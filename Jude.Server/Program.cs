@@ -1,10 +1,16 @@
+using Microsoft.EntityFrameworkCore;
+using Jude.Server.Extensions;
+using Jude.Config;
+using Jude.Data.Repository;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+AppConfig.Initialize();
 
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.ConfigureDatabase();
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
