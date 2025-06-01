@@ -12,7 +12,7 @@ public class GlobalExceptionHandler : IExceptionHandler
     )
     {
         await httpContext.Response.WriteAsJsonAsync(
-            Result.Exception(exception.Message),
+            Result.Ok(exception.Message),
             cancellationToken: cancellationToken
         );
 

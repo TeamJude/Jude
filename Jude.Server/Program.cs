@@ -1,23 +1,23 @@
+using Jude.Server.Config;
 using Jude.Server.Core.Helpers;
+using Jude.Server.Extensions;
 using Jude.Server.Middleware;
 using Microsoft.AspNetCore.Mvc;
 
+//init environment var values into our appconfig
+AppConfig.Initialize();
+
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddControllers();
-builder.Services.AddOpenApi();
-
-var app = builder.Build();
 
 builder.Services.AddSwaggerGen();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.ConfigureDatabase();
+builder.Services.ConfigureAuthentication();
+builder.Services.AddServices();
+builder.Services.AddControllers();
+builder.Services.AddOpenApi();
 
-// Configure ASP.NET to return our standardized Result type for model validation errors.
-// By default, ASP.NET controllers (with the [ApiController] attribute) perform automatic
-// model validation on input DTOs
-// If validation fails, the framework returns a 400 Bad Request with a ProblemDetails object (the default dotnet error result type).
-// This override replaces that behavior by returning a custom Result.Fail(...) object instead,
-// allowing us to maintain consistent error responses across the entire API.
+// Override default model validation response to return our custom ApiResponse format instead of default response for consistent API errors.
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = (actionContext) =>
@@ -27,10 +27,18 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
             .Select(e => e.ErrorMessage)
             .ToList();
 
-        var errorResult = Result.Fail(errors);
-        return new BadRequestObjectResult(errorResult);
+        var errorResponse = new ApiResponse<object>
+        {
+            Success = false,
+            Data = null,
+            Errors = errors
+        };
+        
+        return new BadRequestObjectResult(errorResponse);
     };
 });
+
+var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
@@ -41,8 +49,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

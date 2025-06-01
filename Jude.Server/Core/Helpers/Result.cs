@@ -1,56 +1,71 @@
 namespace Jude.Server.Core.Helpers;
 
-public class Result
+public class Result<T>
 {
-    public bool IsSuccess { get; protected set; }
-    public string? Message { get; protected set; }
-    public int? ErrorCode { get; protected set; }
-    public List<string>? Errors { get; protected set; }
+    public T? Data { get; set; }
+    public bool Success { get; set; }
+    public List<string> Errors { get; set; } = [];
 
-    protected Result(
-        bool isSuccess,
-        string? message = null,
-        int? errorCode = null,
-        List<string>? errors = null
-    )
+    private Result(bool success, T? data = default, List<string>? errors = null)
     {
-        IsSuccess = isSuccess;
-        Message = message;
-        ErrorCode = errorCode;
-        Errors = errors;
+        Success = success;
+        Data = data;
+        Errors = errors ?? [];
     }
 
-    public static Result Ok(string? message = null) => new(true, message);
+    // Static factory methods
+    public static Result<T> Ok(T data) => new(true, data);
 
-    public static Result Fail(string message, int code = 400) => new(false, null, code, [message]);
+    public static Result<T> Fail(string error) => new(false, default, [error]);
 
-    public static Result Fail(List<string> errors, int code = 400) =>
-        new(false, null, code, errors);
+    public static Result<T> Fail(List<string> errors) => new(false, default, errors);
 
-    public static Result Exception(string message) => new(false, null, 500, [message]);
+    public static Result<T> Exception(string errorMessage) => new(false, default, [errorMessage]);
+
+    // Implicit conversions
+    public static implicit operator Result<T>(T value) => Ok(value);
+
+    // Add implicit conversions for SuccessResult and FailureResult
+    public static implicit operator Result<T>(SuccessResult<T> successResult) =>
+        Ok(successResult.Data);
+
+    public static implicit operator Result<T>(FailureResult failureResult) =>
+        Fail(failureResult.Errors);
 }
 
-public class ResultWithData<T> : Result
+// Non-generic Result class for static factory methods
+public static class Result
 {
-    public T? Data { get; }
+    public static SuccessResult<T> Ok<T>(T data) => new(data);
 
-    private ResultWithData(
-        bool isSuccess,
-        T? data,
-        string? message = null,
-        int? errorCode = null,
-        List<string>? errors = null
-    )
-        : base(isSuccess, message, errorCode, errors)
+    public static FailureResult Fail(string message) => new(message);
+
+    public static FailureResult Fail(List<string> errors) => new(errors);
+
+    public static FailureResult Exception(string message) => new(message);
+}
+
+public class SuccessResult<T>
+{
+    public T Data { get; }
+
+    internal SuccessResult(T data)
     {
         Data = data;
     }
+}
 
-    public static ResultWithData<T> Ok(T data, string? message = null) => new(true, data, message);
+public class FailureResult
+{
+    public List<string> Errors { get; }
 
-    public static new ResultWithData<T> Fail(List<string> errors, int code = 400) =>
-        new(false, default, null, code, errors);
+    internal FailureResult(string message)
+    {
+        Errors = [message];
+    }
 
-    public static new ResultWithData<T> Exception(string errorMessage) =>
-        new(false, default, null, 500, [errorMessage]);
+    internal FailureResult(List<string> errors)
+    {
+        Errors = errors;
+    }
 }
