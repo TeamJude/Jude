@@ -20,10 +20,10 @@ public class AuthController : ControllerBase
         var result = await _authService.Register(request);
 
         if (!result.Success)
-            return BadRequest(result.Errors);
+            return BadRequest(result);
 
         SetAuthCookie(HttpContext, result.Data!.Token);
-        return Ok(result.Data);
+        return Ok(result);
     }
 
     [HttpPost("login")]
@@ -32,10 +32,10 @@ public class AuthController : ControllerBase
         var result = await _authService.Login(request);
 
         if (!result.Success)
-            return BadRequest(result.Errors);
+            return BadRequest(result);
 
         SetAuthCookie(HttpContext, result.Data!.Token);
-        return Ok(result.Data);
+        return Ok(result);
     }
 
     private static void SetAuthCookie(HttpContext httpContext, string token)

@@ -27,14 +27,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
             .Select(e => e.ErrorMessage)
             .ToList();
 
-        var errorResponse = new ApiResponse<object>
-        {
-            Success = false,
-            Data = null,
-            Errors = errors
-        };
-        
-        return new BadRequestObjectResult(errorResponse);
+        var response = Result.Fail(errors);
+        return new BadRequestObjectResult(response);
     };
 });
 
