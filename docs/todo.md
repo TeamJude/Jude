@@ -2,23 +2,23 @@
 
 **Server-Side (jude.server - .NET C#)**
 
-1.  [ ] **Initial Project & DB Setup:**
+1.  [x] **Initial Project & DB Setup:**
     - Create ASP.NET Core Web API project.
     - Install core NuGet packages (EF Core, JWT, FluentValidation).
     - Configure `appsettings.json` (DB connection, JWT settings).
     - Define `User` model and `AppDbContext`.
     - Create and apply initial EF Core migration.
-2.  [ ] **Core Middleware & Utilities:**
+2.  [x] **Core Middleware & Utilities:**
     - Implement `Result` type for error handling.
     - Set up global exception handling middleware.
     - Configure CORS.
-3.  [ ] **Implement Auth Feature:**
+3.  [x] **Implement Auth Feature:**
     - Create DTOs (`RegisterRequest`, `LoginRequest`, `TokenResponse`).
     - Create FluentValidation validators for requests.
     - Implement `PasswordHasher` utility.
     - Develop `IAuthService` & `AuthService` (register, login, token generation).
     - Create Auth Endpoints/Controller (`/register`, `/login`).
-4.  [ ] **Configure JWT Authentication:**
+4.  [x] **Configure JWT Authentication:**
     - Set up JWT Bearer authentication in `Program.cs`.
     - Add authentication & authorization middleware.
 
@@ -33,8 +33,8 @@
     - Setup HeroUI chosen fonts.
 2.  [ ] **Core Structure & API Client:**
     - Establish basic folder structure (`core`, `features`, `components`, `routes`).
-    - Configure `apiClient.ts` (Axios instance with base URL).
-    - Set up `QueryClient` and `AppProviders`.
+    - Configure `apiClient.ts`
+    - Set up `QueryClient` and `providers`.
 3.  [ ] **Develop Auth UI (Forms & Pages):**
     - Create the auth pages and components
     - Style with Tailwind CSS / HeroUI.
