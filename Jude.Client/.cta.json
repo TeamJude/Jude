@@ -1,5 +1,5 @@
 {
-  "projectName": "Jude.Client",
+  "projectName": "jude.client",
   "mode": "file-router",
   "typescript": true,
   "tailwind": true,
