@@ -11,6 +11,7 @@ public interface IAuthService
 {
     public Task<Result<AuthResponse>> Register(RegisterRequest request);
     public Task<Result<AuthResponse>> Login(LoginRequest request);
+    public Task<Result<UserDataResponse>> GetUserData(Guid userId);
 }
 
 public class AuthService : IAuthService
@@ -100,5 +101,23 @@ public class AuthService : IAuthService
         );
 
         return Result.Ok(new AuthResponse(token, userData));
+    }
+
+    public async Task<Result<UserDataResponse>> GetUserData(Guid userId)
+    {
+        var user = await _repository.Users.FindAsync(userId);
+
+        if (user == null)
+            return Result.Fail("User not found");
+
+        var userData = new UserDataResponse(
+            user.Id,
+            user.Email,
+            user.Username,
+            user.AvatarUrl,
+            user.CreatedAt
+        );
+
+        return Result.Ok(userData);
     }
 }

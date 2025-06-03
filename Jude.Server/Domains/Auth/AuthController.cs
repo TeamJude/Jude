@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Jude.Server.Core.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Jude.Server.Domains.Auth;
@@ -36,6 +38,21 @@ public class AuthController : ControllerBase
 
         SetAuthCookie(HttpContext, result.Data!.Token);
         return Ok(result);
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetUserData()
+    {
+        if (Guid.TryParse(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            var result = await _authService.GetUserData(userId);
+            if (!result.Success)
+                return BadRequest(result);
+            return Ok(result);
+
+        }
+        else return Unauthorized("User not authenticated");
     }
 
     private static void SetAuthCookie(HttpContext httpContext, string token)
