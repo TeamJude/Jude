@@ -15,6 +15,8 @@
   "dependencies": {
     "@heroui/react": "^2.7.8",
     "@tailwindcss/typography": "^0.5.16",
+    "@tanstack/react-form": "^1.12.0",
+    "@tanstack/react-query": "^5.79.2",
     "@tanstack/react-router": "^1.114.3",
     "@tanstack/react-router-devtools": "^1.114.3",
     "@tanstack/router-plugin": "^1.114.3",

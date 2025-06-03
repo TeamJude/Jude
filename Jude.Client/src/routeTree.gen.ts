@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as appImport } from './routes/__app'
 import { Route as IndexImport } from './routes/index'
+import { Route as AuthLoginImport } from './routes/auth/login'
 import { Route as appKnowledgeIndexImport } from './routes/__app/knowledge/index'
 import { Route as appDashboardIndexImport } from './routes/__app/dashboard/index'
 import { Route as appClaimsIndexImport } from './routes/__app/claims/index'
@@ -28,6 +29,12 @@ const appRoute = appImport.update({
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthLoginRoute = AuthLoginImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -71,6 +78,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: ''
       preLoaderRoute: typeof appImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginImport
       parentRoute: typeof rootRoute
     }
     '/__app/claims/': {
@@ -125,6 +139,7 @@ const appRouteWithChildren = appRoute._addFileChildren(appRouteChildren)
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof appRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
   '/claims': typeof appClaimsIndexRoute
   '/dashboard': typeof appDashboardIndexRoute
   '/knowledge': typeof appKnowledgeIndexRoute
@@ -134,6 +149,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '': typeof appRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
   '/claims': typeof appClaimsIndexRoute
   '/dashboard': typeof appDashboardIndexRoute
   '/knowledge': typeof appKnowledgeIndexRoute
@@ -144,6 +160,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/__app': typeof appRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
   '/__app/claims/': typeof appClaimsIndexRoute
   '/__app/dashboard/': typeof appDashboardIndexRoute
   '/__app/knowledge/': typeof appKnowledgeIndexRoute
@@ -152,13 +169,28 @@ export interface FileRoutesById {
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '' | '/claims' | '/dashboard' | '/knowledge' | '/claims/$id'
+  fullPaths:
+    | '/'
+    | ''
+    | '/auth/login'
+    | '/claims'
+    | '/dashboard'
+    | '/knowledge'
+    | '/claims/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '' | '/claims' | '/dashboard' | '/knowledge' | '/claims/$id'
+  to:
+    | '/'
+    | ''
+    | '/auth/login'
+    | '/claims'
+    | '/dashboard'
+    | '/knowledge'
+    | '/claims/$id'
   id:
     | '__root__'
     | '/'
     | '/__app'
+    | '/auth/login'
     | '/__app/claims/'
     | '/__app/dashboard/'
     | '/__app/knowledge/'
@@ -169,11 +201,13 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   appRoute: typeof appRouteWithChildren
+  AuthLoginRoute: typeof AuthLoginRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   appRoute: appRouteWithChildren,
+  AuthLoginRoute: AuthLoginRoute,
 }
 
 export const routeTree = rootRoute
@@ -187,7 +221,8 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/__app"
+        "/__app",
+        "/auth/login"
       ]
     },
     "/": {
@@ -201,6 +236,9 @@ export const routeTree = rootRoute
         "/__app/knowledge/",
         "/__app/claims/$id/"
       ]
+    },
+    "/auth/login": {
+      "filePath": "auth/login.tsx"
     },
     "/__app/claims/": {
       "filePath": "__app/claims/index.tsx",
