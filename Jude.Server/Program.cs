@@ -17,6 +17,8 @@ builder.Services.AddServices();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+builder.Services.ConfigureCors();
+
 // Override default model validation response to return our custom ApiResponse format instead of default response for consistent API errors.
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -33,6 +35,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 });
 
 var app = builder.Build();
+
+app.UseCors("jude");
 
 if (app.Environment.IsDevelopment())
 {

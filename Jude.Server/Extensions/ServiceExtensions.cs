@@ -67,6 +67,26 @@ public static class ServiceExtensions
         return services;
     }
 
+    public static IServiceCollection ConfigureCors(this IServiceCollection services)
+    {
+        services.AddCors(options =>
+        {
+            options.AddPolicy(
+                "jude",
+                policy =>
+                {
+                    policy
+                        .WithOrigins(AppConfig.Client.Url)
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials();
+                }
+            );
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddScoped<IAuthService, AuthService>();
