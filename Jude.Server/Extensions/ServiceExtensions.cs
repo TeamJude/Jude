@@ -76,7 +76,7 @@ public static class ServiceExtensions
     public static void ConfigureAuthorization(this IServiceCollection services)
     {
         services.AddAuthorization(options =>
-    {
+        {
             foreach (var feature in Features.All)
             {
                 options.AddPolicy(
@@ -120,7 +120,7 @@ public static class ServiceExtensions
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddScoped<IAuthService, AuthService>();
-        services.AddSingleton<IPermissionService, PermissionService>();
+        services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<ITokenProvider, TokenProvider>();
         services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
         return services;
