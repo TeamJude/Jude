@@ -12,7 +12,6 @@ import {
   useRouter,
   useSearch
 } from "@tanstack/react-router";
-import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion";
 import { Eye, EyeClosed } from "lucide-react";
 import { useState } from "react";
 
@@ -35,11 +34,6 @@ function SignIn() {
 
   const [errors, setErrors] = useState<string[]>([]);
   const [isVisible, setIsVisible] = useState(false);
-
-  const variants = {
-    visible: { opacity: 1, y: 0 },
-    hidden: { opacity: 0, y: 10 },
-  };
 
   const signInMutation = useMutation({
     mutationFn: (data: { userIdentifier: string; password: string }) =>
@@ -98,73 +92,63 @@ function SignIn() {
           />
         )}
 
-        <LazyMotion features={domAnimation}>
-          <AnimatePresence mode="wait">
-            
-              <m.form
-                animate="visible"
-                exit="hidden"
-                initial="hidden"
-                variants={variants}
-                className="flex flex-col gap-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  form.handleSubmit();
-                }}
-              >
-                <form.Field name="userIdentifier">
-                  {(field) => (
-                    <Input
-                      isRequired
-                      label="Username or Email"
-                      type="text"
-                      variant="flat"
-                      size="sm"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      isDisabled={signInMutation.isPending}
-                    />
-                  )}
-                </form.Field>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+        >
+          <form.Field name="userIdentifier">
+            {(field) => (
+              <Input
+                isRequired
+                label="Username or Email"
+                type="text"
+                variant="flat"
+                size="sm"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                isDisabled={signInMutation.isPending}
+              />
+            )}
+          </form.Field>
 
-                <form.Field name="password">
-                  {(field) => (
-                    <Input
-                      isRequired
-                      endContent={
-                        <button
-                          type="button"
-                          onClick={() => setIsVisible(!isVisible)}
-                          disabled={signInMutation.isPending}
-                        >
-                          {isVisible ? <EyeClosed /> : <Eye />}
-                        </button>
-                      }
-                      label="Password"
-                      type={isVisible ? "text" : "password"}
-                      variant="flat"
-                      size="sm"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      isDisabled={signInMutation.isPending}
-                    />
-                  )}
-                </form.Field>
+          <form.Field name="password">
+            {(field) => (
+              <Input
+                isRequired
+                endContent={
+                  <button
+                    type="button"
+                    onClick={() => setIsVisible(!isVisible)}
+                    disabled={signInMutation.isPending}
+                  >
+                    {isVisible ? <EyeClosed /> : <Eye />}
+                  </button>
+                }
+                label="Password"
+                type={isVisible ? "text" : "password"}
+                variant="flat"
+                size="sm"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                isDisabled={signInMutation.isPending}
+              />
+            )}
+          </form.Field>
 
-                <Button
-                  className="w-full"
-                  color="primary"
-                  type="submit"
-                  isDisabled={signInMutation.isPending}
-                  isLoading={signInMutation.isPending}
-                >
-                  Sign In
-                </Button>
-              </m.form>
-            
-          </AnimatePresence>
-        </LazyMotion>
+          <Button
+            className="w-full"
+            color="primary"
+            type="submit"
+            isDisabled={signInMutation.isPending}
+            isLoading={signInMutation.isPending}
+          >
+            Sign In
+          </Button>
+        </form>
       </div>
     </div>
   )

@@ -1,9 +1,36 @@
-export type User = {
+export enum Permission {
+	Read = "Read",
+	Write = "Write"
+}
+
+export interface UserRole {
+	name: string;
+	permissions: Array<Record<string, Permission>>;
+}
+
+export interface User {
 	id: string;
+	email: string;
+	username: string | null;
+	avatarUrl: string | null;
+	createdAt: string;
+	role: UserRole;
+}
+
+export interface AuthResponse {
+	token: string;
+	userData: User;
+}
+
+export interface LoginRequest {
+	userIdentifier: string;
+	password: string;
+}
+
+export interface RegisterRequest {
 	username: string;
 	email: string;
-	avatarUrl: string;
-	authProvider: AuthProvider;
-};
-
-export type AuthProvider = "email" | "google";
+	password: string;
+	roleName: string;
+	permissions?: Array<Record<string, Permission>>;
+}
