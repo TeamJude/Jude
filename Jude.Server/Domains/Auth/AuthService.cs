@@ -78,25 +78,45 @@ public class AuthService : IAuthService
     {
         var isEmailTaken = await _repository.Users.AnyAsync(u => u.Email == request.Email);
         if (isEmailTaken)
-            return Result.Fail("this userz already exists");
+            return Result.Fail("This email is already registered");
 
         var validationResult = new RegistrationValidator().Validate(request);
-
         if (!validationResult.IsValid)
             return Result.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
 
-        var role = new RoleModel
+        RoleModel role;
+        
+        // Check if role exists
+        var existingRole = await _repository.Roles
+            .FirstOrDefaultAsync(r => r.Name == request.RoleName);
+
+        if (existingRole != null)
         {
-            Name = request.Role.Name,
-            Permissions = request.Role.Permissions,
-        };
+            // If role exists but permissions are provided, return error
+            if (request.Permissions != null)
+                return Result.Fail("Cannot specify permissions when using an existing role");
+            
+            role = existingRole;
+        }
+        else
+        {
+            // If role doesn't exist, permissions must be provided
+            if (request.Permissions == null)
+                return Result.Fail("Permissions must be provided when creating a new role");
+
+            role = new RoleModel
+            {
+                Name = request.RoleName,
+                Permissions = request.Permissions
+            };
+        }
 
         var user = new UserModel
         {
             Username = request.Username,
             Email = request.Email,
             AuthProvider = AuthProvider.Email,
-            Role = role,
+            Role = role
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
@@ -104,7 +124,7 @@ public class AuthService : IAuthService
         await _repository.Users.AddAsync(user);
         await _repository.SaveChangesAsync();
 
-        var token = _jwt.GenerateToken(user.Id.ToString(), user.Email);
+        var token = _jwt.GenerateToken(user.Id.ToString(), user.RoleId.ToString());
         var userData = new UserDataResponse(
             user.Id,
             user.Email,

@@ -1,7 +1,10 @@
 using Jude.Server.Config;
 using Jude.Server.Core.Helpers;
+using Jude.Server.Data.Models;
+using Jude.Server.Data.Repository;
 using Jude.Server.Extensions;
 using Jude.Server.Middleware;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 //init environment var values into our appconfig
@@ -52,5 +55,14 @@ app.MapControllers().RequireAuthorization();
 app.UseExceptionHandler(options => { });
 
 app.UseCors("jude");
+
+// Seed the database
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<JudeDbContext>();
+    var passwordHasher = services.GetRequiredService<IPasswordHasher<UserModel>>();
+    await DbSeeder.SeedData(context, passwordHasher);
+}
 
 app.Run();
