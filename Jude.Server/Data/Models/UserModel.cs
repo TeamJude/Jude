@@ -1,6 +1,7 @@
 namespace Jude.Server.Data.Models;
 
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 public class UserModel
 {
@@ -13,6 +14,10 @@ public class UserModel
     public string PasswordHash { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public AuthProvider AuthProvider { get; set; }
+
+    [ForeignKey(nameof(RoleModel))]
+    public Guid RoleId { get; set; }
+    public required RoleModel Role { get; set; }
 }
 
 public enum AuthProvider

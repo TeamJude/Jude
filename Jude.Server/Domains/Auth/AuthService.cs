@@ -20,12 +20,12 @@ public class AuthService : IAuthService
 
     //using inbuilt password hasher
     private readonly IPasswordHasher<UserModel> _passwordHasher;
-    private readonly IJwtTokenManager _jwt;
+    private readonly ITokenProvider _jwt;
 
     public AuthService(
         JudeDbContext repository,
         IPasswordHasher<UserModel> passwordHasher,
-        IJwtTokenManager jwt
+        ITokenProvider jwt
     )
     {
         _repository = repository;
@@ -36,9 +36,11 @@ public class AuthService : IAuthService
     public async Task<Result<AuthResponse>> Login(LoginRequest request)
     {
         // get the user associated with the identifier
-        var user = await _repository.Users.FirstOrDefaultAsync(u =>
-            u.Email == request.UserIdentifier || u.Username == request.UserIdentifier
-        );
+        var user = await _repository
+            .Users.Include(u => u.Role)
+            .FirstOrDefaultAsync(u =>
+                u.Email == request.UserIdentifier || u.Username == request.UserIdentifier
+            );
 
         if (user == null)
             return Result.Fail("Invalid credentials");
@@ -56,13 +58,17 @@ public class AuthService : IAuthService
         if (passwordVerificationResult == PasswordVerificationResult.Failed)
             return Result.Fail("Invalid credentials");
 
-        var token = _jwt.GenerateToken(user.Id.ToString(), user.Email);
+        var token = _jwt.GenerateToken(user.Id.ToString(), user.RoleId.ToString());
+
+        var role = new UserRole(user.Role.Name, user.Role.Permissions);
+
         var userData = new UserDataResponse(
             user.Id,
             user.Email,
             user.Username,
             user.AvatarUrl,
-            user.CreatedAt
+            user.CreatedAt,
+            role
         );
 
         return Result.Ok(new AuthResponse(token, userData));
@@ -72,18 +78,25 @@ public class AuthService : IAuthService
     {
         var isEmailTaken = await _repository.Users.AnyAsync(u => u.Email == request.Email);
         if (isEmailTaken)
-            return Result.Fail("Email already exists");
+            return Result.Fail("this userz already exists");
 
         var validationResult = new RegistrationValidator().Validate(request);
 
         if (!validationResult.IsValid)
             return Result.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
 
+        var role = new RoleModel
+        {
+            Name = request.Role.Name,
+            Permissions = request.Role.Permissions,
+        };
+
         var user = new UserModel
         {
             Username = request.Username,
             Email = request.Email,
             AuthProvider = AuthProvider.Email,
+            Role = role,
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
@@ -97,7 +110,8 @@ public class AuthService : IAuthService
             user.Email,
             user.Username,
             user.AvatarUrl,
-            user.CreatedAt
+            user.CreatedAt,
+            new(user.Role.Name, user.Role.Permissions)
         );
 
         return Result.Ok(new AuthResponse(token, userData));
@@ -105,7 +119,11 @@ public class AuthService : IAuthService
 
     public async Task<Result<UserDataResponse>> GetUserData(Guid userId)
     {
-        var user = await _repository.Users.FindAsync(userId);
+        var user = await _repository
+            .Users.Where(u => u.Id == userId)
+            .AsNoTracking()
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync();
 
         if (user == null)
             return Result.Fail("User not found");
@@ -115,7 +133,8 @@ public class AuthService : IAuthService
             user.Email,
             user.Username,
             user.AvatarUrl,
-            user.CreatedAt
+            user.CreatedAt,
+            new(user.Role.Name, user.Role.Permissions)
         );
 
         return Result.Ok(userData);

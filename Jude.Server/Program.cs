@@ -13,6 +13,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.ConfigureDatabase();
 builder.Services.ConfigureAuthentication();
+builder.Services.ConfigureAuthorization();
 builder.Services.AddServices();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -36,8 +37,6 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 var app = builder.Build();
 
-app.UseCors("jude");
-
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -49,6 +48,9 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+app.MapControllers().RequireAuthorization();
+app.UseExceptionHandler(options => { });
+
+app.UseCors("jude");
 
 app.Run();

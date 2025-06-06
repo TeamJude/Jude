@@ -6,19 +6,19 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Jude.Server.Domains.Auth;
 
-public interface IJwtTokenManager
+public interface ITokenProvider
 {
-    string GenerateToken(string userId, string email);
+    string GenerateToken(string userId, string roleId);
 }
 
-public class JwtTokenManager : IJwtTokenManager
+public class TokenProvider : ITokenProvider
 {
-    public string GenerateToken(string userId, string email)
+    public string GenerateToken(string userId, string roleId)
     {
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, userId),
-            new Claim(ClaimTypes.Email, email),
+            new Claim(ClaimTypes.Role, roleId.ToString()),
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AppConfig.JwtConfig.Secret));

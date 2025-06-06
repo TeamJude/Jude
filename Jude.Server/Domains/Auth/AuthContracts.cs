@@ -1,7 +1,9 @@
+using Jude.Server.Data.Models;
+
 namespace Jude.Server.Domains.Auth;
 
 //for DTOs we use for auth, could have named this AuthDTOs but AuthContracts is more aesthetic imo
-public record RegisterRequest(string Username, string Email, string Password);
+public record RegisterRequest(string Username, string Email, string Password, UserRole Role);
 
 public record LoginRequest(string UserIdentifier, string Password);
 
@@ -12,5 +14,8 @@ public record UserDataResponse(
     string Email,
     string? Username,
     string? AvatarUrl,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    UserRole Role
 );
+
+public record UserRole(string Name, List<Dictionary<string, Permission>> Permissions);

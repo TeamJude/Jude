@@ -4,21 +4,27 @@ using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Auth;
+using Jude.Server.Domains.Auth.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 
 namespace Jude.Server.Extensions;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection ConfigureDatabase(this IServiceCollection services)
+    public static void ConfigureDatabase(this IServiceCollection services)
     {
+        var db = new NpgsqlDataSourceBuilder(AppConfig.Database.ConnectionString)
+            .EnableDynamicJson()
+            .Build();
         services.AddDbContext<JudeDbContext>(options =>
-            options.UseNpgsql(AppConfig.Database.ConnectionString)
-        );
-        return services;
+        {
+            options.UseNpgsql(db);
+        });
     }
 
     public static IServiceCollection ConfigureAuthentication(this IServiceCollection services)
@@ -67,6 +73,30 @@ public static class ServiceExtensions
         return services;
     }
 
+    public static void ConfigureAuthorization(this IServiceCollection services)
+    {
+        services.AddAuthorization(options =>
+    {
+            foreach (var feature in Features.All)
+            {
+                options.AddPolicy(
+                    $"{feature}.Read",
+                    policy =>
+                        policy.Requirements.Add(new PermissionRequirement(feature, Permission.Read))
+                );
+                options.AddPolicy(
+                    $"{feature}.Write",
+                    policy =>
+                        policy.Requirements.Add(
+                            new PermissionRequirement(feature, Permission.Write)
+                        )
+                );
+            }
+        });
+
+        services.AddScoped<IAuthorizationHandler, PermissionsAuthorizationHandler>();
+    }
+
     public static IServiceCollection ConfigureCors(this IServiceCollection services)
     {
         services.AddCors(options =>
@@ -90,7 +120,8 @@ public static class ServiceExtensions
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IJwtTokenManager, JwtTokenManager>();
+        services.AddSingleton<IPermissionService, PermissionService>();
+        services.AddScoped<ITokenProvider, TokenProvider>();
         services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
         return services;
     }

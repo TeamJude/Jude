@@ -7,8 +7,15 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
 {
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
+        //configure the permissions prop to be a json object
+        modelBuilder
+            .Entity<RoleModel>()
+            .Property(r => r.Permissions)
+            .HasColumnType("jsonb")
+            .IsRequired();
     }
 
     public DbSet<UserModel> Users { get; set; }
+
+    public DbSet<RoleModel> Roles { get; set; }
 }

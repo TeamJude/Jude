@@ -44,15 +44,12 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetUserData()
     {
-        if (Guid.TryParse(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        if (Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
             var result = await _authService.GetUserData(userId);
-            if (!result.Success)
-                return BadRequest(result);
-            return Ok(result);
-
+            return result.Success ? Ok(result) : BadRequest(result);
         }
-        else return Unauthorized("User not authenticated");
+        return Unauthorized("User not authenticated");
     }
 
     private static void SetAuthCookie(HttpContext httpContext, string token)
