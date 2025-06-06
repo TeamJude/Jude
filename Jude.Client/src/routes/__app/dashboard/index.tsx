@@ -65,7 +65,7 @@ function Dashboard() {
   ];
   
   return (
-    <main className="min-h-screen  py-6 px-4">
+    <main className="h-full py-6 px-4">
       <div className="max-w-7xl mx-auto px-4 space-y-6">
         {/* Header with Title and Actions */}
         <div className="flex justify-between items-center">

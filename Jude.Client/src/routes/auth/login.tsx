@@ -1,7 +1,7 @@
 import Logo from "@/components/Logo";
 import { login } from "@/lib/services/auth.service";
 import { Alert, Button, Input } from "@heroui/react";
-import authState from "@lib/state/auth.state";
+import {authState} from "@lib/state/auth.state";
 import type { User } from "@lib/types/user";
 import type { ApiResponse } from "@lib/utils/api";
 import { publicOnlyLoader } from "@lib/utils/loaders";
@@ -45,6 +45,7 @@ function SignIn() {
           isAuthenticated: true,
           isLoading: false,
         }));
+        console.log(authState.state);
         router.navigate({ to: redirectUrl, replace: true });
         return;
       } 

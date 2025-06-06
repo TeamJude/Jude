@@ -1,6 +1,6 @@
 export enum Permission {
-	Read = "Read",
-	Write = "Write"
+	Read ,
+	Write 
 }
 
 export interface UserRole {

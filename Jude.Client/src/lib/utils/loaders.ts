@@ -1,4 +1,4 @@
-import authState from "@lib/state/auth.state";
+import { authState } from "@/lib/state/auth.state";
 import { redirect } from "@tanstack/react-router";
 
 export const publicOnlyLoader = async () => {

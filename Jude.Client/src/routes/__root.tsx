@@ -1,5 +1,5 @@
 import { me } from "@/lib/services/auth.service";
-import authState from "@lib/state/auth.state";
+import { authState } from "@/lib/state/auth.state";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 

@@ -5,12 +5,14 @@ import { ChevronLeft, ChevronRight, LogOut, SidebarIcon } from "lucide-react";
 import Avatar from "boring-avatars";
 import SidebarNav from "./sidebar-nav";
 import SidebarDrawer from "./sidebar-drawer";
-import { user } from "@/lib/user";
+import { authState } from "@/lib/state/auth.state";
 
-const SIDEBAR_COLLAPSED_KEY = "apolllo-sidebar-collapsed";
+const SIDEBAR_COLLAPSED_KEY = "jude-sidebar-collapsed";
 
 export default function AppSidebar() {
+	const { user } = authState.state;
 	const [isOpen, setIsOpen] = React.useState(false);
+	
 
 	const [isCollapsed, setIsCollapsed] = React.useState<boolean>(() => {
 		if (typeof window !== "undefined") {
@@ -73,7 +75,7 @@ export default function AppSidebar() {
 
 			<Spacer y={6} />
 			<div className="flex items-center gap-3 px-3">
-				<Avatar size={38} name={user.username} />
+				<Avatar size={38} name={user?.email || ""} />
 				<div
 					className={cn("flex max-w-full flex-col overflow-hidden", {
 						hidden: isCollapsed,
@@ -81,12 +83,12 @@ export default function AppSidebar() {
 				>
 					<p
 						className="text-small text-gray-800 truncate"
-						title={user.username}
+						title={user?.username || ""}
 					>
-						{user.username.substring(0, 25)}
-						{user.username.length > 25 ? "..." : ""}
+						{user?.username?.substring(0, 25)}
+						{user?.username && user.username.length > 25 ? "..." : ""}
 					</p>
-					<p className="text-tiny text-gray-600">Ajudicator</p>
+					<p className="text-tiny text-gray-600">{user?.role?.name}</p>
 				</div>
 			</div>
 

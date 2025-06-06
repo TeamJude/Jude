@@ -8,9 +8,11 @@ namespace Jude.Server.Data.Repository;
 
 public static class DbSeeder
 {
-    public static async Task SeedData(JudeDbContext context, IPasswordHasher<UserModel> passwordHasher)
+    public static async Task SeedData(
+        JudeDbContext context,
+        IPasswordHasher<UserModel> passwordHasher
+    )
     {
-    
         var adminRole = new RoleModel
         {
             Id = Guid.NewGuid(),
@@ -21,22 +23,16 @@ public static class DbSeeder
                 {
                     { "Claims", Permission.Write },
                     { "Users", Permission.Write },
-                    { "Roles", Permission.Write }
-                }
-            ]
+                    { "Roles", Permission.Write },
+                },
+            ],
         };
 
         var userRole = new RoleModel
         {
             Id = Guid.NewGuid(),
             Name = "User",
-            Permissions =
-            [
-                new()
-                {
-                    { "Claims", Permission.Read }
-                }
-            ]
+            Permissions = [new() { { "Claims", Permission.Read } }],
         };
 
         await context.Roles.AddRangeAsync(adminRole, userRole);
@@ -51,7 +47,7 @@ public static class DbSeeder
             AuthProvider = AuthProvider.Email,
             RoleId = adminRole.Id,
             Role = adminRole,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         var regularUser = new UserModel
@@ -63,7 +59,7 @@ public static class DbSeeder
             AuthProvider = AuthProvider.Email,
             RoleId = userRole.Id,
             Role = userRole,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "Admin123!");
@@ -72,4 +68,4 @@ public static class DbSeeder
         await context.Users.AddRangeAsync(adminUser, regularUser);
         await context.SaveChangesAsync();
     }
-} 
+}

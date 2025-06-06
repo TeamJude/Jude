@@ -7,6 +7,6 @@ const queryClient = new QueryClient();
 
 export default function Providers({ children }: { children: ReactNode }) {
 	return <QueryClientProvider client={queryClient}>
-		<HeroUIProvider>{children}</HeroUIProvider>;
+		<HeroUIProvider>{children}</HeroUIProvider>
 	</QueryClientProvider>
 }
