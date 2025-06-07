@@ -24,8 +24,18 @@ export const apiRequest = async <T>(
 		});
 
 		const data = await response.json();
-		return data;
 
+		if (response.ok) {
+			return {
+				success: true,
+				data: data,
+			};
+		} else {
+			return {
+				success: false,
+				errors: Array.isArray(data) ? data : [data.message || "Request failed"],
+			};
+		}
 	} catch (error) {
 		return {
 			success: false,

@@ -23,10 +23,10 @@ public class AuthController : ControllerBase
         var result = await _authService.Register(request);
 
         if (!result.Success)
-            return BadRequest(result);
+            return BadRequest(result.Errors);
 
         SetAuthCookie(HttpContext, result.Data!.Token);
-        return Ok(Result.Ok(result.Data.UserData));
+        return Ok(result.Data.UserData);
     }
 
     [HttpPost("login")]
@@ -36,11 +36,10 @@ public class AuthController : ControllerBase
         var result = await _authService.Login(request);
 
         if (!result.Success)
-            return BadRequest(result);
+            return BadRequest(result.Errors);
 
         SetAuthCookie(HttpContext, result.Data!.Token);
-        
-        return Ok(Result.Ok(result.Data.UserData));
+        return Ok(result.Data.UserData);
     }
 
     [HttpGet("me")]
@@ -50,7 +49,7 @@ public class AuthController : ControllerBase
         if (Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
             var result = await _authService.GetUserData(userId);
-            return result.Success ? Ok(result) : BadRequest(result);
+            return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
         }
         return Unauthorized("User not authenticated");
     }

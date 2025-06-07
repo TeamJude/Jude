@@ -181,7 +181,7 @@ export default function Logo(props: SVGProps<SVGSVGElement>) {
 					y2="57.894"
 					gradientUnits="userSpaceOnUse"
 				>
-					<stop stop-color="#808181" />
+					<stop stopColor="#808181" />
 					<stop offset="0.495" stop-color="#808181" />
 					<stop offset="0.6556" stop-color="#828282" />
 					<stop offset="0.7458" stop-color="#888888" />
