@@ -1,8 +1,10 @@
 import AppSidebar from "@/components/layout/app-sidebar";
+import { protectedLoader } from "@/lib/utils/loaders";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/__app")({
 	component: RouteComponent,
+	loader: protectedLoader,
 });
 
 function RouteComponent() {

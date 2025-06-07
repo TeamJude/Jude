@@ -14,7 +14,7 @@ export default function AppSidebar() {
 	const [isOpen, setIsOpen] = React.useState(false);
 	
 
-	const [isCollapsed, setIsCollapsed] = React.useState<boolean>(() => {
+const [isCollapsed, setIsCollapsed] = React.useState<boolean>(() => {
 		if (typeof window !== "undefined") {
 			const savedState = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
 			return savedState ? JSON.parse(savedState) : false;
