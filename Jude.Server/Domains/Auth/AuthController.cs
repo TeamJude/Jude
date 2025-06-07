@@ -26,7 +26,7 @@ public class AuthController : ControllerBase
             return BadRequest(result);
 
         SetAuthCookie(HttpContext, result.Data!.Token);
-        return Ok(result);
+        return Ok(Result.Ok(result.Data.UserData));
     }
 
     [HttpPost("login")]
@@ -39,7 +39,8 @@ public class AuthController : ControllerBase
             return BadRequest(result);
 
         SetAuthCookie(HttpContext, result.Data!.Token);
-        return Ok(result);
+        
+        return Ok(Result.Ok(result.Data.UserData));
     }
 
     [HttpGet("me")]
