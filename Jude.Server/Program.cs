@@ -3,6 +3,7 @@ using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Extensions;
+using Microsoft.EntityFrameworkCore;
 using Jude.Server.Middleware;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -47,6 +48,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.MapFallbackToFile("index.html");
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
@@ -56,11 +62,14 @@ app.UseExceptionHandler(options => { });
 
 app.UseCors("jude");
 
-// Seed the database
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<JudeDbContext>();
+
+    context.Database.Migrate();
+
     var passwordHasher = services.GetRequiredService<IPasswordHasher<UserModel>>();
     await DbSeeder.SeedData(context, passwordHasher);
 }

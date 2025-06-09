@@ -1,0 +1,48 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+      - "8443:443"
+    depends_on:
+      - postgres
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DATABASE_URL=Host=postgres;Database=jude_db;Username=postgres;Password=postgres
+      - CLIENT_URL=http://localhost:8080
+      - JWT_SECRET_KEY=your_super_secret_key_for_development_only_change_in_production
+      - JWT_ISSUER=jude
+      - JWT_AUDIENCE=jude-client
+      - VITE_SERVER_URL=http://localhost:8080
+    networks:
+      - jude-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: jude-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=jude_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - jude-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  jude-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
