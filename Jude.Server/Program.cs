@@ -1,3 +1,4 @@
+using System.Reflection;
 using Jude.Server.Config;
 using Jude.Server.Core.Helpers;
 using Jude.Server.Extensions;
@@ -36,6 +37,14 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 var app = builder.Build();
 
+app.Map("/__embedded_resources", (HttpContext context) =>
+{
+    var assembly = Assembly.GetExecutingAssembly();
+    var resourceNames = assembly.GetManifestResourceNames();
+    context.Response.ContentType = "text/plain";
+    return context.Response.WriteAsync("Embedded Resources:\n" + string.Join("\n", resourceNames));
+});
+
 app.UseCors("jude");
 
 if (app.Environment.IsDevelopment())
@@ -50,5 +59,15 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapWhen(context => !context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase), builder =>
+{
+    builder.UseMiddleware<Jude.Server.Middleware.EmbeddedFrontendMiddleware>(
+        Assembly.GetExecutingAssembly(),
+        "",
+        "index.html"
+    );
+});
+
 
 app.Run();

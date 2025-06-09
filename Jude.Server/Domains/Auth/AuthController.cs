@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Jude.Server.Domains.Auth;
 
+
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
@@ -19,6 +20,7 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
+
         var result = await _authService.Register(request);
 
         if (!result.Success)
@@ -47,10 +49,7 @@ public class AuthController : ControllerBase
         if (Guid.TryParse(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
             var result = await _authService.GetUserData(userId);
-            if (!result.Success)
-                return BadRequest(result);
-            return Ok(result);
-
+            return result.Success ? Ok(result) : BadRequest(result);
         }
         else return Unauthorized("User not authenticated");
     }

@@ -20,4 +20,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\Jude.Client\dist\**\*" LinkBase="%(RecursiveDir)" />
+  </ItemGroup>
+
 </Project>
