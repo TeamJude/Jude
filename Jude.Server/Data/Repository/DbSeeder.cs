@@ -13,6 +13,9 @@ public static class DbSeeder
         IPasswordHasher<UserModel> passwordHasher
     )
     {
+        var anyUsers = await context.Users.AnyAsync();
+        if (anyUsers)
+            return;
         var adminRole = new RoleModel
         {
             Id = Guid.NewGuid(),
