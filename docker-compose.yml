@@ -9,7 +9,10 @@ services:
     depends_on:
       - postgres
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
+      - CIMAS_ACCOUNT_NAME=test_sys_admin
+      - CIMAS_ACCOUNT_PASSWORD=test_password
+      - CIMAS_CLAIMS_SWITCH_ENDPOINT=https://test-endpoint.com
       - DATABASE_URL=Host=postgres;Database=jude_db;Username=postgres;Password=postgres
       - CLIENT_URL=http://localhost:8080
       - JWT_SECRET_KEY=your_super_secret_key_for_development_only_change_in_production
