@@ -63,6 +63,7 @@ app.UseExceptionHandler(options => { });
 app.UseCors("jude");
 
 
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

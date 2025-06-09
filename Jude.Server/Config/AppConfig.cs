@@ -37,6 +37,16 @@ public static class AppConfig
             Environment.GetEnvironmentVariable("JWT_AUDIENCE")
                 ?? throw new Exception("Jwt Audience is not set")
         );
+
+    public static CIMASConfig CIMAS { get; } =
+        new CIMASConfig(
+            Environment.GetEnvironmentVariable("CIMAS_CLAIMS_SWITCH_ENDPOINT")
+                ?? throw new Exception("CIMAS Claims Switch Endpoint is not set"),
+            Environment.GetEnvironmentVariable("CIMAS_ACCOUNT_NAME")
+                ?? throw new Exception("CIMAS Account Name is not set"),
+            Environment.GetEnvironmentVariable("CIMAS_ACCOUNT_PASSWORD")
+                ?? throw new Exception("CIMAS Account Password is not set")
+        );
 }
 
 public record Database(string ConnectionString);
@@ -44,3 +54,5 @@ public record Database(string ConnectionString);
 public record Client(string Url);
 
 public record JwtConfig(string Secret, string Issuer, string Audience);
+
+public record CIMASConfig(string ClaimsSwitchEndpoint, string AccountName, string AccountPassword);

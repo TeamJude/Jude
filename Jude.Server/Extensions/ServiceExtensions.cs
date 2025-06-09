@@ -5,6 +5,7 @@ using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Auth;
 using Jude.Server.Domains.Auth.Authorization;
+using Jude.Server.Providers.CIMAS;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -123,6 +124,12 @@ public static class ServiceExtensions
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<ITokenProvider, TokenProvider>();
         services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
+
+        services.AddSingleton(AppConfig.CIMAS);
+
+        services.AddHttpClient<ICIMASProvider, CIMASProvider>();
+        services.AddScoped<ICIMASProvider, CIMASProvider>();
+
         return services;
     }
 }
