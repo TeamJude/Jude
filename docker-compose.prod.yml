@@ -1,8 +1,6 @@
 services:
   app:
     image: ghcr.io/TeamJude/jude:latest
-    env_file:
-      - .env.prod
     depends_on:
       - postgres
     environment:
