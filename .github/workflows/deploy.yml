@@ -30,11 +30,11 @@ jobs:
 
       - name: Build image
         run: |
-          docker build -t ghcr.io/teamjude/jude:${{ steps.tag.outputs.tag }} --label service="peasy" -t ghcr.io/teamjude/jude:latest .
+          docker build -t ghcr.io/teamjude/jude:${{ steps.tag.outputs.tag }} -t ghcr.io/teamjude/jude:latest .
 
       - name: Push image
         run: |
-          docker push ghcr.io/teamjude/jude:${{ steps.tag.outputs.tag }}
+          docker push ghcr.io/teamjude/jude:${{ steps.tag.outputs.tag }} 
 
       - name: Copy files to server
         uses: appleboy/scp-action@v1
@@ -42,9 +42,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          source: |
-            docker-compose.prod.yml
-            Caddyfile
+          source: "docker-compose.prod.yml, Caddyfile"
           target: ~/jude
 
       - name: Deploy on server
