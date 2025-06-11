@@ -1,0 +1,66 @@
+services:
+  app:
+    image: ghcr.io/TeamJude/jude:latest
+    env_file:
+      - .env.prod
+    depends_on:
+      - postgres
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - CIMAS_ACCOUNT_NAME
+      - CIMAS_ACCOUNT_PASSWORD
+      - CIMAS_CLAIMS_SWITCH_ENDPOINT
+      - DATABASE_URL
+      - CLIENT_URL
+      - JWT_SECRET_KEY
+      - JWT_ISSUER
+      - JWT_AUDIENCE
+      - VITE_SERVER_URL
+    networks:
+      - jude-network
+    restart: unless-stopped
+  postgres:
+    image: postgres:16-alpine
+    container_name: jude-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - jude-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+  caddy:
+    image: caddy:2.7-alpine
+    container_name: jude-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - jude-network
+    restart: unless-stopped
+    depends_on:
+      - app
+
+networks:
+  jude-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  caddy_data:
+  caddy_config:
