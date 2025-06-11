@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/TeamJude/jude:latest
+    image: ghcr.io/teamjude/jude:latest
     depends_on:
       - postgres
     environment:
