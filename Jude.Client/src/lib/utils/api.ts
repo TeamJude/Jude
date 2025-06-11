@@ -13,7 +13,7 @@ export const apiRequest = async <T>(
 	options: RequestInit = {},
 ): Promise<ApiResponse<T>> => {
 	try {
-		const url = `${config.url}${endpoint}`;
+		const url = config.environment == "production" ? endpoint : `${config.url}${endpoint}`;
 		const response = await fetch(url, {
 			...options,
 			credentials: "include",
