@@ -18,4 +18,7 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
     public DbSet<UserModel> Users { get; set; }
 
     public DbSet<RoleModel> Roles { get; set; }
+    public DbSet<RuleModel> Rules { get; set; }
+
 }
+
