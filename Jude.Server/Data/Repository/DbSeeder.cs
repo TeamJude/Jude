@@ -27,7 +27,7 @@ public static class DbSeeder
                     { "Claims", Permission.Write },
                     { "Users", Permission.Write },
                     { "Roles", Permission.Write },
-                },
+                },  
             ],
         };
 
