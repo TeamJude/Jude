@@ -5,7 +5,7 @@ using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Auth;
 using Jude.Server.Domains.Auth.Authorization;
-using Jude.Server.Providers.CIMAS;
+using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

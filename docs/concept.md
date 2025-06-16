@@ -59,7 +59,7 @@ graph TD
     - The AI Agent is triggered for each new claim.
     - **Policy Consultation:** The Agent queries **Kernel Memory**, which has ingested CIMAS policy documents and fraud criteria. This allows the Agent to "talk to" the policy data and understand relevant guidelines for the specific claim.
     - **Rule Application:** The Agent applies a set of **dynamic claim processing rules**. These rules can be configured by administrators via a dashboard, allowing for flexibility and quick adaptation to changing requirements.
-    - **Historical Context:** The Agent can access **historical claims data** (potentially via the CIMAS API or a synchronized internal store) to understand precedents, typical award amounts for similar cases, and member history.
+    - **Historical Context:** The Agent can access **historical claims data** ( via the CIMAS API or a synchronized internal store) to understand precedents, typical award amounts for similar cases, and member history.
     - **Membership & Subscription Analysis:** The Agent considers the claimant's membership level and subscription benefits.
     - **Decision Making:** Based on all the above inputs, the Agent, powered by a fine-tuned Azure OpenAI GPT-4.1 model, formulates a decision or recommendation (e.g., amount to be awarded, approval/rejection, request for more information).
 
