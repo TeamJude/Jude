@@ -1,9 +1,10 @@
 import { PolicyDocumentManager } from "@/components/knowledge/knowledge-base";
 import { RulesManager } from "@/components/knowledge/rules-manager";
+import { FraudManager } from "@/components/knowledge/fraud-manager";
 import { Tab, Tabs } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { BookOpen, GitBranch, AlertTriangle, Construction } from "lucide-react";
+import { BookOpen, GitBranch, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/__app/knowledge/")({
 	component: RouteComponent,
@@ -66,14 +67,7 @@ function RouteComponent() {
 							</div>
 						}
 					>
-						<div className="flex flex-col items-center justify-center p-12 text-center">
-							<Construction className="text-foreground-400 mb-4" width={48} />
-							<h3 className="text-xl font-medium mb-2">Coming Soon</h3>
-							<p className="text-foreground-500 max-w-md">
-								The fraud criteria management module is currently under
-								development and will be available in a future update.
-							</p>
-						</div>
+						<FraudManager />
 					</Tab>
 				</Tabs>
 			</div>
