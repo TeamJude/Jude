@@ -1,147 +1,102 @@
-import React from 'react';
-import { 
-  Card, 
-  CardBody, 
-  Button, 
-  Table, 
-  TableHeader, 
-  TableColumn, 
-  TableBody, 
-  TableRow, 
-  TableCell,
-  Switch,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+import { createRule, getRules } from '@/lib/services/rules.service';
+import { RuleStatus } from '@/lib/types/rule';
+import {
+  addToast,
+  Button,
+  Card,
+  CardBody,
   Input,
-  Textarea,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
   Select,
   SelectItem,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+  Textarea,
   useDisclosure
 } from '@heroui/react';
+import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
+import React from 'react';
 
 interface Rule {
   id: string;
   name: string;
   description: string;
-  condition: string;
-  action: string;
-  status: 'Active' | 'Inactive';
+  status: RuleStatus;
   priority: number;
 }
 
 export const RulesManager: React.FC = () => {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  const [rules, setRules] = React.useState<Rule[]>([
-    {
-      id: 'RULE-001',
-      name: 'High Value Check',
-      description: 'Flag claims with amount exceeding threshold for human review',
-      condition: 'Claim.Amount > 1000',
-      action: 'FlagForReview, SetSeverity=Medium',
-      status: 'Active',
-      priority: 1
-    },
-    {
-      id: 'RULE-002',
-      name: 'Provider Network Validation',
-      description: 'Verify provider is in-network for member plan',
-      condition: 'Provider.NetworkStatus != "In-Network"',
-      action: 'FlagForReview, SetSeverity=High',
-      status: 'Active',
-      priority: 2
-    },
-    {
-      id: 'RULE-003',
-      name: 'Pediatric Service Check',
-      description: 'Special handling for pediatric services',
-      condition: 'Claim.ServiceCode IN ["PED-001", "PED-002"] AND Member.Age < 18',
-      action: 'ApplyPediatricGuidelines, SetSeverity=Low',
-      status: 'Active',
-      priority: 3
-    },
-    {
-      id: 'RULE-004',
-      name: 'Duplicate Claim Detection',
-      description: 'Identify potential duplicate claims',
-      condition: 'EXISTS(PreviousClaim WHERE Member.ID = Current.Member.ID AND ABS(PreviousClaim.Date - Current.Date) < 30 AND PreviousClaim.ServiceCode = Current.ServiceCode)',
-      action: 'FlagAsPotentialDuplicate, SetSeverity=Medium',
-      status: 'Active',
-      priority: 4
-    },
-    {
-      id: 'RULE-005',
-      name: 'Pre-Authorization Check',
-      description: 'Verify pre-authorization for required services',
-      condition: 'Claim.ServiceCode IN AuthorizationRequiredServices AND NOT EXISTS(Authorization WHERE Authorization.ID = Claim.AuthorizationID)',
-      action: 'FlagForReview, SetSeverity=High, AddNote="Missing pre-authorization"',
-      status: 'Inactive',
-      priority: 5
-    }
-  ]);
+  const [rule, setRule] = React.useState<Rule & {_isEditing:boolean; _isLoading:boolean}>({
+    id: '',
+    name: '',
+    description: '',
+    status: RuleStatus.Active,
+    priority: 1,
+    _isEditing: false,
+    _isLoading:false
+  });
 
-  const [editingRule, setEditingRule] = React.useState<Rule | null>(null);
-  const [ruleName, setRuleName] = React.useState("");
-  const [ruleDescription, setRuleDescription] = React.useState("");
-  const [ruleCondition, setRuleCondition] = React.useState("");
-  const [ruleAction, setRuleAction] = React.useState("");
-  const [rulePriority, setRulePriority] = React.useState("1");
-  const [ruleStatus, setRuleStatus] = React.useState<"Active" | "Inactive">("Active");
+  const {isPending, error, data, refetch} = useQuery({
+    queryKey: ['rules'],
+    queryFn: ()=> getRules({ page: 1, pageSize: 100 }),
+  })
   
   const handleOpenModal = (rule?: Rule) => {
+    
     if (rule) {
-      setEditingRule(rule);
-      setRuleName(rule.name);
-      setRuleDescription(rule.description);
-      setRuleCondition(rule.condition);
-      setRuleAction(rule.action);
-      setRulePriority(rule.priority.toString());
-      setRuleStatus(rule.status);
+      setRule({...rule, _isEditing: true, _isLoading: false});
     } else {
-      setEditingRule(null);
-      setRuleName("");
-      setRuleDescription("");
-      setRuleCondition("");
-      setRuleAction("");
-      setRulePriority("1");
-      setRuleStatus("Active");
+      setRule({
+        id: '',
+        name: '',
+        description: '',
+        status: RuleStatus.Active,
+        priority: 1,
+        _isEditing: false,
+        _isLoading: false
+      });
     }
     onOpen();
   };
   
-  const handleSaveRule = () => {
-    const newRule: Rule = {
-      id: editingRule ? editingRule.id : `RULE-${Math.floor(Math.random() * 1000)}`,
-      name: ruleName,
-      description: ruleDescription,
-      condition: ruleCondition,
-      action: ruleAction,
-      status: ruleStatus,
-      priority: Number.parseInt(rulePriority)
-    };
-    
-    if (editingRule) {
-      setRules(rules.map(rule => rule.id === editingRule.id ? newRule : rule));
+  const handleSaveRule = async () => {
+    rule._isLoading = true;
+    if (rule._isEditing){
+      //edit logic
     } else {
-      setRules([...rules, newRule]);
+      const response = await createRule({
+        name: rule.name,
+        description: rule.description,
+        priority: rule.priority,
+        status: rule.status
+      })
+
+      if (response.success) {
+        refetch();
+        addToast({
+          title:"Rule created successfully",
+        })
+      } else {
+        addToast({
+          title:"Error creating rule",
+          description: response.errors.join(", "),
+        })
+      }
     }
     
+    rule._isLoading = false;
     onOpenChange();
-  };
-
-  const toggleRuleStatus = (id: string) => {
-    setRules(rules.map(rule => {
-      if (rule.id === id) {
-        return {
-          ...rule,
-          status: rule.status === 'Active' ? 'Inactive' : 'Active'
-        };
-      }
-      return rule;
-    }));
   };
 
   return (
@@ -171,15 +126,16 @@ export const RulesManager: React.FC = () => {
               <TableColumn key="actions" className="text-right">ACTIONS</TableColumn>
             </TableHeader>
             <TableBody>
-              {rules.map((rule) => (
+              {/* This is cursed af and needs to be redone */}
+              {isPending ?  <>Loading...</> : error ? <>Error loading rules, {error}</> : !data.success ? <>Error loading rules</> : data.data.rules.map((rule) => (
                 <TableRow key={rule.id}>
                   <TableCell>{rule.name}</TableCell>
                   <TableCell>{rule.description}</TableCell>
                   <TableCell>{rule.priority}</TableCell>
                   <TableCell>
                     <Switch 
-                      isSelected={rule.status === 'Active'} 
-                      onValueChange={() => toggleRuleStatus(rule.id)}
+                      isSelected={rule.status === RuleStatus.Active} 
+                      onValueChange={() => setRule((r) => ({ ...r, status: rule.status === RuleStatus.Active ? RuleStatus.Inactive : RuleStatus.Active }))}
                       size="sm"
                       color="success"
                     />
@@ -215,26 +171,26 @@ export const RulesManager: React.FC = () => {
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                {editingRule ? 'Edit Rule' : 'Create New Rule'}
+                {rule._isEditing ? 'Edit Rule' : 'Create New Rule'}
               </ModalHeader>
               <ModalBody>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     label="Rule Name"
                     placeholder="Enter rule name"
-                    value={ruleName}
-                    onValueChange={setRuleName}
+                    value={rule.name}
+                    onValueChange={(v)=>setRule((r)=>({...r, name: v}))}
                   />
                   <div className="flex gap-4">
                     <Select
                       label="Priority"
                       placeholder="Select priority"
-                      selectedKeys={[rulePriority]}
-                      onChange={(e) => setRulePriority(e.target.value)}
+                      selectedKeys={[rule.priority.toString()]}
+                      onChange={(e) => setRule((r) => ({ ...r, priority: Number(e.target.value) }))}
                       className="flex-1"
                     >
                       {[1, 2, 3, 4, 5].map((priority) => (
-                        <SelectItem key={priority.toString()}>
+                        <SelectItem key={priority.toString()} textValue={priority.toString()}>
                           {priority}
                         </SelectItem>
                       ))}
@@ -243,12 +199,12 @@ export const RulesManager: React.FC = () => {
                       <span className="text-sm mb-1">Status</span>
                       <div className="flex items-center h-[40px]">
                         <Switch 
-                          isSelected={ruleStatus === 'Active'} 
-                          onValueChange={(selected) => setRuleStatus(selected ? 'Active' : 'Inactive')}
+                          isSelected={rule.status === RuleStatus.Active} 
+                          onValueChange={(selected) => setRule((r) => ({ ...r, status: selected ? RuleStatus.Active : RuleStatus.Inactive }))}
                           size="sm"
                           color="success"
                         />
-                        <span className="ml-2">{ruleStatus}</span>
+                        <span className="ml-2">{rule.status}</span>
                       </div>
                     </div>
                   </div>
@@ -257,24 +213,9 @@ export const RulesManager: React.FC = () => {
                 <Textarea
                   label="Description"
                   placeholder="Enter rule description"
-                  value={ruleDescription}
-                  onValueChange={setRuleDescription}
-                />
-                
-                <Textarea
-                  label="Condition"
-                  placeholder="IF (Claim.ServiceCode IN ['X', 'Y']) AND (Claim.MemberAge < 18)"
-                  value={ruleCondition}
-                  onValueChange={setRuleCondition}
-                  minRows={3}
-                />
-                
-                <Textarea
-                  label="Action"
-                  placeholder="THEN Action=FlagForReview, SetSeverity=High, AddNote='Pediatric high-value service'"
-                  value={ruleAction}
-                  onValueChange={setRuleAction}
-                  minRows={3}
+                  value={rule.description}
+                  rows={4}
+                  onValueChange={(v) => setRule((r) => ({ ...r, description: v }))}
                 />
               </ModalBody>
               <ModalFooter>
@@ -284,9 +225,10 @@ export const RulesManager: React.FC = () => {
                 <Button 
                   color="primary" 
                   onPress={handleSaveRule}
-                  isDisabled={!ruleName || !ruleCondition || !ruleAction}
+                  isDisabled={!rule.name || !rule.description || rule._isLoading}
+                  isLoading={rule._isLoading}
                 >
-                  {editingRule ? 'Update Rule' : 'Create Rule'}
+                  {rule._isEditing ? 'Update Rule' : 'Create Rule'}
                 </Button>
               </ModalFooter>
             </>

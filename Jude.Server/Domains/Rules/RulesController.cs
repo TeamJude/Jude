@@ -17,7 +17,7 @@ public class RulesController : ControllerBase
         _rulesService = rulesService;
     }
 
-    [HttpPost("create")]
+    [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateRule([FromBody] CreateRuleRequest request)
     {
@@ -25,6 +25,14 @@ public class RulesController : ControllerBase
             return Unauthorized("User not authenticated");
 
         var result = await _rulesService.CreateRule(request, userId);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetRules([FromQuery] GetRulesRequest request)
+    {
+        var result = await _rulesService.GetRules(request);
         return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
 }
