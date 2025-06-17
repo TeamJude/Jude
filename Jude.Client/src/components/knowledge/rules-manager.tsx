@@ -1,5 +1,5 @@
 import { createRule, getRules } from '@/lib/services/rules.service';
-import { RuleStatus } from '@/lib/types/rule';
+import { RuleStatus, type Rule } from '@/lib/types/rule';
 import {
   addToast,
   Button,
@@ -23,80 +23,73 @@ import {
   Textarea,
   useDisclosure
 } from '@heroui/react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useForm } from '@tanstack/react-form';
 import { Plus } from 'lucide-react';
-import React from 'react';
-
-interface Rule {
-  id: string;
-  name: string;
-  description: string;
-  status: RuleStatus;
-  priority: number;
-}
+import React, { useState } from 'react';
 
 export const RulesManager: React.FC = () => {
+  const queryClient = useQueryClient();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  const [rule, setRule] = React.useState<Rule & {_isEditing:boolean; _isLoading:boolean}>({
-    id: '',
-    name: '',
-    description: '',
-    status: RuleStatus.Active,
-    priority: 1,
-    _isEditing: false,
-    _isLoading:false
+  const [editingRule, setEditingRule] = useState<Rule | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  const { isPending, error, data } = useQuery({
+    queryKey: ['rules'],
+    queryFn: () => getRules({ page: 1, pageSize: 100 }),
   });
 
-  const {isPending, error, data, refetch} = useQuery({
-    queryKey: ['rules'],
-    queryFn: ()=> getRules({ page: 1, pageSize: 100 }),
-  })
-  
+  const createRuleMutation = useMutation({
+    mutationFn: (data: { name: string; description: string; status: RuleStatus; priority: number }) =>
+      createRule(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: ['rules'] });
+        addToast({
+          title: 'Rule created successfully',
+        });
+        onOpenChange();
+        form.reset();
+      } else {
+        setErrors(response.errors);
+      }
+    },
+    onError: (error: Error) => {
+      setErrors([error.message || 'An unexpected error occurred.']);
+    },
+  });
+
+  const form = useForm({
+    defaultValues: {
+      name: '',
+      description: '',
+      status: RuleStatus.Active,
+      priority: 1,
+    },
+    onSubmit: async ({ value }) => {
+      setErrors([]);
+      createRuleMutation.mutate(value);
+    },
+  });
+
   const handleOpenModal = (rule?: Rule) => {
-    
+    setErrors([]);
     if (rule) {
-      setRule({...rule, _isEditing: true, _isLoading: false});
+      setEditingRule(rule);
+      form.setFieldValue('name', rule.name);
+      form.setFieldValue('description', rule.description);
+      form.setFieldValue('status', rule.status);
+      form.setFieldValue('priority', rule.priority);
     } else {
-      setRule({
-        id: '',
-        name: '',
-        description: '',
-        status: RuleStatus.Active,
-        priority: 1,
-        _isEditing: false,
-        _isLoading: false
-      });
+      setEditingRule(null);
+      form.reset();
     }
     onOpen();
   };
-  
-  const handleSaveRule = async () => {
-    rule._isLoading = true;
-    if (rule._isEditing){
-      //edit logic
-    } else {
-      const response = await createRule({
-        name: rule.name,
-        description: rule.description,
-        priority: rule.priority,
-        status: rule.status
-      })
 
-      if (response.success) {
-        refetch();
-        addToast({
-          title:"Rule created successfully",
-        })
-      } else {
-        addToast({
-          title:"Error creating rule",
-          description: response.errors.join(", "),
-        })
-      }
-    }
-    
-    rule._isLoading = false;
-    onOpenChange();
+  const handleStatusToggle = (rule: Rule) => {
+    // TODO: Implement status update functionality
+    console.log('Toggle status for:', rule.id);
   };
 
   return (
@@ -123,22 +116,35 @@ export const RulesManager: React.FC = () => {
               <TableColumn key="description">DESCRIPTION</TableColumn>
               <TableColumn key="priority">PRIORITY</TableColumn>
               <TableColumn key="status">STATUS</TableColumn>
+              <TableColumn key="createdAt">CREATED</TableColumn>
               <TableColumn key="actions" className="text-right">ACTIONS</TableColumn>
             </TableHeader>
-            <TableBody>
-              {/* This is cursed af and needs to be redone */}
-              {isPending ?  <>Loading...</> : error ? <>Error loading rules, {error}</> : !data.success ? <>Error loading rules</> : data.data.rules.map((rule) => (
+            <TableBody 
+              emptyContent={isPending ? "Loading..." : error ? "Error loading rules" : "No rules found"}
+            >
+              {data?.success ? data.data.rules.map((rule) => (
                 <TableRow key={rule.id}>
-                  <TableCell>{rule.name}</TableCell>
-                  <TableCell>{rule.description}</TableCell>
-                  <TableCell>{rule.priority}</TableCell>
+                  <TableCell className="font-medium">{rule.name}</TableCell>
+                  <TableCell className="max-w-md">
+                    <div className="truncate" title={rule.description}>
+                      {rule.description}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                      {rule.priority}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <Switch 
                       isSelected={rule.status === RuleStatus.Active} 
-                      onValueChange={() => setRule((r) => ({ ...r, status: rule.status === RuleStatus.Active ? RuleStatus.Inactive : RuleStatus.Active }))}
+                      onValueChange={() => handleStatusToggle(rule)}
                       size="sm"
                       color="success"
                     />
+                  </TableCell>
+                  <TableCell>
+                    {new Date(rule.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -160,7 +166,7 @@ export const RulesManager: React.FC = () => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : []}
             </TableBody>
           </Table>
         </CardBody>
@@ -171,66 +177,110 @@ export const RulesManager: React.FC = () => {
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                {rule._isEditing ? 'Edit Rule' : 'Create New Rule'}
+                {editingRule ? 'Edit Rule' : 'Create New Rule'}
               </ModalHeader>
-              <ModalBody>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Rule Name"
-                    placeholder="Enter rule name"
-                    value={rule.name}
-                    onValueChange={(v)=>setRule((r)=>({...r, name: v}))}
-                  />
-                  <div className="flex gap-4">
-                    <Select
-                      label="Priority"
-                      placeholder="Select priority"
-                      selectedKeys={[rule.priority.toString()]}
-                      onChange={(e) => setRule((r) => ({ ...r, priority: Number(e.target.value) }))}
-                      className="flex-1"
-                    >
-                      {[1, 2, 3, 4, 5].map((priority) => (
-                        <SelectItem key={priority.toString()} textValue={priority.toString()}>
-                          {priority}
-                        </SelectItem>
-                      ))}
-                    </Select>
-                    <div className="flex flex-col flex-1">
-                      <span className="text-sm mb-1">Status</span>
-                      <div className="flex items-center h-[40px]">
-                        <Switch 
-                          isSelected={rule.status === RuleStatus.Active} 
-                          onValueChange={(selected) => setRule((r) => ({ ...r, status: selected ? RuleStatus.Active : RuleStatus.Inactive }))}
-                          size="sm"
-                          color="success"
-                        />
-                        <span className="ml-2">{rule.status}</span>
-                      </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  form.handleSubmit();
+                }}
+              >
+                <ModalBody className="space-y-4">
+                  {errors.length > 0 && (
+                    <div className="bg-danger-50 border border-danger-200 rounded-lg p-3">
+                      <ul className="list-disc ml-5 text-sm text-danger-600">
+                        {errors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
                     </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form.Field name="name">
+                      {(field) => (
+                        <Input
+                          label="Rule Name"
+                          placeholder="Enter rule name"
+                          value={field.state.value}
+                          onValueChange={(v) => field.handleChange(v)}
+                          isRequired
+                          isDisabled={createRuleMutation.isPending}
+                        />
+                      )}
+                    </form.Field>
+                    
+                    <form.Field name="priority">
+                      {(field) => (
+                        <Select
+                          label="Priority"
+                          placeholder="Select priority"
+                          selectedKeys={[field.state.value.toString()]}
+                          onChange={(e) => field.handleChange(Number(e.target.value))}
+                          isDisabled={createRuleMutation.isPending}
+                        >
+                          {[1, 2, 3, 4, 5].map((priority) => (
+                            <SelectItem key={priority.toString()} textValue={priority.toString()}>
+                              Priority {priority}
+                            </SelectItem>
+                          ))}
+                        </Select>
+                      )}
+                    </form.Field>
                   </div>
-                </div>
-                
-                <Textarea
-                  label="Description"
-                  placeholder="Enter rule description"
-                  value={rule.description}
-                  rows={4}
-                  onValueChange={(v) => setRule((r) => ({ ...r, description: v }))}
-                />
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="flat" onPress={onClose}>
-                  Cancel
-                </Button>
-                <Button 
-                  color="primary" 
-                  onPress={handleSaveRule}
-                  isDisabled={!rule.name || !rule.description || rule._isLoading}
-                  isLoading={rule._isLoading}
-                >
-                  {rule._isEditing ? 'Update Rule' : 'Create Rule'}
-                </Button>
-              </ModalFooter>
+                  
+                  <div className="flex flex-col">
+                    <span className="text-sm mb-2 text-foreground-600">Status</span>
+                    <form.Field name="status">
+                      {(field) => (
+                        <div className="flex items-center h-[40px]">
+                          <Switch 
+                            isSelected={field.state.value === RuleStatus.Active} 
+                            onValueChange={(selected) => 
+                              field.handleChange(selected ? RuleStatus.Active : RuleStatus.Inactive)
+                            }
+                            size="sm"
+                            color="success"
+                            isDisabled={createRuleMutation.isPending}
+                          />
+                          <span className="ml-2 text-sm">{field.state.value}</span>
+                        </div>
+                      )}
+                    </form.Field>
+                  </div>
+                  
+                  <form.Field name="description">
+                    {(field) => (
+                      <Textarea
+                        label="Description"
+                        placeholder="Enter detailed rule description"
+                        value={field.state.value}
+                        onValueChange={(v) => field.handleChange(v)}
+                        rows={4}
+                        isRequired
+                        isDisabled={createRuleMutation.isPending}
+                      />
+                    )}
+                  </form.Field>
+                </ModalBody>
+                <ModalFooter>
+                  <Button 
+                    variant="flat" 
+                    onPress={onClose}
+                    isDisabled={createRuleMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    color="primary" 
+                    type="submit"
+                    isLoading={createRuleMutation.isPending}
+                  >
+                    {editingRule ? 'Update Rule' : 'Create Rule'}
+                  </Button>
+                </ModalFooter>
+              </form>
             </>
           )}
         </ModalContent>
