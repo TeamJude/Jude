@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
-using Jude.Server.Domains.Rules;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jude.Server.Domains.Rules;
@@ -31,7 +30,7 @@ public class RulesService : IRulesService
             Description = request.Description,
             Status = request.Status,
             Priority = request.Priority,
-            CreatedById = userId
+            CreatedById = userId,
         };
 
         await _repository.Rules.AddAsync(rule);

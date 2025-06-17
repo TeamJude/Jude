@@ -12,11 +12,7 @@ public record CreateRuleRequest(
 public record GetRulesRequest(
     int Page = 1,
     int PageSize = 10
-
 // TODO: add more filters in the future
 );
 
-public record GetRulesResponse(
-    RuleModel[] Rules,
-    int TotalCount
-);
+public record GetRulesResponse(RuleModel[] Rules, int TotalCount);
