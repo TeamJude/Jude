@@ -1,9 +1,9 @@
-import { redirect } from "@tanstack/react-router";
 import { authState } from "@/lib/state/auth.state";
+import { redirect } from "@tanstack/react-router";
 
 const AUTH_CHECK_TIMEOUT = 10000; // 5 seconds timeout
 
-async function waitForAuthState(): Promise<void> {
+export async function waitForAuthState(): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const timeout = setTimeout(() => {
 			reject(new Error("Auth state check timed out"));
