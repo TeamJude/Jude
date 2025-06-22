@@ -62,8 +62,9 @@ public class AuthController : ControllerBase
             new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
+                //TODO: set this back to true when we start using HTTPS on deployment
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
                 //set to 14days for
                 Expires = DateTimeOffset.UtcNow.AddDays(14),
             }
