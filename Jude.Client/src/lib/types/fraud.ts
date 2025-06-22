@@ -1,7 +1,7 @@
 export enum IndicatorStatus {
-    Active = 'Active',
-    Inactive = 'Inactive',
-    Archived = 'Archived'
+    Active = 0,
+    Inactive = 1,
+    Archived = 2
 }
 
 export interface FraudIndicator {
