@@ -1,5 +1,6 @@
 import { createRule, getRules } from '@/lib/services/rules.service';
 import { RuleStatus, type Rule } from '@/lib/types/rule';
+import { RuleStatus, type Rule } from '@/lib/types/rule';
 import {
   addToast,
   Button,
@@ -23,8 +24,8 @@ import {
   Textarea,
   useDisclosure
 } from '@heroui/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from '@tanstack/react-form';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import React, { useState } from 'react';
 
@@ -38,7 +39,6 @@ export const RulesManager: React.FC = () => {
     queryKey: ['rules'],
     queryFn: () => getRules({ page: 1, pageSize: 100 }),
   });
-
   const createRuleMutation = useMutation({
     mutationFn: (data: { name: string; description: string; status: RuleStatus; priority: number }) =>
       createRule(data),
@@ -56,8 +56,7 @@ export const RulesManager: React.FC = () => {
     },
     onError: (error: Error) => {
       setErrors([error.message || 'An unexpected error occurred.']);
-    },
-  });
+    },  });
 
   const form = useForm({
     defaultValues: {
@@ -65,8 +64,7 @@ export const RulesManager: React.FC = () => {
       description: '',
       status: RuleStatus.Active,
       priority: 1,
-    },
-    onSubmit: async ({ value }) => {
+    },    onSubmit: async ({ value }) => {
       setErrors([]);
       createRuleMutation.mutate(value);
     },
@@ -118,8 +116,7 @@ export const RulesManager: React.FC = () => {
               <TableColumn key="status">STATUS</TableColumn>
               <TableColumn key="createdAt">CREATED</TableColumn>
               <TableColumn key="actions" className="text-right">ACTIONS</TableColumn>
-            </TableHeader>
-            <TableBody 
+            </TableHeader><TableBody 
               emptyContent={isPending ? "Loading..." : error ? "Error loading rules" : "No rules found"}
             >
               {data?.success ? data.data.rules.map((rule) => (
@@ -130,11 +127,7 @@ export const RulesManager: React.FC = () => {
                       {rule.description}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                      {rule.priority}
-                    </span>
-                  </TableCell>
+                  <TableCell>{rule.priority}</TableCell>
                   <TableCell>
                     <Switch 
                       isSelected={rule.status === RuleStatus.Active} 
@@ -171,8 +164,7 @@ export const RulesManager: React.FC = () => {
           </Table>
         </CardBody>
       </Card>
-      
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
+        <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
         <ModalContent>
           {(onClose) => (
             <>
@@ -211,50 +203,53 @@ export const RulesManager: React.FC = () => {
                       )}
                     </form.Field>
                     
-                    <form.Field name="priority">
-                      {(field) => (
-                        <Select
-                          label="Priority"
-                          placeholder="Select priority"
-                          selectedKeys={[field.state.value.toString()]}
-                          onChange={(e) => field.handleChange(Number(e.target.value))}
-                          isDisabled={createRuleMutation.isPending}
-                        >
-                          {[1, 2, 3, 4, 5].map((priority) => (
-                            <SelectItem key={priority.toString()} textValue={priority.toString()}>
-                              Priority {priority}
-                            </SelectItem>
-                          ))}
-                        </Select>
-                      )}
-                    </form.Field>
-                  </div>
-                  
-                  <div className="flex flex-col">
-                    <span className="text-sm mb-2 text-foreground-600">Status</span>
-                    <form.Field name="status">
-                      {(field) => (
-                        <div className="flex items-center h-[40px]">
-                          <Switch 
-                            isSelected={field.state.value === RuleStatus.Active} 
-                            onValueChange={(selected) => 
-                              field.handleChange(selected ? RuleStatus.Active : RuleStatus.Inactive)
-                            }
-                            size="sm"
-                            color="success"
+                    <div className="flex gap-4">
+                      <form.Field name="priority">
+                        {(field) => (
+                          <Select
+                            label="Priority"
+                            placeholder="Select priority"
+                            selectedKeys={[field.state.value.toString()]}
+                            onChange={(e) => field.handleChange(Number(e.target.value))}
+                            className="flex-1"
                             isDisabled={createRuleMutation.isPending}
-                          />
-                          <span className="ml-2 text-sm">{field.state.value}</span>
-                        </div>
-                      )}
-                    </form.Field>
+                          >
+                            {[1, 2, 3, 4, 5].map((priority) => (
+                              <SelectItem key={priority.toString()} textValue={priority.toString()}>
+                                {priority}
+                              </SelectItem>
+                            ))}
+                          </Select>
+                        )}
+                      </form.Field>
+                      
+                      <div className="flex flex-col flex-1">
+                        <span className="text-sm mb-2 text-foreground-600">Status</span>
+                        <form.Field name="status">
+                          {(field) => (
+                            <div className="flex items-center h-[40px]">
+                              <Switch 
+                                isSelected={field.state.value === RuleStatus.Active} 
+                                onValueChange={(selected) => 
+                                  field.handleChange(selected ? RuleStatus.Active : RuleStatus.Inactive)
+                                }
+                                size="sm"
+                                color="success"
+                                isDisabled={createRuleMutation.isPending}
+                              />
+                              <span className="ml-2 text-sm">{field.state.value}</span>
+                            </div>
+                          )}
+                        </form.Field>
+                      </div>
+                    </div>
                   </div>
                   
                   <form.Field name="description">
                     {(field) => (
                       <Textarea
                         label="Description"
-                        placeholder="Enter detailed rule description"
+                        placeholder="Enter rule description"
                         value={field.state.value}
                         onValueChange={(v) => field.handleChange(v)}
                         rows={4}
