@@ -1,6 +1,5 @@
 import { createRule, getRules } from '@/lib/services/rules.service';
 import { RuleStatus, type Rule } from '@/lib/types/rule';
-import { RuleStatus, type Rule } from '@/lib/types/rule';
 import {
   addToast,
   Button,
