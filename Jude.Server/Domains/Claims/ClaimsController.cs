@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
 using Jude.Server.Domains.Auth.Authorization;
@@ -12,48 +13,97 @@ namespace Jude.Server.Domains.Claims;
 [Authorize]
 public class ClaimsController : ControllerBase
 {
+    private readonly IClaimsService _claimsService;
     private readonly ICIMASProvider _cimasProvider;
     private readonly ILogger<ClaimsController> _logger;
 
-    public ClaimsController(ICIMASProvider cimasProvider, ILogger<ClaimsController> logger)
+    public ClaimsController(
+        IClaimsService claimsService,
+        ICIMASProvider cimasProvider, 
+        ILogger<ClaimsController> logger)
     {
+        _claimsService = claimsService;
         _cimasProvider = cimasProvider;
         _logger = logger;
     }
 
     [HttpGet]
     [HasPermission(Features.Claims, Permission.Read)]
-    public async Task<IActionResult> GetClaims()
+    public async Task<IActionResult> GetClaims([FromQuery] GetClaimsRequest request)
     {
-        return Ok(new { message = "Claims list endpoint - requires Read permission" });
+        var result = await _claimsService.GetClaims(request);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
 
     [HttpGet("{id}")]
     [HasPermission(Features.Claims, Permission.Read)]
     public async Task<IActionResult> GetClaim(Guid id)
     {
-        return Ok(new { message = $"Get claim {id} - requires Read permission" });
+        var result = await _claimsService.GetClaim(id);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
 
-    [HttpPost]
+    [HttpPost("from-cimas")]
     [HasPermission(Features.Claims, Permission.Write)]
-    public async Task<IActionResult> CreateClaim()
+    public async Task<IActionResult> CreateClaimFromCIMAS([FromBody] CreateClaimFromCIMASRequest request)
     {
-        return Ok(new { message = "Create claim endpoint - requires Write permission" });
+        if (!Guid.TryParse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized("User not authenticated");
+
+        var result = await _claimsService.CreateClaimFromCIMAS(request, userId);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id}/status")]
     [HasPermission(Features.Claims, Permission.Write)]
-    public async Task<IActionResult> UpdateClaim(Guid id)
+    public async Task<IActionResult> UpdateClaimStatus(Guid id, [FromBody] UpdateClaimStatusRequest request)
     {
-        return Ok(new { message = $"Update claim {id} - requires Write permission" });
+        if (!Guid.TryParse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized("User not authenticated");
+
+        var result = await _claimsService.UpdateClaimStatus(id, request, userId);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
 
-    [HttpDelete("{id}")]
+    [HttpPost("{id}/review")]
     [HasPermission(Features.Claims, Permission.Write)]
-    public async Task<IActionResult> DeleteClaim(Guid id)
+    public async Task<IActionResult> ReviewClaim(Guid id, [FromBody] ReviewClaimRequest request)
     {
-        return Ok(new { message = $"Delete claim {id} - requires Write permission" });
+        if (!Guid.TryParse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized("User not authenticated");
+
+        var result = await _claimsService.ReviewClaim(id, request, userId);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
+
+    [HttpPost("{id}/process")]
+    [HasPermission(Features.Claims, Permission.Write)]
+    public async Task<IActionResult> ProcessClaim(Guid id, [FromBody] ProcessClaimRequest request)
+    {
+        var result = await _claimsService.ProcessClaim(id, request);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
+
+    [HttpPost("batch-review")]
+    [HasPermission(Features.Claims, Permission.Write)]
+    public async Task<IActionResult> BatchReviewClaims([FromBody] BatchReviewClaimsRequest request)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized("User not authenticated");
+
+        var result = await _claimsService.BatchReviewClaims(request, userId);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
+
+    [HttpPost("resubmit")]
+    [HasPermission(Features.Claims, Permission.Write)]
+    public async Task<IActionResult> ResubmitClaim([FromBody] ResubmitClaimRequest request)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized("User not authenticated");
+
+        var result = await _claimsService.ResubmitClaim(request, userId);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
 
     #region CIMAS Provider Endpoints
