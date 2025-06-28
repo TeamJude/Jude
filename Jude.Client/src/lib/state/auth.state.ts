@@ -39,28 +39,26 @@ export const authActions = {
 };
 
 export const authSelectors = {
-    hasPermission: (feature: keyof User["role"]["permissions"], permission: Permission) => {
+    hasPermission: (feature: string, permission: Permission) => {
         const state = authState.state;
         if (!state.user) return false;
         
-        const featurePermissions = state.user.role.permissions[feature];
-        if (!Array.isArray(featurePermissions)) return false;
+        const userPermission = state.user.role.permissions[feature];
+        if (userPermission === undefined) return false;
         
-        return featurePermissions.includes(permission);
+        return userPermission >= permission;
     },
-    canAccessFeature: (feature: keyof User["role"]["permissions"]) => {
+    canAccessFeature: (feature: string) => {
         const state = authState.state;
         if (!state.user) return false;
         
-        const featurePermissions = state.user.role.permissions[feature];
-        return Array.isArray(featurePermissions) && featurePermissions.length > 0;
+        return feature in state.user.role.permissions;
     },
-    getFeaturePermissions: (feature: keyof User["role"]["permissions"]) => {
+    getFeaturePermission: (feature: string) => {
         const state = authState.state;
-        if (!state.user) return [];
+        if (!state.user) return undefined;
         
-        const featurePermissions = state.user.role.permissions[feature];
-        return Array.isArray(featurePermissions) ? featurePermissions : [];
+        return state.user.role.permissions[feature];
     }
 };
 

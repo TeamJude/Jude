@@ -53,8 +53,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.ConfigureDatabase();
 builder.Services.ConfigureAuthentication();
-
-// builder.Services.ConfigureAuthorization();
+builder.Services.ConfigureAuthorization();
 builder.Services.AddServices();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

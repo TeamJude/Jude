@@ -8,8 +8,7 @@ public class RoleModel
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
 
-    //to fix this later this ought be just a dictionary
-    public List<Dictionary<string, Permission>> Permissions { get; set; } = [];
+    public Dictionary<string, Permission> Permissions { get; set; } = [];
 }
 
 public enum Permission

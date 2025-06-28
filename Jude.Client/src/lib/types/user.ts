@@ -5,7 +5,7 @@ export enum Permission {
 
 export interface UserRole {
 	name: string;
-	permissions: Array<Record<string, Permission>>;
+	permissions: Record<string, Permission>;
 }
 
 export interface User {
@@ -32,5 +32,5 @@ export interface RegisterRequest {
 	email: string;
 	password: string;
 	roleName: string;
-	permissions?: Array<Record<string, Permission>>;
+	permissions?: Record<string, Permission>;
 }

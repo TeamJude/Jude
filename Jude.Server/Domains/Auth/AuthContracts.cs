@@ -8,7 +8,7 @@ public record RegisterRequest(
     string Email, 
     string Password, 
     string RoleName,
-    List<Dictionary<string, Permission>>? Permissions = null
+    Dictionary<string, Permission>? Permissions = null
 );
 
 public record LoginRequest(string UserIdentifier, string Password);
@@ -24,4 +24,4 @@ public record UserDataResponse(
     UserRole Role
 );
 
-public record UserRole(string Name, List<Dictionary<string, Permission>> Permissions);
+public record UserRole(string Name, Dictionary<string, Permission> Permissions);

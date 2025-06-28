@@ -7,12 +7,29 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
 {
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        //configure the permissions prop to be a json object
+        // Configure the permissions property to be a json object with the new Dictionary structure
         modelBuilder
             .Entity<RoleModel>()
             .Property(r => r.Permissions)
             .HasColumnType("jsonb")
             .IsRequired();
+
+        modelBuilder
+            .Entity<RoleModel>()
+            .HasIndex(r => r.Name)
+            .IsUnique();
+
+
+        modelBuilder
+            .Entity<UserModel>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder
+            .Entity<UserModel>()
+            .HasIndex(u => u.Username)
+            .IsUnique();
+
     }
 
     public DbSet<UserModel> Users { get; set; }
