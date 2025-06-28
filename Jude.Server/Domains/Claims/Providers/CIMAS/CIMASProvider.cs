@@ -23,11 +23,7 @@ public class CIMASProvider : ICIMASProvider
     private readonly HttpClient _httpClient;
     private readonly ILogger<CIMASProvider> _logger;
 
-    public CIMASProvider(
-        HttpClient httpClient,
-        ILogger<CIMASProvider> logger,
-        CIMASConfig config
-    )
+    public CIMASProvider(HttpClient httpClient, ILogger<CIMASProvider> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
@@ -41,16 +37,25 @@ public class CIMASProvider : ICIMASProvider
         {
             var response = await _httpClient.PostAsJsonAsync(
                 $"{AppConfig.CIMAS.ClaimsSwitchEndpoint}/login/",
-                new { acc_name = AppConfig.CIMAS.AccountName, password = AppConfig.CIMAS.AccountPassword }
+                new
+                {
+                    acc_name = AppConfig.CIMAS.AccountName,
+                    password = AppConfig.CIMAS.AccountPassword,
+                }
             );
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("Failed to get access token. Status: {Status}", response.StatusCode);
+                _logger.LogError(
+                    "Failed to get access token. Status: {Status}",
+                    response.StatusCode
+                );
                 return Result.Fail("Failed to get access token");
             }
 
-            var apiResponse = await response.Content.ReadFromJsonAsync<APIResponse<TokenResponse>>();
+            var apiResponse = await response.Content.ReadFromJsonAsync<
+                APIResponse<TokenResponse>
+            >();
             if (apiResponse == null)
             {
                 _logger.LogError("Failed to deserialize token response");
@@ -59,7 +64,11 @@ public class CIMASProvider : ICIMASProvider
 
             if (apiResponse.Status != 200)
             {
-                _logger.LogError("API returned error status: {Status}, Message: {Message}", apiResponse.Status, apiResponse.Message);
+                _logger.LogError(
+                    "API returned error status: {Status}, Message: {Message}",
+                    apiResponse.Status,
+                    apiResponse.Message
+                );
                 return Result.Fail(apiResponse.Message);
             }
 
@@ -107,7 +116,10 @@ public class CIMASProvider : ICIMASProvider
 
     public async Task<Result<Member>> GetMemberAsync(GetMemberInput input)
     {
-        _logger.LogInformation("Getting member info for {MembershipNumber}", input.MembershipNumber);
+        _logger.LogInformation(
+            "Getting member info for {MembershipNumber}",
+            input.MembershipNumber
+        );
 
         try
         {
@@ -188,7 +200,10 @@ public class CIMASProvider : ICIMASProvider
 
     public async Task<Result<ClaimResponse>> SubmitClaimAsync(SubmitClaimInput input)
     {
-        _logger.LogInformation("Submitting claim for member {MemberNumber}", input.Request.Member.MedicalSchemeNumber);
+        _logger.LogInformation(
+            "Submitting claim for member {MemberNumber}",
+            input.Request.Member.MedicalSchemeNumber
+        );
 
         try
         {
@@ -203,10 +218,7 @@ public class CIMASProvider : ICIMASProvider
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError(
-                    "Failed to submit claim. Status: {Status}",
-                    response.StatusCode
-                );
+                _logger.LogError("Failed to submit claim. Status: {Status}", response.StatusCode);
                 return Result.Fail("Failed to submit claim");
             }
 
@@ -237,16 +249,15 @@ public class CIMASProvider : ICIMASProvider
                 $"{AppConfig.CIMAS.ClaimsSwitchEndpoint}/claims/reverse"
             );
             request.Headers.Add("Authorization", $"Bearer {input.AccessToken}");
-            request.Content = JsonContent.Create(new { transaction_number = input.TransactionNumber });
+            request.Content = JsonContent.Create(
+                new { transaction_number = input.TransactionNumber }
+            );
 
             var response = await _httpClient.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError(
-                    "Failed to reverse claim. Status: {Status}",
-                    response.StatusCode
-                );
+                _logger.LogError("Failed to reverse claim. Status: {Status}", response.StatusCode);
                 return Result.Fail("Failed to reverse claim");
             }
 
@@ -261,16 +272,15 @@ public class CIMASProvider : ICIMASProvider
 
     public async Task<Result<bool>> UploadDocumentAsync(UploadDocumentInput input)
     {
-        _logger.LogInformation("Uploading document for claim {TransactionNumber}", input.TransactionNumber);
+        _logger.LogInformation(
+            "Uploading document for claim {TransactionNumber}",
+            input.TransactionNumber
+        );
 
         try
         {
             using var content = new MultipartFormDataContent();
-            content.Add(
-                new StreamContent(input.FileStream),
-                "file",
-                input.FileName
-            );
+            content.Add(new StreamContent(input.FileStream), "file", input.FileName);
 
             var request = new HttpRequestMessage(
                 HttpMethod.Post,

@@ -65,7 +65,7 @@ public static class DbSeeder
             CreatedAt = DateTime.UtcNow,
         };
 
-        adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "Admin123!");
+        adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "hro");
         regularUser.PasswordHash = passwordHasher.HashPassword(regularUser, "User123!");
 
         await context.Users.AddRangeAsync(adminUser, regularUser);

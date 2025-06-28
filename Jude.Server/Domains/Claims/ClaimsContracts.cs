@@ -9,10 +9,7 @@ public record CreateClaimFromCIMASRequest(
     ClaimResponse? CIMASResponse = null
 );
 
-public record UpdateClaimStatusRequest(
-    ClaimStatus Status,
-    string? Comments = null
-);
+public record UpdateClaimStatusRequest(ClaimStatus Status, string? Comments = null);
 
 public record ReviewClaimRequest(
     ClaimDecision Decision,
@@ -41,11 +38,7 @@ public record GetClaimsRequest(
 );
 
 // Response DTOs
-public record GetClaimsResponse(
-    ClaimSummaryDto[] Claims, 
-    int TotalCount,
-    ClaimStatsDto Stats
-);
+public record GetClaimsResponse(ClaimSummaryDto[] Claims, int TotalCount, ClaimStatsDto Stats);
 
 public record ClaimSummaryDto(
     Guid Id,
@@ -66,23 +59,19 @@ public record ClaimDetailDto(
     Guid Id,
     string ClaimNumber,
     string TransactionNumber,
-    
     // Patient Information
     int MembershipNumber,
     int DependantCode,
     string PatientName,
     string PatientIdNumber,
-    
     // Provider Information
     string ProviderPracticeNumber,
     string ProviderPracticeName,
-    
     // Financial Information
     decimal ClaimAmount,
     decimal ApprovedAmount,
     decimal PatientPayAmount,
     string Currency,
-    
     // Status and Workflow
     ClaimStatus Status,
     ClaimSource Source,
@@ -90,18 +79,15 @@ public record ClaimDetailDto(
     DateTime UpdatedAt,
     DateTime? SubmittedAt,
     DateTime? ProcessedAt,
-    
     // AI Agent Analysis
     string? AgentRecommendation,
     string? AgentReasoning,
     decimal? AgentConfidenceScore,
     DateTime? AgentProcessedAt,
-    
     // Fraud Detection
     bool IsFlagged,
     FraudRiskLevel FraudRiskLevel,
     string[] FraudIndicators,
-    
     // Human Review
     bool RequiresHumanReview,
     ClaimDecision? FinalDecision,
@@ -109,15 +95,11 @@ public record ClaimDetailDto(
     string? RejectionReason,
     DateTime? ReviewedAt,
     string? ReviewedByName,
-    
     // CIMAS Integration
     bool IsResubmitted,
     DateTime? ResubmittedAt,
-    
     // Payloads (for detailed view)
-    object? CIMASRequest,
-    object? CIMASResponse,
-    object? AgentAnalysis
+    object? Payload
 );
 
 public record ClaimStatsDto(
@@ -132,14 +114,5 @@ public record ClaimStatsDto(
     double AverageProcessingTime
 );
 
-// Batch operations
-public record BatchReviewClaimsRequest(
-    Guid[] ClaimIds,
-    ClaimDecision Decision,
-    string? Comments = null
-);
 
-public record ResubmitClaimRequest(
-    Guid ClaimId,
-    ClaimRequest ModifiedCIMASRequest
-); 
+public record ResubmitClaimRequest(Guid ClaimId, ClaimRequest ModifiedCIMASRequest);

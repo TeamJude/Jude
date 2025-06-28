@@ -5,8 +5,8 @@ using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Auth;
 using Jude.Server.Domains.Auth.Authorization;
-using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Jude.Server.Domains.Claims;
+using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Jude.Server.Domains.Fraud;
 using Jude.Server.Domains.Rules;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -123,6 +123,8 @@ public static class ServiceExtensions
 
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
+        services.AddMemoryCache();
+        
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IRulesService, RulesService>();
         services.AddScoped<IFraudService, FraudService>();
