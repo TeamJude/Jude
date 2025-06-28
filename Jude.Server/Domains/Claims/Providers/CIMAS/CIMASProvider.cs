@@ -53,9 +53,13 @@ public class CIMASProvider : ICIMASProvider
                 return Result.Fail("Failed to get access token");
             }
 
-            var apiResponse = await response.Content.ReadFromJsonAsync<
-                APIResponse<TokenResponse>
-            >();
+            var responseContent = await response.Content.ReadAsStringAsync();
+            _logger.LogDebug("CIMAS login response: {Response}", responseContent);
+
+            var apiResponse = await JsonSerializer.DeserializeAsync<APIResponse<TokenResponse>>(
+                new MemoryStream(System.Text.Encoding.UTF8.GetBytes(responseContent))
+            );
+
             if (apiResponse == null)
             {
                 _logger.LogError("Failed to deserialize token response");
@@ -72,7 +76,17 @@ public class CIMASProvider : ICIMASProvider
                 return Result.Fail(apiResponse.Message);
             }
 
-            return Result.Ok(apiResponse.Data.Tokens);
+            _logger.LogDebug(
+                "Parsed tokens - Access: {HasAccess}, Refresh: {HasRefresh}",
+                !string.IsNullOrEmpty(apiResponse.Data.Tokens.Access),
+                !string.IsNullOrEmpty(apiResponse.Data.Tokens.Refresh)
+            );
+
+            var tokenPair = new TokenPair(
+                apiResponse.Data.Tokens.Access,
+                apiResponse.Data.Tokens.Refresh ?? string.Empty
+            );
+            return Result.Ok(tokenPair);
         }
         catch (Exception ex)
         {
@@ -182,14 +196,18 @@ public class CIMASProvider : ICIMASProvider
                 return Result.Fail("Failed to get past claims");
             }
 
-            var data = await response.Content.ReadFromJsonAsync<APIResponse<ClaimsResponse>>();
+            var data = await response.Content.ReadFromJsonAsync<ClaimsResponse>();
+            _logger.LogDebug("CIMAS past claims response: {Response}", data);
+
             if (data == null)
             {
                 _logger.LogError("Failed to deserialize claims response");
                 return Result.Fail("Failed to deserialize claims response");
             }
 
-            return Result.Ok(data.Data.Results.Select(r => r.Response).ToList());
+            _logger.LogDebug("Parsed {Count} claims from CIMAS response", data.Results.Count);
+
+            return Result.Ok(data.Results.Select(r => r.Response).ToList());
         }
         catch (Exception ex)
         {

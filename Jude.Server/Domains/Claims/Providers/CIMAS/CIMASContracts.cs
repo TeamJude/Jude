@@ -4,13 +4,22 @@ namespace Jude.Server.Domains.Claims.Providers.CIMAS;
 
 public record TokenPair(string AccessToken, string RefreshToken);
 
+public record CIMASTokens
+{
+    [JsonPropertyName("access")]
+    public string Access { get; set; } = string.Empty;
+    
+    [JsonPropertyName("refresh")]
+    public string? Refresh { get; set; }
+}
+
 public record TokenResponse
 {
     [JsonPropertyName("notify")]
     public object? Notify { get; set; }
 
     [JsonPropertyName("tokens")]
-    public TokenPair Tokens { get; set; } = new(string.Empty, string.Empty);
+    public CIMASTokens Tokens { get; set; } = new();
 }
 
 public record GetMemberInput(int MembershipNumber, int Suffix, string AccessToken);
@@ -299,13 +308,103 @@ public record TotalValues
     public int PatientPayAmount { get; set; }
 }
 
+public record ClaimTotalValues
+{
+    [JsonPropertyName("Claimed")]
+    public string Claimed { get; set; } = string.Empty;
+
+    [JsonPropertyName("Copayment")]
+    public string Copayment { get; set; } = string.Empty;
+
+    [JsonPropertyName("SchemeAmount")]
+    public string SchemeAmount { get; set; } = string.Empty;
+
+    [JsonPropertyName("SavingsAmount")]
+    public string SavingsAmount { get; set; } = string.Empty;
+
+    [JsonPropertyName("NettMember")]
+    public string NettMember { get; set; } = string.Empty;
+
+    [JsonPropertyName("NettProvider")]
+    public string NettProvider { get; set; } = string.Empty;
+}
+
+public record ClaimResponseMember
+{
+    [JsonPropertyName("MedicalSchemeNumber")]
+    public int MedicalSchemeNumber { get; set; }
+
+    [JsonPropertyName("MedicalSchemeName")]
+    public string MedicalSchemeName { get; set; } = string.Empty;
+
+    [JsonPropertyName("Currency")]
+    public string Currency { get; set; } = string.Empty;
+}
+
+public record ClaimResponsePatient
+{
+    [JsonPropertyName("DependantCode")]
+    public int DependantCode { get; set; }
+
+    [JsonPropertyName("Personal")]
+    public ClaimResponsePersonal Personal { get; set; } = new();
+}
+
+public record ClaimResponsePersonal
+{
+    [JsonPropertyName("Surname")]
+    public string Surname { get; set; } = string.Empty;
+
+    [JsonPropertyName("FirstName")]
+    public string FirstName { get; set; } = string.Empty;
+
+    [JsonPropertyName("Initials")]
+    public string? Initials { get; set; }
+
+    [JsonPropertyName("Gender")]
+    public string Gender { get; set; } = string.Empty;
+
+    [JsonPropertyName("DateOfBirth")]
+    public string DateOfBirth { get; set; } = string.Empty;
+}
+
+public record ServiceResponse
+{
+    [JsonPropertyName("Number")]
+    public string Number { get; set; } = string.Empty;
+
+    [JsonPropertyName("Code")]
+    public string Code { get; set; } = string.Empty;
+
+    [JsonPropertyName("Description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("SubTotalValues")]
+    public ClaimTotalValues SubTotalValues { get; set; } = new();
+
+    [JsonPropertyName("Message")]
+    public Message Message { get; set; } = new();
+
+    [JsonPropertyName("TotalValues")]
+    public ClaimTotalValues TotalValues { get; set; } = new();
+}
+
 public record ClaimResponse
 {
     [JsonPropertyName("TransactionResponse")]
     public TransactionResponse TransactionResponse { get; set; } = new();
 
+    [JsonPropertyName("Member")]
+    public ClaimResponseMember Member { get; set; } = new();
+
+    [JsonPropertyName("Patient")]
+    public ClaimResponsePatient Patient { get; set; } = new();
+
     [JsonPropertyName("ClaimHeaderResponse")]
     public ClaimHeaderResponse ClaimHeaderResponse { get; set; } = new();
+
+    [JsonPropertyName("ServiceResponse")]
+    public List<ServiceResponse> ServiceResponse { get; set; } = [];
 
     [JsonPropertyName("ProductResponse")]
     public List<ProductResponse> ProductResponse { get; set; } = [];
@@ -341,7 +440,7 @@ public record ClaimHeaderResponse
     public string ResponseCode { get; set; } = string.Empty;
 
     [JsonPropertyName("TotalValues")]
-    public TotalValues TotalValues { get; set; } = new();
+    public ClaimTotalValues TotalValues { get; set; } = new();
 }
 
 public record ProductResponse
@@ -356,13 +455,13 @@ public record ProductResponse
     public string Description { get; set; } = string.Empty;
 
     [JsonPropertyName("SubTotalValues")]
-    public TotalValues SubTotalValues { get; set; } = new();
+    public ClaimTotalValues SubTotalValues { get; set; } = new();
 
     [JsonPropertyName("Message")]
     public Message Message { get; set; } = new();
 
     [JsonPropertyName("TotalValues")]
-    public TotalValues TotalValues { get; set; } = new();
+    public ClaimTotalValues TotalValues { get; set; } = new();
 }
 
 public record Message
@@ -374,7 +473,7 @@ public record Message
     public string? Code { get; set; }
 
     [JsonPropertyName("Description")]
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 }
 
 public record APIResponse<T>
@@ -399,7 +498,7 @@ public record ClaimsResponse
 {
     [JsonPropertyName("count")]
     public int Count { get; set; }
-
+    
     [JsonPropertyName("next")]
     public object? Next { get; set; }
 

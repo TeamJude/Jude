@@ -16,10 +16,7 @@ public class ClaimsController : ControllerBase
     private readonly IClaimsService _claimsService;
     private readonly ILogger<ClaimsController> _logger;
 
-    public ClaimsController(
-        IClaimsService claimsService,
-        ILogger<ClaimsController> logger
-    )
+    public ClaimsController(IClaimsService claimsService, ILogger<ClaimsController> logger)
     {
         _claimsService = claimsService;
         _logger = logger;
@@ -71,9 +68,10 @@ public class ClaimsController : ControllerBase
 
     [HttpPost("upload/{transactionNumber}/{channel}")]
     public async Task<IActionResult> UploadDocument(
-        string transactionNumber, 
-        string channel, 
-        IFormFile file)
+        string transactionNumber,
+        string channel,
+        IFormFile file
+    )
     {
         if (file == null || file.Length == 0)
         {
@@ -82,26 +80,16 @@ public class ClaimsController : ControllerBase
 
         using var stream = file.OpenReadStream();
         var result = await _claimsService.UploadDocumentAsync(
-            transactionNumber, 
-            channel, 
-            stream, 
-            file.FileName);
-            
+            transactionNumber,
+            channel,
+            stream,
+            file.FileName
+        );
+
         if (!result.Success)
         {
             return BadRequest(result.Errors);
         }
         return Ok();
-    }
-
-    [HttpPost("authenticate")]
-    public async Task<IActionResult> EnsureAuthentication()
-    {
-        var result = await _claimsService.EnsureAuthenticationAsync();
-        if (!result.Success)
-        {
-            return BadRequest(result.Errors);
-        }
-        return Ok("Authentication successful");
     }
 }
