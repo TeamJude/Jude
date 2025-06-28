@@ -1,6 +1,6 @@
-import React from 'react';
 import { Card, Chip } from "@heroui/react";
-import { DollarSign, Hospital, Clock, ClipboardList, AlertTriangle } from "lucide-react";
+import { AlertTriangle, ClipboardList, Clock, DollarSign, Hospital } from "lucide-react";
+import React from 'react';
 
 interface ClaimCardProps {
   claim: {
@@ -27,7 +27,7 @@ export const ClaimCard: React.FC<ClaimCardProps> = ({ claim, onClick }) => {
       case 'inQueue':
         return 'border-blue-500 hover:border-blue-600';
       case 'inProgress':
-        return 'border-purple-500 animate-pulse hover:border-purple-600';
+        return 'border-purple-500 hover:border-purple-600';
       case 'awaitingReview':
         return 'border-orange-500 shadow-lg shadow-orange-200 hover:border-orange-600';
       default:
@@ -54,7 +54,7 @@ export const ClaimCard: React.FC<ClaimCardProps> = ({ claim, onClick }) => {
     if (claim.status === 'inProgress') {
       return (
         <div className="absolute top-2 right-2">
-          <div className="w-2 h-2 bg-purple-500 rounded-full animate-ping"></div>
+          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
         </div>
       );
     }
