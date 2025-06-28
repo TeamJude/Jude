@@ -14,22 +14,11 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
             .HasColumnType("jsonb")
             .IsRequired();
 
-        modelBuilder
-            .Entity<RoleModel>()
-            .HasIndex(r => r.Name)
-            .IsUnique();
+        modelBuilder.Entity<RoleModel>().HasIndex(r => r.Name).IsUnique();
 
+        modelBuilder.Entity<UserModel>().HasIndex(u => u.Email).IsUnique();
 
-        modelBuilder
-            .Entity<UserModel>()
-            .HasIndex(u => u.Email)
-            .IsUnique();
-
-        modelBuilder
-            .Entity<UserModel>()
-            .HasIndex(u => u.Username)
-            .IsUnique();
-
+        modelBuilder.Entity<UserModel>().HasIndex(u => u.Username).IsUnique();
     }
 
     public DbSet<UserModel> Users { get; set; }

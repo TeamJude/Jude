@@ -9,7 +9,6 @@ public class ClaimModel
     public DateTime IngestedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    // Claim Status and Workflow
     public ClaimStatus Status { get; set; } = ClaimStatus.Pending;
     public ClaimSource Source { get; set; } = ClaimSource.CIMAS;
     public DateTime? SubmittedAt { get; set; }
@@ -20,7 +19,7 @@ public class ClaimModel
     public decimal? AgentConfidenceScore { get; set; }
     public DateTime? AgentProcessedAt { get; set; }
 
-    // Fraud Detection
+
     public bool IsFlagged { get; set; } = false;
     public List<string>? FraudIndicators { get; set; }
     public FraudRiskLevel FraudRiskLevel { get; set; } = FraudRiskLevel.Low;
