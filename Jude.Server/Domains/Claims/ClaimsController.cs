@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
 using Jude.Server.Domains.Auth.Authorization;
@@ -12,56 +13,19 @@ namespace Jude.Server.Domains.Claims;
 [Authorize]
 public class ClaimsController : ControllerBase
 {
-    private readonly ICIMASProvider _cimasProvider;
+    private readonly IClaimsService _claimsService;
     private readonly ILogger<ClaimsController> _logger;
 
-    public ClaimsController(ICIMASProvider cimasProvider, ILogger<ClaimsController> logger)
+    public ClaimsController(IClaimsService claimsService, ILogger<ClaimsController> logger)
     {
-        _cimasProvider = cimasProvider;
+        _claimsService = claimsService;
         _logger = logger;
     }
 
-    [HttpGet]
-    [HasPermission(Features.Claims, Permission.Read)]
-    public async Task<IActionResult> GetClaims()
+    [HttpGet("member/{membershipNumber}/{suffix}")]
+    public async Task<IActionResult> GetMember(int membershipNumber, int suffix)
     {
-        return Ok(new { message = "Claims list endpoint - requires Read permission" });
-    }
-
-    [HttpGet("{id}")]
-    [HasPermission(Features.Claims, Permission.Read)]
-    public async Task<IActionResult> GetClaim(Guid id)
-    {
-        return Ok(new { message = $"Get claim {id} - requires Read permission" });
-    }
-
-    [HttpPost]
-    [HasPermission(Features.Claims, Permission.Write)]
-    public async Task<IActionResult> CreateClaim()
-    {
-        return Ok(new { message = "Create claim endpoint - requires Write permission" });
-    }
-
-    [HttpPut("{id}")]
-    [HasPermission(Features.Claims, Permission.Write)]
-    public async Task<IActionResult> UpdateClaim(Guid id)
-    {
-        return Ok(new { message = $"Update claim {id} - requires Write permission" });
-    }
-
-    [HttpDelete("{id}")]
-    [HasPermission(Features.Claims, Permission.Write)]
-    public async Task<IActionResult> DeleteClaim(Guid id)
-    {
-        return Ok(new { message = $"Delete claim {id} - requires Write permission" });
-    }
-
-    #region CIMAS Provider Endpoints
-    //these are just for testing purposes will probably use service directly to poll claims
-    [HttpPost("cimas/token")]
-    public async Task<IActionResult> GetCIMASToken()
-    {
-        var result = await _cimasProvider.GetAccessTokenAsync();
+        var result = await _claimsService.GetMemberAsync(membershipNumber, suffix);
         if (!result.Success)
         {
             return BadRequest(result.Errors);
@@ -69,10 +33,10 @@ public class ClaimsController : ControllerBase
         return Ok(result.Data);
     }
 
-    [HttpPost("cimas/token/refresh")]
-    public async Task<IActionResult> RefreshCIMASToken([FromBody] string refreshToken)
+    [HttpGet("past-claims/{practiceNumber}")]
+    public async Task<IActionResult> GetPastClaims(string practiceNumber)
     {
-        var result = await _cimasProvider.RefreshAccessTokenAsync(refreshToken);
+        var result = await _claimsService.GetPastClaimsAsync(practiceNumber);
         if (!result.Success)
         {
             return BadRequest(result.Errors);
@@ -80,11 +44,10 @@ public class ClaimsController : ControllerBase
         return Ok(result.Data);
     }
 
-    [HttpGet("cimas/member/{membershipNumber}/{suffix}")]
-    public async Task<IActionResult> GetCIMASMember(int membershipNumber, int suffix, [FromHeader] string authorization)
+    [HttpPost("submit")]
+    public async Task<IActionResult> SubmitClaim([FromBody] ClaimRequest request)
     {
-        var token = authorization.Replace("Bearer ", "");
-        var result = await _cimasProvider.GetMemberAsync(new GetMemberInput(membershipNumber, suffix, token));
+        var result = await _claimsService.SubmitClaimAsync(request);
         if (!result.Success)
         {
             return BadRequest(result.Errors);
@@ -92,37 +55,10 @@ public class ClaimsController : ControllerBase
         return Ok(result.Data);
     }
 
-    [HttpGet("cimas/past/{practiceNumber}")]
-    public async Task<IActionResult> GetCIMASPastClaims(string practiceNumber, [FromHeader] string authorization)
+    [HttpPost("reverse/{transactionNumber}")]
+    public async Task<IActionResult> ReverseClaim(string transactionNumber)
     {
-        var token = authorization.Replace("Bearer ", "");
-        var result = await _cimasProvider.GetPastClaimsAsync(new GetPastClaimsInput(practiceNumber, token));
-        if (!result.Success)
-        {
-            return BadRequest(result.Errors);
-        }
-        return Ok(result.Data);
-    }
-
-    [HttpPost("cimas/submit")]
-    public async Task<IActionResult> SubmitCIMASClaim([FromBody] SubmitClaimInput input, [FromHeader] string authorization)
-    {
-        var token = authorization.Replace("Bearer ", "");
-        input = input with { AccessToken = token };
-        var result = await _cimasProvider.SubmitClaimAsync(input);
-        if (!result.Success)
-        {
-            return BadRequest(result.Errors);
-        }
-        return Ok(result.Data);
-    }
-
-    [HttpPost("cimas/reverse")]
-    public async Task<IActionResult> ReverseCIMASClaim([FromBody] ReverseClaimInput input, [FromHeader] string authorization)
-    {
-        var token = authorization.Replace("Bearer ", "");
-        input = input with { AccessToken = token };
-        var result = await _cimasProvider.ReverseClaimAsync(input);
+        var result = await _claimsService.ReverseClaimAsync(transactionNumber);
         if (!result.Success)
         {
             return BadRequest(result.Errors);
@@ -130,18 +66,30 @@ public class ClaimsController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("cimas/upload")]
-    public async Task<IActionResult> UploadCIMASDocument([FromForm] UploadDocumentInput input, [FromHeader] string authorization)
+    [HttpPost("upload/{transactionNumber}/{channel}")]
+    public async Task<IActionResult> UploadDocument(
+        string transactionNumber,
+        string channel,
+        IFormFile file
+    )
     {
-        var token = authorization.Replace("Bearer ", "");
-        input = input with { AccessToken = token };
-        var result = await _cimasProvider.UploadDocumentAsync(input);
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest("No file provided");
+        }
+
+        using var stream = file.OpenReadStream();
+        var result = await _claimsService.UploadDocumentAsync(
+            transactionNumber,
+            channel,
+            stream,
+            file.FileName
+        );
+
         if (!result.Success)
         {
             return BadRequest(result.Errors);
         }
         return Ok();
     }
-
-    #endregion
 }

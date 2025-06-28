@@ -20,22 +20,26 @@ public static class DbSeeder
         {
             Id = Guid.NewGuid(),
             Name = "Admin",
-            Permissions =
-            [
-                new()
-                {
-                    { "Claims", Permission.Write },
-                    { "Users", Permission.Write },
-                    { "Roles", Permission.Write },
-                },  
-            ],
+            Permissions = new()
+            {
+                { "Claims", Permission.Write },
+                { "Users", Permission.Write },
+                { "Roles", Permission.Write },
+                { "Rules", Permission.Write },
+                { "Fraud", Permission.Write },
+                { "Dashboard", Permission.Write },
+            },
         };
 
         var userRole = new RoleModel
         {
             Id = Guid.NewGuid(),
             Name = "User",
-            Permissions = [new() { { "Claims", Permission.Read } }],
+            Permissions = new()
+            {
+                { "Claims", Permission.Read },
+                { "Dashboard", Permission.Read },
+            },
         };
 
         await context.Roles.AddRangeAsync(adminRole, userRole);
@@ -65,7 +69,7 @@ public static class DbSeeder
             CreatedAt = DateTime.UtcNow,
         };
 
-        adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "Admin123!");
+        adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "hro");
         regularUser.PasswordHash = passwordHasher.HashPassword(regularUser, "User123!");
 
         await context.Users.AddRangeAsync(adminUser, regularUser);
