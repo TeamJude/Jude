@@ -3,6 +3,9 @@ using Jude.Server.Config;
 using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
+using Jude.Server.Domains.Agents;
+using Jude.Server.Domains.Agents.Events;
+using Jude.Server.Domains.Agents.Workflows;
 using Jude.Server.Domains.Auth;
 using Jude.Server.Domains.Auth.Authorization;
 using Jude.Server.Domains.Claims;
@@ -124,7 +127,7 @@ public static class ServiceExtensions
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddMemoryCache();
-        
+
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IRulesService, RulesService>();
         services.AddScoped<IFraudService, FraudService>();
@@ -137,6 +140,25 @@ public static class ServiceExtensions
 
         services.AddHttpClient<ICIMASProvider, CIMASProvider>();
         services.AddScoped<ICIMASProvider, CIMASProvider>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddAgentServices(this IServiceCollection services)
+    {
+        // Event Queue - Singleton for in-memory queue
+        services.AddSingleton<IClaimIngestEventsQueue, ClaimIngestEventsQueue>();
+
+        // Event Handler - Scoped for database access
+        services.AddScoped<IClaimIngestEventHandler, ClaimIngestEventHandler>();
+
+        // AI Agents - Scoped for database and service access
+        services.AddScoped<Ajudicator>();
+        services.AddScoped<AjudicationOrchestrator>();
+        services.AddScoped<ManualOrchestrationService>();
+
+        // Background Services
+        services.AddHostedService<ClaimsIngestProcessor>();
 
         return services;
     }

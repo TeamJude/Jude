@@ -9,10 +9,28 @@ public class ClaimModel
     public DateTime IngestedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    // Claim Identification
+    public string TransactionNumber { get; set; } = string.Empty;
+    public string ClaimNumber { get; set; } = string.Empty;
+    
+    // Patient and Provider Information
+    public string PatientName { get; set; } = string.Empty;
+    public string MembershipNumber { get; set; } = string.Empty;
+    public string ProviderPractice { get; set; } = string.Empty;
+    
+    // Financial Information
+    public decimal ClaimAmount { get; set; }
+    public decimal? ApprovedAmount { get; set; }
+    public string Currency { get; set; } = "USD";
+
+    // Workflow Status
     public ClaimStatus Status { get; set; } = ClaimStatus.Pending;
     public ClaimSource Source { get; set; } = ClaimSource.CIMAS;
     public DateTime? SubmittedAt { get; set; }
     public DateTime? ProcessedAt { get; set; }
+    
+    // CIMAS Integration
+    public string? CIMASPayload { get; set; }
 
     public string? AgentRecommendation { get; set; }
     public string? AgentReasoning { get; set; }
@@ -29,10 +47,6 @@ public class ClaimModel
     public string? ReviewerComments { get; set; }
     public string? RejectionReason { get; set; }
     public DateTime? ReviewedAt { get; set; }
-
-    // [ForeignKey(nameof(ClaimDataModel))]
-    // public Guid ClaimDataId { get; set; }
-    // public ClaimDataModel ClaimData { get; set; }
 
     [ForeignKey(nameof(UserModel))]
     public Guid? ReviewedById { get; set; }

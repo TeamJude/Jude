@@ -25,5 +25,5 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
     public DbSet<RoleModel> Roles { get; set; }
     public DbSet<RuleModel> Rules { get; set; }
     public DbSet<FraudIndicatorModel> FraudIndicators { get; set; }
-    // public DbSet<ClaimModel> Claims { get; set; }
+    public DbSet<ClaimModel> Claims { get; set; }
 }
