@@ -13,7 +13,8 @@ public class OrchestrationController : ControllerBase
 
     public OrchestrationController(
         ManualOrchestrationService orchestrationService,
-        ILogger<OrchestrationController> logger)
+        ILogger<OrchestrationController> logger
+    )
     {
         _orchestrationService = orchestrationService;
         _logger = logger;
@@ -25,27 +26,31 @@ public class OrchestrationController : ControllerBase
         try
         {
             var result = await _orchestrationService.ProcessSingleClaimAsync(claimId);
-            
+
             if (result.Success)
             {
-                return Ok(new
-                {
-                    success = true,
-                    claimId = result.ClaimId,
-                    recommendation = result.FinalRecommendation?.Recommendation,
-                    confidence = result.FinalRecommendation?.ConsolidatedConfidence,
-                    agentCount = result.AgentResults.Count,
-                    processingTime = result.CompletedAt - result.StartedAt
-                });
+                return Ok(
+                    new
+                    {
+                        success = true,
+                        claimId = result.ClaimId,
+                        recommendation = result.FinalRecommendation?.Recommendation,
+                        confidence = result.FinalRecommendation?.ConsolidatedConfidence,
+                        agentCount = result.AgentResults.Count,
+                        processingTime = result.CompletedAt - result.StartedAt,
+                    }
+                );
             }
-            
-            return BadRequest(new
-            {
-                success = false,
-                claimId = result.ClaimId,
-                error = result.FailureReason,
-                processingTime = result.CompletedAt - result.StartedAt
-            });
+
+            return BadRequest(
+                new
+                {
+                    success = false,
+                    claimId = result.ClaimId,
+                    error = result.FailureReason,
+                    processingTime = result.CompletedAt - result.StartedAt,
+                }
+            );
         }
         catch (Exception ex)
         {
@@ -55,7 +60,10 @@ public class OrchestrationController : ControllerBase
     }
 
     [HttpPost("process-batch/{status}")]
-    public async Task<IActionResult> ProcessClaimsByStatus(string status, [FromQuery] int maxClaims = 10)
+    public async Task<IActionResult> ProcessClaimsByStatus(
+        string status,
+        [FromQuery] int maxClaims = 10
+    )
     {
         try
         {
@@ -64,14 +72,17 @@ public class OrchestrationController : ControllerBase
                 return BadRequest(new { error = "Invalid claim status" });
             }
 
-            var results = await _orchestrationService.ProcessClaimsByStatusAsync(claimStatus, maxClaims);
-            
+            var results = await _orchestrationService.ProcessClaimsByStatusAsync(
+                claimStatus,
+                maxClaims
+            );
+
             var summary = new
             {
                 totalProcessed = results.Count,
                 successful = results.Count(r => r.Success),
                 failed = results.Count(r => !r.Success),
-                averageProcessingTime = results.Any() 
+                averageProcessingTime = results.Any()
                     ? results.Average(r => (r.CompletedAt - r.StartedAt)?.TotalMilliseconds ?? 0)
                     : 0,
                 results = results.Select(r => new
@@ -80,8 +91,8 @@ public class OrchestrationController : ControllerBase
                     success = r.Success,
                     recommendation = r.FinalRecommendation?.Recommendation,
                     confidence = r.FinalRecommendation?.ConsolidatedConfidence,
-                    error = r.FailureReason
-                })
+                    error = r.FailureReason,
+                }),
             };
 
             return Ok(summary);
@@ -99,7 +110,7 @@ public class OrchestrationController : ControllerBase
         try
         {
             var results = await _orchestrationService.ReprocessFailedClaimsAsync(maxClaims);
-            
+
             var summary = new
             {
                 totalReprocessed = results.Count,
@@ -111,8 +122,8 @@ public class OrchestrationController : ControllerBase
                     success = r.Success,
                     recommendation = r.FinalRecommendation?.Recommendation,
                     confidence = r.FinalRecommendation?.ConsolidatedConfidence,
-                    error = r.FailureReason
-                })
+                    error = r.FailureReason,
+                }),
             };
 
             return Ok(summary);
@@ -138,4 +149,4 @@ public class OrchestrationController : ControllerBase
             return StatusCode(500, new { error = "Internal server error retrieving stats" });
         }
     }
-} 
+}

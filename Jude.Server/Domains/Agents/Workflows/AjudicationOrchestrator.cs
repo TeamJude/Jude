@@ -10,7 +10,10 @@ public class AjudicationOrchestrator
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AjudicationOrchestrator> _logger;
 
-    public AjudicationOrchestrator(IServiceProvider serviceProvider, ILogger<AjudicationOrchestrator> logger)
+    public AjudicationOrchestrator(
+        IServiceProvider serviceProvider,
+        ILogger<AjudicationOrchestrator> logger
+    )
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -18,19 +21,26 @@ public class AjudicationOrchestrator
 
     public async Task<ClaimProcessingResult> ProcessClaimAsync(ClaimModel claim)
     {
-        _logger.LogInformation("Starting claim adjudication orchestration for claim {ClaimId}", claim.Id);
+        _logger.LogInformation(
+            "Starting claim adjudication orchestration for claim {ClaimId}",
+            claim.Id
+        );
 
         var result = new ClaimProcessingResult
         {
             ClaimId = claim.Id,
             StartedAt = DateTime.UtcNow,
-            Success = false
+            Success = false,
         };
 
         try
         {
             // Update claim status to indicate processing has started
-            await UpdateClaimStatus(claim, ClaimStatus.Processing, "Adjudication orchestration started");
+            await UpdateClaimStatus(
+                claim,
+                ClaimStatus.Processing,
+                "Adjudication orchestration started"
+            );
 
             // Stage 1: Primary Adjudication Agent
             var primaryResult = await ExecutePrimaryAdjudication(claim);
@@ -67,14 +77,22 @@ public class AjudicationOrchestrator
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during claim adjudication orchestration for claim {ClaimId}", claim.Id);
-            
+            _logger.LogError(
+                ex,
+                "Error during claim adjudication orchestration for claim {ClaimId}",
+                claim.Id
+            );
+
             result.Success = false;
             result.FailureReason = ex.Message;
             result.CompletedAt = DateTime.UtcNow;
 
             // Ensure claim is flagged for human review on orchestration failure
-            await UpdateClaimStatus(claim, ClaimStatus.PendingReview, $"Orchestration failed: {ex.Message}");
+            await UpdateClaimStatus(
+                claim,
+                ClaimStatus.PendingReview,
+                $"Orchestration failed: {ex.Message}"
+            );
             claim.RequiresHumanReview = true;
             claim.FraudRiskLevel = FraudRiskLevel.Medium;
 
@@ -84,7 +102,10 @@ public class AjudicationOrchestrator
 
     public async Task<List<ClaimProcessingResult>> ProcessClaimsBatchAsync(List<ClaimModel> claims)
     {
-        _logger.LogInformation("Starting batch adjudication orchestration for {ClaimCount} claims", claims.Count);
+        _logger.LogInformation(
+            "Starting batch adjudication orchestration for {ClaimCount} claims",
+            claims.Count
+        );
 
         var results = new List<ClaimProcessingResult>();
         var semaphore = new SemaphoreSlim(3, 3); // Limit concurrent processing
@@ -134,7 +155,9 @@ public class AjudicationOrchestrator
                 ProcessedAt = DateTime.UtcNow,
                 Recommendation = claim.AgentRecommendation,
                 ConfidenceScore = claim.AgentConfidenceScore,
-                Notes = success ? "Primary adjudication completed successfully" : "Primary adjudication failed"
+                Notes = success
+                    ? "Primary adjudication completed successfully"
+                    : "Primary adjudication failed",
             };
         }
         catch (Exception ex)
@@ -145,7 +168,7 @@ public class AjudicationOrchestrator
                 AgentType = "Primary Adjudicator",
                 Success = false,
                 ProcessedAt = DateTime.UtcNow,
-                Notes = $"Primary adjudication error: {ex.Message}"
+                Notes = $"Primary adjudication error: {ex.Message}",
             };
         }
     }
@@ -190,9 +213,10 @@ public class AjudicationOrchestrator
             AgentType = "Fraud Detection Specialist",
             Success = true,
             ProcessedAt = DateTime.UtcNow,
-            Recommendation = claim.FraudRiskLevel >= FraudRiskLevel.High ? "Investigate" : "Approve",
+            Recommendation =
+                claim.FraudRiskLevel >= FraudRiskLevel.High ? "Investigate" : "Approve",
             ConfidenceScore = 0.85m,
-            Notes = $"Fraud risk assessment completed - Risk Level: {claim.FraudRiskLevel}"
+            Notes = $"Fraud risk assessment completed - Risk Level: {claim.FraudRiskLevel}",
         };
     }
 
@@ -208,7 +232,7 @@ public class AjudicationOrchestrator
             ProcessedAt = DateTime.UtcNow,
             Recommendation = "Approve",
             ConfidenceScore = 0.90m,
-            Notes = "Medical necessity review completed - services appear appropriate"
+            Notes = "Medical necessity review completed - services appear appropriate",
         };
     }
 
@@ -224,28 +248,32 @@ public class AjudicationOrchestrator
             ProcessedAt = DateTime.UtcNow,
             Recommendation = "Approve",
             ConfidenceScore = 0.95m,
-            Notes = "Policy compliance check completed - all requirements met"
+            Notes = "Policy compliance check completed - all requirements met",
         };
     }
 
-    private async Task<ConsolidatedResult> ConsolidateResults(ClaimModel claim, List<AgentResult> agentResults)
+    private async Task<ConsolidatedResult> ConsolidateResults(
+        ClaimModel claim,
+        List<AgentResult> agentResults
+    )
     {
-        _logger.LogDebug("Consolidating results from {AgentCount} agents for claim {ClaimId}", 
-            agentResults.Count, claim.Id);
+        _logger.LogDebug(
+            "Consolidating results from {AgentCount} agents for claim {ClaimId}",
+            agentResults.Count,
+            claim.Id
+        );
 
-        var result = new ConsolidatedResult
-        {
-            ClaimId = claim.Id,
-            ProcessedAt = DateTime.UtcNow
-        };
+        var result = new ConsolidatedResult { ClaimId = claim.Id, ProcessedAt = DateTime.UtcNow };
 
         // Analyze all agent recommendations
-        var recommendations = agentResults.Where(r => r.Success && !string.IsNullOrEmpty(r.Recommendation))
-                                         .Select(r => r.Recommendation)
-                                         .ToList();
+        var recommendations = agentResults
+            .Where(r => r.Success && !string.IsNullOrEmpty(r.Recommendation))
+            .Select(r => r.Recommendation)
+            .ToList();
 
-        var avgConfidence = agentResults.Where(r => r.ConfidenceScore.HasValue)
-                                       .Average(r => r.ConfidenceScore.Value);
+        var avgConfidence = agentResults
+            .Where(r => r.ConfidenceScore.HasValue)
+            .Average(r => r.ConfidenceScore.Value);
 
         // Consolidation logic
         if (recommendations.Any(r => r.Equals("Investigate", StringComparison.OrdinalIgnoreCase)))
@@ -275,14 +303,18 @@ public class AjudicationOrchestrator
         }
 
         result.ConsolidatedConfidence = avgConfidence;
-        result.ConsolidationNotes = $"Consolidated from {agentResults.Count} agents. Average confidence: {avgConfidence:P}";
+        result.ConsolidationNotes =
+            $"Consolidated from {agentResults.Count} agents. Average confidence: {avgConfidence:P}";
 
         await Task.CompletedTask; // For future async consolidation logic
 
         return result;
     }
 
-    private async Task ApplyFinalRecommendation(ClaimModel claim, ConsolidatedResult consolidatedResult)
+    private async Task ApplyFinalRecommendation(
+        ClaimModel claim,
+        ConsolidatedResult consolidatedResult
+    )
     {
         claim.AgentRecommendation = consolidatedResult.Recommendation;
         claim.RequiresHumanReview = consolidatedResult.RequiresHumanReview;
@@ -297,10 +329,12 @@ public class AjudicationOrchestrator
         // Set final status
         claim.Status = consolidatedResult.Recommendation switch
         {
-            "Approve" => consolidatedResult.RequiresHumanReview ? ClaimStatus.PendingReview : ClaimStatus.Approved,
+            "Approve" => consolidatedResult.RequiresHumanReview
+                ? ClaimStatus.PendingReview
+                : ClaimStatus.Approved,
             "Deny" => ClaimStatus.PendingReview,
             "Investigate" => ClaimStatus.PendingReview,
-            _ => ClaimStatus.PendingReview
+            _ => ClaimStatus.PendingReview,
         };
 
         // Update processed timestamp
@@ -321,7 +355,7 @@ public class AjudicationOrchestrator
         // Add note to reasoning
         var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC");
         var formattedNote = $"[{timestamp} - Orchestrator]: {note}";
-        
+
         var existingReasoning = claim.AgentReasoning ?? "";
         claim.AgentReasoning = string.IsNullOrEmpty(existingReasoning)
             ? formattedNote

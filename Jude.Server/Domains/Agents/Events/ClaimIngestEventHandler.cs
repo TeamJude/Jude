@@ -20,9 +20,10 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
     private readonly AjudicationOrchestrator _orchestrator;
 
     public ClaimIngestEventHandler(
-        JudeDbContext dbContext, 
+        JudeDbContext dbContext,
         ILogger<ClaimIngestEventHandler> logger,
-        AjudicationOrchestrator orchestrator)
+        AjudicationOrchestrator orchestrator
+    )
     {
         _dbContext = dbContext;
         _logger = logger;

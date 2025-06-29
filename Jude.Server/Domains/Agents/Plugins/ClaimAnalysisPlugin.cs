@@ -20,7 +20,11 @@ public class ClaimAnalysisPlugin
     [Description("Record detailed analysis reasoning for the claim")]
     public Task<string> UpdateClaimAnalysisAsync(
         [Description("Detailed reasoning for the claim analysis decision")] string reasoning,
-        [Description("Confidence score from 0-100 indicating how confident you are in this analysis")] int confidenceScore)
+        [Description(
+            "Confidence score from 0-100 indicating how confident you are in this analysis"
+        )]
+            int confidenceScore
+    )
     {
         try
         {
@@ -39,7 +43,9 @@ public class ClaimAnalysisPlugin
                 confidenceScore
             );
 
-            return Task.FromResult($"Successfully updated claim analysis with {confidenceScore}% confidence.");
+            return Task.FromResult(
+                $"Successfully updated claim analysis with {confidenceScore}% confidence."
+            );
         }
         catch (Exception ex)
         {
@@ -52,13 +58,17 @@ public class ClaimAnalysisPlugin
     [Description("Set the fraud risk level for the claim")]
     public Task<string> SetFraudRiskAsync(
         [Description("Fraud risk level: Low, Medium, High, or Critical")] string riskLevel,
-        [Description("List of specific fraud indicators found, separated by semicolons")] string fraudIndicators = "")
+        [Description("List of specific fraud indicators found, separated by semicolons")]
+            string fraudIndicators = ""
+    )
     {
         try
         {
             if (!Enum.TryParse<FraudRiskLevel>(riskLevel, true, out var parsedRiskLevel))
             {
-                return Task.FromResult("Error: Invalid risk level. Use Low, Medium, High, or Critical.");
+                return Task.FromResult(
+                    "Error: Invalid risk level. Use Low, Medium, High, or Critical."
+                );
             }
 
             _claim.FraudRiskLevel = parsedRiskLevel;
@@ -66,7 +76,8 @@ public class ClaimAnalysisPlugin
 
             if (!string.IsNullOrEmpty(fraudIndicators))
             {
-                _claim.FraudIndicators = fraudIndicators.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                _claim.FraudIndicators = fraudIndicators
+                    .Split(';', StringSplitOptions.RemoveEmptyEntries)
                     .Select(i => i.Trim())
                     .ToList();
             }
@@ -89,9 +100,12 @@ public class ClaimAnalysisPlugin
     [KernelFunction]
     [Description("Make a recommendation for claim approval or denial")]
     public Task<string> RecommendActionAsync(
-        [Description("Recommended action: Approve, Deny, Pending, Review, or Investigate")] string action,
-        [Description("Approved amount if recommending approval (leave empty for full amount)")] decimal? approvedAmount = null,
-        [Description("Reason for denial if recommending denial")] string denialReason = "")
+        [Description("Recommended action: Approve, Deny, Pending, Review, or Investigate")]
+            string action,
+        [Description("Approved amount if recommending approval (leave empty for full amount)")]
+            decimal? approvedAmount = null,
+        [Description("Reason for denial if recommending denial")] string denialReason = ""
+    )
     {
         try
         {
@@ -99,7 +113,9 @@ public class ClaimAnalysisPlugin
             var validActions = new[] { "Approve", "Deny", "Pending", "Review", "Investigate" };
             if (!validActions.Contains(action, StringComparer.OrdinalIgnoreCase))
             {
-                return Task.FromResult($"Error: Invalid action. Use one of: {string.Join(", ", validActions)}");
+                return Task.FromResult(
+                    $"Error: Invalid action. Use one of: {string.Join(", ", validActions)}"
+                );
             }
 
             _claim.AgentRecommendation = action;
@@ -148,22 +164,25 @@ public class ClaimAnalysisPlugin
     [Description("Flag the claim for human review with specific reasons")]
     public Task<string> FlagForReviewAsync(
         [Description("Reason why human review is required")] string reviewReason,
-        [Description("Priority level: Low, Medium, High")] string priority = "Medium")
+        [Description("Priority level: Low, Medium, High")] string priority = "Medium"
+    )
     {
         try
         {
             _claim.RequiresHumanReview = true;
             _claim.Status = ClaimStatus.PendingReview;
-            
+
             // Append review reason to existing reasoning
             var existingReasoning = _claim.AgentReasoning ?? "";
-            _claim.AgentReasoning = string.IsNullOrEmpty(existingReasoning) 
+            _claim.AgentReasoning = string.IsNullOrEmpty(existingReasoning)
                 ? $"FLAGGED FOR REVIEW: {reviewReason}"
                 : $"{existingReasoning}\n\nFLAGGED FOR REVIEW: {reviewReason}";
 
             // Adjust fraud risk based on priority
-            if (priority.Equals("High", StringComparison.OrdinalIgnoreCase) && 
-                _claim.FraudRiskLevel < FraudRiskLevel.High)
+            if (
+                priority.Equals("High", StringComparison.OrdinalIgnoreCase)
+                && _claim.FraudRiskLevel < FraudRiskLevel.High
+            )
             {
                 _claim.FraudRiskLevel = FraudRiskLevel.High;
                 _claim.IsFlagged = true;
@@ -176,7 +195,9 @@ public class ClaimAnalysisPlugin
                 reviewReason
             );
 
-            return Task.FromResult($"Successfully flagged claim for {priority.ToLower()} priority human review.");
+            return Task.FromResult(
+                $"Successfully flagged claim for {priority.ToLower()} priority human review."
+            );
         }
         catch (Exception ex)
         {
@@ -188,7 +209,8 @@ public class ClaimAnalysisPlugin
     [KernelFunction]
     [Description("Add a note or comment to the claim for documentation purposes")]
     public Task<string> AddClaimNoteAsync(
-        [Description("Note or comment to add to the claim")] string note)
+        [Description("Note or comment to add to the claim")] string note
+    )
     {
         try
         {
@@ -219,22 +241,22 @@ public class ClaimAnalysisPlugin
         try
         {
             var summary = $"""
-            ## Claim Summary
-            
-            **Transaction Number:** {_claim.TransactionNumber}
-            **Patient:** {_claim.PatientName}
-            **Member:** {_claim.MembershipNumber}
-            **Provider:** {_claim.ProviderPractice}
-            **Claim Amount:** {_claim.Currency}{_claim.ClaimAmount:N2}
-            **Status:** {_claim.Status}
-            **Source:** {_claim.Source}
-            **Submitted:** {_claim.SubmittedAt:yyyy-MM-dd}
-            **Current Risk Level:** {_claim.FraudRiskLevel}
-            **Flagged:** {(_claim.IsFlagged ? "Yes" : "No")}
-            
-            **Previous Analysis:** {_claim.AgentReasoning ?? "None"}
-            **Previous Recommendation:** {_claim.AgentRecommendation ?? "None"}
-            """;
+                ## Claim Summary
+
+                **Transaction Number:** {_claim.TransactionNumber}
+                **Patient:** {_claim.PatientName}
+                **Member:** {_claim.MembershipNumber}
+                **Provider:** {_claim.ProviderPractice}
+                **Claim Amount:** {_claim.Currency}{_claim.ClaimAmount:N2}
+                **Status:** {_claim.Status}
+                **Source:** {_claim.Source}
+                **Submitted:** {_claim.SubmittedAt:yyyy-MM-dd}
+                **Current Risk Level:** {_claim.FraudRiskLevel}
+                **Flagged:** {(_claim.IsFlagged ? "Yes" : "No")}
+
+                **Previous Analysis:** {_claim.AgentReasoning ?? "None"}
+                **Previous Recommendation:** {_claim.AgentRecommendation ?? "None"}
+                """;
 
             return Task.FromResult(summary);
         }
@@ -244,4 +266,4 @@ public class ClaimAnalysisPlugin
             return Task.FromResult("Error retrieving claim summary.");
         }
     }
-} 
+}

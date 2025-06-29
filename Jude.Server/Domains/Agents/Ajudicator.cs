@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 
 namespace Jude.Server.Domains.Agents;
 
@@ -20,7 +21,7 @@ public class Ajudicator
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
-        
+
         _kernel = Kernel
             .CreateBuilder()
             .AddAzureOpenAIChatCompletion(
@@ -40,12 +41,16 @@ public class Ajudicator
             // Create a new scope for this claim processing
             using var scope = _serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<JudeDbContext>();
-            
+
             // Create plugins with scoped dependencies
-            var contextPlugin = new ClaimContextPlugin(dbContext, 
-                scope.ServiceProvider.GetRequiredService<ILogger<ClaimContextPlugin>>());
-            var analysisPlugin = new ClaimAnalysisPlugin(claim,
-                scope.ServiceProvider.GetRequiredService<ILogger<ClaimAnalysisPlugin>>());
+            var contextPlugin = new ClaimContextPlugin(
+                dbContext,
+                scope.ServiceProvider.GetRequiredService<ILogger<ClaimContextPlugin>>()
+            );
+            var analysisPlugin = new ClaimAnalysisPlugin(
+                claim,
+                scope.ServiceProvider.GetRequiredService<ILogger<ClaimAnalysisPlugin>>()
+            );
 
             // Import plugins into the kernel
             _kernel.ImportPluginFromObject(contextPlugin, "ClaimContext");
@@ -57,12 +62,18 @@ public class Ajudicator
                 Name = "Jude",
                 Instructions = Prompts.AdjudicationEngine,
                 Kernel = _kernel,
+                Arguments = new KernelArguments(
+                    new AzureOpenAIPromptExecutionSettings()
+                    {
+                        FunctionChoiceBehavior = FunctionChoiceBehavior.Required(),
+                    }
+                ),
             };
 
             // Create the initial message with claim information
             var claimSummary = await analysisPlugin.GetClaimSummaryAsync();
             var initialMessage = new ChatMessageContent(
-                role: AuthorRole.User, 
+                role: AuthorRole.User,
                 content: $"Please process this medical claim for adjudication:\n\n{claimSummary}\n\nAnalyze the claim according to your instructions and use the available tools to record your analysis and recommendation."
             );
 
@@ -75,12 +86,12 @@ public class Ajudicator
                 responseContent += response.Message.Content;
                 thread = response.Thread;
             }
+            _logger.LogDebug(
+                "Agent response for claim {ClaimId}: {Response}",
+                claim.Id,
+                responseContent
+            );
 
-            // Log the agent's response for debugging
-            _logger.LogDebug("Agent response for claim {ClaimId}: {Response}", claim.Id, responseContent);
-
-            // The agent should have updated the claim through the analysis plugin functions
-            // Mark the claim as processed
             claim.ProcessedAt = DateTime.UtcNow;
 
             // Save changes to the database
@@ -97,12 +108,12 @@ public class Ajudicator
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing claim {ClaimId} with agent", claim.Id);
-            
+
             // Mark the claim as having an error
             claim.AgentReasoning = $"Agent processing failed: {ex.Message}";
             claim.RequiresHumanReview = true;
             claim.FraudRiskLevel = FraudRiskLevel.Medium; // Escalate due to processing error
-            
+
             return false;
         }
     }

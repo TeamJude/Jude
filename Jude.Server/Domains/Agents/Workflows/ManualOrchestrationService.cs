@@ -1,7 +1,6 @@
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace Jude.Server.Domains.Agents.Workflows;
 
@@ -14,7 +13,8 @@ public class ManualOrchestrationService
     public ManualOrchestrationService(
         AjudicationOrchestrator orchestrator,
         JudeDbContext dbContext,
-        ILogger<ManualOrchestrationService> logger)
+        ILogger<ManualOrchestrationService> logger
+    )
     {
         _orchestrator = orchestrator;
         _dbContext = dbContext;
@@ -36,19 +36,25 @@ public class ManualOrchestrationService
                 Success = false,
                 FailureReason = "Claim not found",
                 StartedAt = DateTime.UtcNow,
-                CompletedAt = DateTime.UtcNow
+                CompletedAt = DateTime.UtcNow,
             };
         }
 
         return await _orchestrator.ProcessClaimAsync(claim);
     }
 
-    public async Task<List<ClaimProcessingResult>> ProcessClaimsByStatusAsync(ClaimStatus status, int maxClaims = 10)
+    public async Task<List<ClaimProcessingResult>> ProcessClaimsByStatusAsync(
+        ClaimStatus status,
+        int maxClaims = 10
+    )
     {
-        _logger.LogInformation("Manual batch orchestration requested for claims with status {Status}", status);
+        _logger.LogInformation(
+            "Manual batch orchestration requested for claims with status {Status}",
+            status
+        );
 
-        var claims = await _dbContext.Claims
-            .Where(c => c.Status == status)
+        var claims = await _dbContext
+            .Claims.Where(c => c.Status == status)
             .Take(maxClaims)
             .ToListAsync();
 
@@ -58,7 +64,11 @@ public class ManualOrchestrationService
             return new List<ClaimProcessingResult>();
         }
 
-        _logger.LogInformation("Processing {ClaimCount} claims with status {Status}", claims.Count, status);
+        _logger.LogInformation(
+            "Processing {ClaimCount} claims with status {Status}",
+            claims.Count,
+            status
+        );
 
         return await _orchestrator.ProcessClaimsBatchAsync(claims);
     }
@@ -67,10 +77,12 @@ public class ManualOrchestrationService
     {
         _logger.LogInformation("Reprocessing failed claims");
 
-        var failedClaims = await _dbContext.Claims
-            .Where(c => c.RequiresHumanReview && 
-                       c.AgentReasoning != null && 
-                       c.AgentReasoning.Contains("failed"))
+        var failedClaims = await _dbContext
+            .Claims.Where(c =>
+                c.RequiresHumanReview
+                && c.AgentReasoning != null
+                && c.AgentReasoning.Contains("failed")
+            )
             .Take(maxClaims)
             .ToListAsync();
 
@@ -89,23 +101,26 @@ public class ManualOrchestrationService
     {
         fromDate ??= DateTime.UtcNow.AddDays(-7); // Default to last 7 days
 
-        var totalClaims = await _dbContext.Claims
-            .CountAsync(c => c.ProcessedAt >= fromDate);
+        var totalClaims = await _dbContext.Claims.CountAsync(c => c.ProcessedAt >= fromDate);
 
-        var processedClaims = await _dbContext.Claims
-            .CountAsync(c => c.ProcessedAt >= fromDate && c.AgentRecommendation != null);
+        var processedClaims = await _dbContext.Claims.CountAsync(c =>
+            c.ProcessedAt >= fromDate && c.AgentRecommendation != null
+        );
 
-        var approvedClaims = await _dbContext.Claims
-            .CountAsync(c => c.ProcessedAt >= fromDate && c.AgentRecommendation == "Approve");
+        var approvedClaims = await _dbContext.Claims.CountAsync(c =>
+            c.ProcessedAt >= fromDate && c.AgentRecommendation == "Approve"
+        );
 
-        var deniedClaims = await _dbContext.Claims
-            .CountAsync(c => c.ProcessedAt >= fromDate && c.AgentRecommendation == "Deny");
+        var deniedClaims = await _dbContext.Claims.CountAsync(c =>
+            c.ProcessedAt >= fromDate && c.AgentRecommendation == "Deny"
+        );
 
-        var reviewClaims = await _dbContext.Claims
-            .CountAsync(c => c.ProcessedAt >= fromDate && c.RequiresHumanReview);
+        var reviewClaims = await _dbContext.Claims.CountAsync(c =>
+            c.ProcessedAt >= fromDate && c.RequiresHumanReview
+        );
 
-        var avgConfidence = await _dbContext.Claims
-            .Where(c => c.ProcessedAt >= fromDate && c.AgentConfidenceScore.HasValue)
+        var avgConfidence = await _dbContext
+            .Claims.Where(c => c.ProcessedAt >= fromDate && c.AgentConfidenceScore.HasValue)
             .AverageAsync(c => c.AgentConfidenceScore ?? 0);
 
         return new ClaimOrchestrationStats
@@ -118,7 +133,7 @@ public class ManualOrchestrationService
             DeniedClaims = deniedClaims,
             ReviewClaims = reviewClaims,
             AverageConfidence = avgConfidence,
-            ProcessingRate = totalClaims > 0 ? (decimal)processedClaims / totalClaims : 0
+            ProcessingRate = totalClaims > 0 ? (decimal)processedClaims / totalClaims : 0,
         };
     }
 }
@@ -134,4 +149,4 @@ public class ClaimOrchestrationStats
     public int ReviewClaims { get; set; }
     public decimal AverageConfidence { get; set; }
     public decimal ProcessingRate { get; set; }
-} 
+}

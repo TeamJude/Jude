@@ -9,7 +9,6 @@ public class ClaimsIngestProcessor : BackgroundService
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<ClaimsIngestProcessor> _logger;
 
-    // Configuration for polling intervals
     private readonly TimeSpan _pollingInterval = TimeSpan.FromMinutes(5); // Poll every 5 minutes
     private readonly TimeSpan _initialDelay = TimeSpan.FromSeconds(30); // Wait 30 seconds before first poll
 
