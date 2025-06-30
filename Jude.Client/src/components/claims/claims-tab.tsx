@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tabs, Tab, Card, CardBody, Divider, Chip, Progress, Button, Textarea } from '@heroui/react';
+import { Tabs, Tab, Card, CardBody, Divider, Chip, Progress, Button, Textarea, Select, SelectItem } from '@heroui/react';
 import { 
   ClipboardList, 
   FileText, 
@@ -29,11 +29,54 @@ interface ClaimTabsProps {
 
 export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
   const [selected, setSelected] = React.useState("summary");
-  const [decision, setDecision] = React.useState("");
-  const [notes, setNotes] = React.useState("");
+  const [finalDecision, setFinalDecision] = React.useState("");
+  const [reviewerComments, setReviewerComments] = React.useState("");
+  const [rejectionReason, setRejectionReason] = React.useState("");
 
   const handleSelectionChange = (key: React.Key) => {
     setSelected(key.toString());
+  };
+
+  const decisions = [
+    { key: "Approve", label: "Approve", description: "Approve the claim as submitted" },
+    { key: "Reject", label: "Reject", description: "Reject the claim" },
+    { key: "RequestMoreInfo", label: "Request More Info", description: "Request additional information" },
+    { key: "Escalate", label: "Escalate", description: "Escalate to supervisor" }
+  ];
+
+  const rejectionReasons = [
+    { key: "service_not_covered", label: "Service Not Covered" },
+    { key: "member_not_eligible", label: "Member Not Eligible" },
+    { key: "insufficient_documentation", label: "Insufficient Documentation" },
+    { key: "duplicate_claim", label: "Duplicate Claim" },
+    { key: "provider_not_in_network", label: "Provider Not In Network" },
+    { key: "pre_authorization_required", label: "Pre-authorization Required" },
+    { key: "policy_exclusion", label: "Policy Exclusion" },
+    { key: "fraudulent_activity", label: "Fraudulent Activity" }
+  ];
+
+  const handleSubmitDecision = () => {
+    if (!finalDecision || !reviewerComments) {
+      alert('Please select a decision and provide comments.');
+      return;
+    }
+    
+    if (finalDecision === 'Reject' && !rejectionReason) {
+      alert('Please select a rejection reason for rejected claims.');
+      return;
+    }
+
+    // Here you would typically call an API to submit the decision
+    const reviewData = {
+      claimId,
+      finalDecision,
+      reviewerComments,
+      rejectionReason: finalDecision === 'Reject' ? rejectionReason : null,
+      reviewedAt: new Date().toISOString()
+    };
+    
+    console.log('Submitting review:', reviewData);
+    alert('Decision submitted successfully!');
   };
 
   return (
@@ -61,56 +104,7 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
         >
           <Card shadow="none">
             <CardBody className="gap-6">
-              <div>
-                <h3 className="text-lg font-medium mb-3">Extracted Data</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium">Claim Details</h4>
-                    <div className="mt-2 space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-foreground-500">Service Type</span>
-                        <span className="text-sm">Consultation</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-foreground-500">Service Code</span>
-                        <span className="text-sm">CON-2023</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-foreground-500">Diagnosis Code</span>
-                        <span className="text-sm">J45.909</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-foreground-500">Place of Service</span>
-                        <span className="text-sm">Office</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-sm font-medium">Financial Details</h4>
-                    <div className="mt-2 space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-foreground-500">Billed Amount</span>
-                        <span className="text-sm">$1,250.00</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-foreground-500">Allowed Amount</span>
-                        <span className="text-sm">$950.00</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-foreground-500">Member Responsibility</span>
-                        <span className="text-sm">$150.00</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-foreground-500">Plan Payment</span>
-                        <span className="text-sm">$800.00</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <Divider />
+     
               
               <div>
                 <div className="flex items-center gap-2 mb-3">
@@ -161,7 +155,7 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-lg font-medium mb-3">Agent's Recommendation</h3>
-                  <Card className="bg-warning-50 border-warning">
+                  <Card className="bg-warning-50 shadow-none border-1 border-gray-300 ">
                     <CardBody>
                       <div className="flex items-center gap-2 mb-2">
                         <UserCheck className="text-warning" width={20} />
@@ -208,105 +202,6 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
           </Card>
         </Tab>
         
-        <Tab 
-          key="documents" 
-          title={
-            <div className="flex items-center gap-2">
-              <FileText width={18} />
-              <span>Original Claim Documents</span>
-            </div>
-          }
-        >
-          <Card shadow="none">
-            <CardBody>
-              <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg">
-                <div className="mb-4">
-                  <FileText width={48} className="text-foreground-400" />
-                </div>
-                <h3 className="text-lg font-medium">Claim Document Preview</h3>
-                <p className="text-sm text-foreground-500 mt-1 mb-4">
-                  View and download the original claim documents
-                </p>
-                <div className="flex gap-3">
-                  <Button 
-                    color="primary"
-                    startContent={<Eye width={16} />}
-                  >
-                    View Document
-                  </Button>
-                  <Button 
-                    variant="flat" 
-                    color="primary"
-                    startContent={<Download width={16} />}
-                  >
-                    Download
-                  </Button>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-        </Tab>
-        
-        <Tab 
-          key="policy" 
-          title={
-            <div className="flex items-center gap-2">
-              <BookOpen width={18} />
-              <span>Policy Context</span>
-            </div>
-          }
-        >
-          <Card shadow="none">
-            <CardBody>
-              <h3 className="text-lg font-medium mb-4">Relevant Policies</h3>
-              
-              <div className="space-y-4">
-                <Card className="shadow-none border border-divider">
-                  <CardBody>
-                    <h4 className="font-medium">Medical Coverage Policy v2.3</h4>
-                    <p className="text-sm text-foreground-500 mt-1">Section 4.B - Consultation Coverage</p>
-                    <div className="mt-3 p-3 bg-content2 rounded-md">
-                      <p className="text-sm">
-                        "Standard consultations with in-network providers are covered at 80% after deductible is met. 
-                        Specialist consultations may require pre-authorization for certain conditions as outlined in 
-                        Appendix A. Maximum allowable amount for standard consultations is determined by provider 
-                        contract rates."
-                      </p>
-                    </div>
-                    <div className="mt-3">
-                      <h5 className="text-sm font-medium">Agent's Interpretation:</h5>
-                      <p className="text-sm mt-1">
-                        This consultation is covered under the member's plan as it was provided by an in-network 
-                        provider. The service code CON-2023 matches standard consultation coverage criteria.
-                      </p>
-                    </div>
-                  </CardBody>
-                </Card>
-                
-                <Card className="shadow-none border border-divider">
-                  <CardBody>
-                    <h4 className="font-medium">Claims Processing Guidelines v1.8</h4>
-                    <p className="text-sm text-foreground-500 mt-1">Section 2.C - High Value Claims</p>
-                    <div className="mt-3 p-3 bg-content2 rounded-md">
-                      <p className="text-sm">
-                        "Claims exceeding $1,000 in total billed amount must undergo additional verification steps, 
-                        including manual review by a claims adjudicator. This applies even when all other automated 
-                        checks have passed successfully."
-                      </p>
-                    </div>
-                    <div className="mt-3">
-                      <h5 className="text-sm font-medium">Agent's Interpretation:</h5>
-                      <p className="text-sm mt-1">
-                        This claim's total amount of $1,250 exceeds the $1,000 threshold for automatic approval, 
-                        requiring human review per policy guidelines.
-                      </p>
-                    </div>
-                  </CardBody>
-                </Card>
-              </div>
-            </CardBody>
-          </Card>
-        </Tab>
         
         <Tab 
           key="adjudication" 
@@ -319,109 +214,97 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
         >
           <Card shadow="none">
             <CardBody className="gap-6">
-
               <div>
-                <h3 className="text-lg font-medium mb-4">Adjudication Decision</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <h3 className="text-lg font-medium mb-4">Review Decision</h3>
+                
+                <div className="space-y-6">
+                  {/* Final Decision */}
                   <div>
-                    <h4 className="text-sm font-medium mb-2">Decision</h4>
-                    <div className="flex flex-wrap gap-2">
-                      <Button 
-                        color="success" 
-                        variant={decision === "approve" ? "solid" : "flat"}
-                        startContent={<Check width={16} />}
-                        onPress={() => setDecision("approve")}
-                        title="Approve the claim"
-                      >
-                        Approve
-                      </Button>
-                      <Button 
-                        color="primary" 
-                        variant={decision === "partial" ? "solid" : "flat"}
-                        startContent={<Edit width={16} />}
-                        onPress={() => setDecision("partial")}
-                        title="Partially approve the claim"
-                      >
-                        Partial Approve
-                      </Button>
-                      <Button 
-                        color="warning" 
-                        variant={decision === "pend" ? "solid" : "flat"}
-                        startContent={<Clock width={16} />}
-                        onPress={() => setDecision("pend")}
-                        title="Pend and request more information"
-                      >
-                        Pend
-                      </Button>
-                      <Button 
-                        color="danger" 
-                        variant={decision === "reject" ? "solid" : "flat"}
-                        startContent={<X width={16} />}
-                        onPress={() => setDecision("reject")}
-                        title="Reject the claim"
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Reason Codes</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { label: "Policy Compliant", color: "success" as const },
-                        { label: "Member Eligible", color: "primary" as const },
-                        { label: "Service Not Covered", color: "danger" as const },
-                        { label: "Missing Information", color: "danger" as const },
-                        { label: "Requires Additional Review", color: "warning" as const },
-                        { label: "Possible Duplicate", color: "warning" as const },
-                      ].map((reason) => (
-                        <Chip
-                          key={reason.label}
-                          variant={notes.includes(reason.label) ? "solid" : "flat"}
-                          color={reason.color}
-                          className="cursor-pointer"
-                          onClick={() => setNotes(notes.includes(reason.label) ? notes.replace(reason.label, "") : notes + (notes ? ", " : "") + reason.label)}
-                        >
-                          {reason.label}
-                        </Chip>
+                    <h4 className="text-sm font-medium mb-2 text-gray-700">Final Decision *</h4>
+                    <Select
+                      placeholder="Select your decision"
+                      selectedKeys={finalDecision ? [finalDecision] : []}
+                      onSelectionChange={(keys) => setFinalDecision(Array.from(keys)[0] as string)}
+                      className="max-w-md"
+                      variant="bordered"
+                    >
+                      {decisions.map((decision) => (
+                        <SelectItem key={decision.key}>
+                          <div>
+                            <div className="font-medium">{decision.label}</div>
+                            <div className="text-sm text-gray-500">{decision.description}</div>
+                          </div>
+                        </SelectItem>
                       ))}
-                    </div>
+                    </Select>
                   </div>
+
+                  {/* Rejection Reason - Only show if decision is Reject */}
+                  {finalDecision === 'Reject' && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-gray-700">Rejection Reason *</h4>
+                      <Select
+                        placeholder="Select rejection reason"
+                        selectedKeys={rejectionReason ? [rejectionReason] : []}
+                        onSelectionChange={(keys) => setRejectionReason(Array.from(keys)[0] as string)}
+                        className="max-w-md"
+                        variant="bordered"
+                      >
+                        {rejectionReasons.map((reason) => (
+                          <SelectItem key={reason.key}>
+                            {reason.label}
+                          </SelectItem>
+                        ))}
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Reviewer Comments */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2 text-gray-700">Reviewer Comments *</h4>
+                    <Textarea
+                      placeholder="Provide detailed reasoning for your decision..."
+                      value={reviewerComments}
+                      onValueChange={setReviewerComments}
+                      minRows={4}
+                      variant="bordered"
+                      className="max-w-2xl"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Please provide clear justification for your decision, especially if overriding the AI recommendation.
+                    </p>
+                  </div>
+                  
+                  {/* Decision Summary */}
+                  {(finalDecision || reviewerComments) && (
+                    <div className="bg-gray-50 rounded-lg p-4 border">
+                      <h4 className="text-sm font-medium mb-2 text-gray-700">Decision Summary</h4>
+                      <div className="space-y-1 text-sm">
+                        <div><span className="font-medium">Decision:</span> {finalDecision || 'Not selected'}</div>
+                        {finalDecision === 'Reject' && rejectionReason && (
+                          <div><span className="font-medium">Rejection Reason:</span> {rejectionReasons.find(r => r.key === rejectionReason)?.label}</div>
+                        )}
+                        <div><span className="font-medium">Comments:</span> {reviewerComments ? `${reviewerComments.substring(0, 100)}${reviewerComments.length > 100 ? '...' : ''}` : 'No comments provided'}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-content2 rounded-md border border-zinc-100">
-                <h4 className="text-sm font-medium mb-2">Current Selection</h4>
-                <div className="flex flex-wrap gap-4 items-center">
-                  <span className="text-sm">Decision: <span className="font-semibold">{decision ? decision.charAt(0).toUpperCase() + decision.slice(1) : "None"}</span></span>
-                  <span className="text-sm">Reasons: <span className="font-semibold">{notes || "None"}</span></span>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <h4 className="text-sm font-medium mb-2">Notes/Comments</h4>
-                <Textarea
-                  placeholder="Enter your detailed reasoning for this decision..."
-                  value={notes}
-                  onValueChange={setNotes}
-                  minRows={4}
-                />
-                <p className="text-xs text-foreground-500 mt-1">
-                  Please provide detailed reasoning, especially if overriding the agent's recommendation.
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-4">
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
                 <Button 
                   variant="flat" 
-                  color="primary"
+                  color="default"
+                  className="min-w-24"
                 >
                   Save Draft
                 </Button>
                 <Button 
                   color="primary"
-                  isDisabled={!decision || !notes}
-                  onPress={() => alert('Decision submitted!')}
+                  className="min-w-24"
+                  isDisabled={!finalDecision || !reviewerComments || (finalDecision === 'Reject' && !rejectionReason)}
+                  onPress={handleSubmitDecision}
                 >
                   Submit Decision
                 </Button>

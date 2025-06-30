@@ -171,21 +171,6 @@ function Dashboard() {
 					</Card>
 				</div>
 
-				{/* Recent Claims Table */}
-				<Card className="shadow-sm p-2 border-zinc-200 border-1">
-					<CardHeader className="flex justify-between items-center pb-2">
-						<div>
-							<h3 className="text-base font-medium">Recent Claims</h3>
-							<p className="text-xs text-gray-500">
-								Latest claims requiring attention
-							</p>
-						</div>
-					</CardHeader>
-					<CardBody>
-						<RecentClaimsTable />
-					</CardBody>
-				</Card>
-
 				{/* Category Charts */}
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 					{categoryChartData.map((chart, index) => (
