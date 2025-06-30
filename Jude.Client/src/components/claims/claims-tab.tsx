@@ -18,16 +18,32 @@ import {
   Clock,
   X,
   Inbox,
-  Cpu,
-  User
+  Cpu
 } from 'lucide-react';
 
 
 interface ClaimTabsProps {
-  claimId: string;
+  claimData: {
+    claimId: string;
+    transactionNumber: string;
+    claimNumber: string;
+    memberName: string;
+    memberId: string;
+    medicalScheme: string;
+    amount: number;
+    currency: string;
+    status: string;
+    responseCode: string;
+    products: Array<{
+      number: string;
+      code: string;
+      description: string;
+      amount: number;
+    }>;
+  };
 }
 
-export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
+export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimData }) => {
   const [selected, setSelected] = React.useState("summary");
   const [finalDecision, setFinalDecision] = React.useState("");
   const [reviewerComments, setReviewerComments] = React.useState("");
@@ -68,7 +84,7 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 
     // Here you would typically call an API to submit the decision
     const reviewData = {
-      claimId,
+      claimId: claimData.claimId,
       finalDecision,
       reviewerComments,
       rejectionReason: finalDecision === 'Reject' ? rejectionReason : null,
@@ -116,35 +132,42 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                   <div className="flex gap-2">
                     <CheckCircle className="text-success mt-0.5" width={18} />
                     <div>
-                      <p className="text-sm"><span className="font-medium">Checked Policy Document 'Medical Coverage v2.3':</span> Section 4.B - Service covered under standard consultation benefits.</p>
+                      <p className="text-sm"><span className="font-medium">Product Code Validation:</span> Verified codes 603790 (Gauze Bandage) and 609150 (Paraffin Gauze) in approved formulary.</p>
                     </div>
                   </div>
                   
                   <div className="flex gap-2">
                     <CheckCircle className="text-success mt-0.5" width={18} />
                     <div>
-                      <p className="text-sm"><span className="font-medium">Applied Rule 'Provider Network Check':</span> Provider ID #PRV-28765 confirmed in-network for member's plan.</p>
+                      <p className="text-sm"><span className="font-medium">Member Eligibility Check:</span> Member {claimData.memberId} active under HEALTHGUARD scheme, benefits valid.</p>
                     </div>
                   </div>
                   
                   <div className="flex gap-2">
                     <AlertCircle className="text-warning mt-0.5" width={18} />
                     <div>
-                      <p className="text-sm"><span className="font-medium">Applied Rule 'High Value Check':</span> Amount {'>'} $1,000 - Flagged for review.</p>
+                      <p className="text-sm"><span className="font-medium">CIMAS Response Analysis:</span> Claim marked as "HELD_FOR_REVIEW" in source system - requires manual verification.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <CheckCircle className="text-success mt-0.5" width={18} />
+                    <div>
+                      <p className="text-sm"><span className="font-medium">Price Validation:</span> Unit prices within acceptable range for medical supplies (Gauze $0.81, Paraffin gauze $0.70).</p>
                     </div>
                   </div>
                   
                   <div className="flex gap-2">
                     <Info className="text-primary mt-0.5" width={18} />
                     <div>
-                      <p className="text-sm"><span className="font-medium">Historical Data:</span> Member had similar claim #CL-2023-45678 approved on 03/15/2023.</p>
+                      <p className="text-sm"><span className="font-medium">Historical Analysis:</span> Patient {claimData.memberName} has consistent pattern of basic medical supply claims.</p>
                     </div>
                   </div>
                   
                   <div className="flex gap-2">
                     <BarChart className="text-secondary mt-0.5" width={18} />
                     <div>
-                      <p className="text-sm"><span className="font-medium">Model Prediction:</span> Confidence Score 0.85 for 'Approve', 0.15 for 'Potential Fraud'.</p>
+                      <p className="text-sm"><span className="font-medium">Fraud Risk Assessment:</span> Low risk score (0.12) - standard medical supplies with reasonable pricing.</p>
                     </div>
                   </div>
                 </div>
@@ -155,15 +178,15 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-lg font-medium mb-3">Agent's Recommendation</h3>
-                  <Card className="bg-warning-50 shadow-none border-1 border-gray-300 ">
+                  <Card className="bg-success-50 shadow-none border-1 border-green-300 ">
                     <CardBody>
                       <div className="flex items-center gap-2 mb-2">
-                        <UserCheck className="text-warning" width={20} />
-                        <h4 className="font-medium">Requires Human Review - High Value Claim</h4>
+                        <CheckCircle className="text-success" width={20} />
+                        <h4 className="font-medium">Recommended for Approval</h4>
                       </div>
                       <p className="text-sm">
-                        This claim exceeds the automatic approval threshold of $1,000 and requires human verification. 
-                        All other policy checks have passed. Historical data shows similar claims were approved.
+                        Standard medical supplies claim for ${claimData.amount.toFixed(2)}. All validation checks passed. 
+                        Only flagged for review due to CIMAS system status. Low fraud risk, standard pricing, eligible member.
                       </p>
                     </CardBody>
                   </Card>
@@ -175,25 +198,25 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                     <div>
                       <div className="flex justify-between mb-1">
                         <span className="text-sm">Fraud Risk</span>
-                        <span className="text-sm font-medium">15%</span>
+                        <span className="text-sm font-medium">12%</span>
                       </div>
-                      <Progress value={15} color="success" className="h-2" />
+                      <Progress value={12} color="success" className="h-2" />
                     </div>
                     
                     <div>
                       <div className="flex justify-between mb-1">
                         <span className="text-sm">Policy Compliance</span>
-                        <span className="text-sm font-medium">95%</span>
+                        <span className="text-sm font-medium">98%</span>
                       </div>
-                      <Progress value={95} color="success" className="h-2" />
+                      <Progress value={98} color="success" className="h-2" />
                     </div>
                     
                     <div>
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm">Overall Confidence</span>
-                        <span className="text-sm font-medium">85%</span>
+                        <span className="text-sm">Approval Confidence</span>
+                        <span className="text-sm font-medium">92%</span>
                       </div>
-                      <Progress value={85} color="primary" className="h-2" />
+                      <Progress value={92} color="success" className="h-2" />
                     </div>
                   </div>
                 </div>
@@ -336,12 +359,12 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Claim Ingested</h4>
+                      <h4 className="font-medium">Claim Received from CIMAS</h4>
                       <Chip size="sm" variant="flat" color="primary">System</Chip>
                     </div>
-                    <p className="text-sm text-foreground-500 mt-1">May 15, 2023 - 09:32 AM</p>
+                    <p className="text-sm text-foreground-500 mt-1">March 10, 2025 - 2:17 PM</p>
                     <p className="text-sm mt-2">
-                      Claim #{claimId} was received via Portal and entered into the system.
+                      Transaction {claimData.transactionNumber} received from CIMAS and ingested into processing queue.
                     </p>
                   </div>
                 </div>
@@ -355,12 +378,12 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Agent Processing Started</h4>
+                      <h4 className="font-medium">AI Agent Processing Started</h4>
                       <Chip size="sm" variant="flat" color="secondary">AI Agent</Chip>
                     </div>
-                    <p className="text-sm text-foreground-500 mt-1">May 15, 2023 - 09:35 AM</p>
+                    <p className="text-sm text-foreground-500 mt-1">March 10, 2025 - 2:18 PM</p>
                     <p className="text-sm mt-2">
-                      AI Agent began processing the claim.
+                      Jude AI Agent began analyzing claim for medical supplies.
                     </p>
                   </div>
                 </div>
@@ -374,12 +397,12 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Agent Processing Completed</h4>
+                      <h4 className="font-medium">AI Analysis Completed</h4>
                       <Chip size="sm" variant="flat" color="secondary">AI Agent</Chip>
                     </div>
-                    <p className="text-sm text-foreground-500 mt-1">May 15, 2023 - 09:36 AM</p>
+                    <p className="text-sm text-foreground-500 mt-1">March 10, 2025 - 2:19 PM</p>
                     <p className="text-sm mt-2">
-                      AI Agent completed processing and flagged for human review due to high value claim.
+                      Agent completed analysis. Recommended for approval but flagged for review due to CIMAS status.
                     </p>
                   </div>
                 </div>
@@ -387,36 +410,17 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                 <div className="flex gap-4">
                   <div className="flex flex-col items-center">
                     <div className="w-8 h-8 rounded-full bg-warning flex items-center justify-center text-white">
-                      <UserCheck width={16} />
-                    </div>
-                    <div className="flex-grow w-0.5 bg-divider my-2"></div>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Status Changed to Pending Human Review</h4>
-                      <Chip size="sm" variant="flat" color="warning">System</Chip>
-                    </div>
-                    <p className="text-sm text-foreground-500 mt-1">May 15, 2023 - 09:36 AM</p>
-                    <p className="text-sm mt-2">
-                      Claim status was updated to "Pending Human Review".
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full bg-default flex items-center justify-center text-white">
-                      <User width={16} />
+                      <AlertCircle width={16} />
                     </div>
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Viewed by John Smith</h4>
-                      <Chip size="sm" variant="flat" color="default">User</Chip>
+                      <h4 className="font-medium">Status: Awaiting Human Review</h4>
+                      <Chip size="sm" variant="flat" color="warning">Current</Chip>
                     </div>
-                    <p className="text-sm text-foreground-500 mt-1">May 15, 2023 - 10:15 AM</p>
+                    <p className="text-sm text-foreground-500 mt-1">March 10, 2025 - 2:19 PM</p>
                     <p className="text-sm mt-2">
-                      Claim details were viewed by John Smith (Claims Adjudicator).
+                      Claim awaiting human adjudicator review. AI recommends approval with 92% confidence.
                     </p>
                   </div>
                 </div>

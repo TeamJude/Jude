@@ -92,4 +92,26 @@ public class ClaimsController : ControllerBase
         }
         return Ok();
     }
+
+    [HttpGet("internal")]
+    public async Task<IActionResult> GetInternalClaims([FromQuery] int take = 10)
+    {
+        var result = await _claimsService.GetInternalClaimsAsync(take);
+        if (!result.Success)
+        {
+            return BadRequest(result.Errors);
+        }
+        return Ok(result.Data);
+    }
+
+    [HttpGet("internal/{id}")]
+    public async Task<IActionResult> GetInternalClaim(Guid id)
+    {
+        var result = await _claimsService.GetInternalClaimAsync(id);
+        if (!result.Success)
+        {
+            return BadRequest(result.Errors);
+        }
+        return Ok(result.Data);
+    }
 }

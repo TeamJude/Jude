@@ -9,33 +9,45 @@ export const Route = createFileRoute("/__app/claims/$id/")({
 		return search;
 	},
 	loader: async ({ params }) => {
-		// In a real application, this would fetch the claim details from an API
+		// Real claim data from CIMAS
 		return {
 			claimId: params.id,
-			memberName: "John Smith",
-			memberId: "MEM-12345",
-			providerName: "City Medical Center",
-			providerId: "PRV-28765",
-			dateReceived: "2023-05-15",
-			dateOfService: "2023-05-10",
-			amount: 1250,
-			status: "Pending Human Review",
+			transactionNumber: "TN-20250310141735-3791",
+			claimNumber: "test-claim-03",
+			memberName: "FLOWER PASSION FRUIT CRIB",
+			memberId: "11067105",
+			medicalScheme: "HEALTHGUARD",
+			providerName: "Demo Practice",
+			providerId: "PRV-DEMO",
+			dateReceived: "2025-03-10",
+			dateOfService: "2025-03-10",
+			dateSubmitted: "2025-03-10T14:17:35",
+			amount: 1.51,
+			currency: "USD",
+			status: "Awaiting Review",
+			responseCode: "HELD_FOR_REVIEW",
+			gender: "F",
+			dateOfBirth: "1974-12-01",
+			products: [
+				{
+					number: "1",
+					code: "603790",
+					description: "GAUZE BANDAGE SELVEDGED 15CMX4.5M*20S",
+					amount: 0.81
+				},
+				{
+					number: "2", 
+					code: "609150",
+					description: "PARAFFIN GAUZE 10CM X 10CM 1S MC4A",
+					amount: 0.70
+				}
+			]
 		};
 	},
 });
 
 function RouteComponent() {
-	const {
-		claimId,
-		memberName,
-		memberId,
-		providerName,
-		providerId,
-		dateReceived,
-		dateOfService,
-		amount,
-		status,
-	} = Route.useLoaderData();
+	const claimData = Route.useLoaderData();
 
 	return (
 		<main className="min-h-screen py-6 px-4">
@@ -47,24 +59,24 @@ function RouteComponent() {
 							Claim Details
 						</h1>
 						<p className="text-sm text-gray-500">
-							Real-time overview of claims processing
+							AI-powered claims adjudication system
 						</p>
 					</div>
 				</div>
 				<div className="space-y-6">
 					<ClaimDetailHeader
-						claimId={claimId}
-						memberName={memberName}
-						memberId={memberId}
-						providerName={providerName}
-						providerId={providerId}
-						dateReceived={dateReceived}
-						dateOfService={dateOfService}
-						amount={amount}
-						status={status}
+						claimId={claimData.claimId}
+						memberName={claimData.memberName}
+						memberId={claimData.memberId}
+						providerName={claimData.providerName}
+						providerId={claimData.providerId}
+						dateReceived={claimData.dateReceived}
+						dateOfService={claimData.dateOfService}
+						amount={claimData.amount}
+						status={claimData.status}
 					/>
 					<div className="mt-6 border border-zinc-200 rounded-lg p-4 bg-white">
-						<ClaimTabs claimId={claimId} />
+						<ClaimTabs claimData={claimData} />
 					</div>
 				</div>
 			</div>

@@ -99,16 +99,16 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
         {
             Id = Guid.NewGuid(),
             TransactionNumber = @event.TransactionNumber,
-            IngestedAt = @event.IngestedAt,
-            UpdatedAt = @event.IngestedAt,
+            IngestedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
             Status = ClaimStatus.Pending,
             Source = Enum.Parse<ClaimSource>(@event.Source),
             SubmittedAt = DateTime.TryParse(
                 cimasData.TransactionResponse?.DateTime,
                 out var submittedDate
             )
-                ? submittedDate
-                : @event.IngestedAt,
+                ? DateTime.SpecifyKind(submittedDate, DateTimeKind.Utc)
+                : DateTime.UtcNow,
 
             // Patient and Provider Info (extracted from CIMAS data)
             PatientName = patientName,

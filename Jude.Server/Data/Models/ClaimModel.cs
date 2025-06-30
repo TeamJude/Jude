@@ -47,9 +47,9 @@ public class ClaimModel
     public string? RejectionReason { get; set; }
     public DateTime? ReviewedAt { get; set; }
 
-    [ForeignKey(nameof(UserModel))]
+    [ForeignKey(nameof(User))]
     public Guid? ReviewedById { get; set; }
-    public UserModel User { get; set; }
+    public UserModel? User { get; set; }
 }
 
 public enum ClaimStatus

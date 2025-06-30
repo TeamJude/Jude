@@ -15,7 +15,6 @@ import {
   DropdownMenu,
   DropdownItem,
   Chip,
-  User,
   Pagination,
   type Selection,
   type ChipProps,
@@ -62,7 +61,6 @@ const claims = [
     riskScore: 15,
     assignedReviewer: 'Sarah Johnson',
     lastAction: '2023-05-15',
-    avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026024d',
   },
   {
     id: 'CL-002',
@@ -78,7 +76,6 @@ const claims = [
     riskScore: 5,
     assignedReviewer: '',
     lastAction: '2023-05-15',
-    avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
   },
   {
     id: 'CL-003',
@@ -94,7 +91,6 @@ const claims = [
     riskScore: 65,
     assignedReviewer: '',
     lastAction: '2023-05-15',
-    avatar: 'https://i.pravatar.cc/150?u=a04258114e29026702d',
   },
   {
     id: 'CL-004',
@@ -110,7 +106,6 @@ const claims = [
     riskScore: 25,
     assignedReviewer: '',
     lastAction: '2023-05-15',
-    avatar: 'https://i.pravatar.cc/150?u=a048581f4e29026701d',
   },
   {
     id: 'CL-005',
@@ -126,7 +121,6 @@ const claims = [
     riskScore: 85,
     assignedReviewer: 'David Miller',
     lastAction: '2023-05-15',
-    avatar: 'https://i.pravatar.cc/150?u=a092581d4ef9026700d',
   },
   {
     id: 'CL-006',
@@ -311,13 +305,10 @@ export function   ClaimsTable() {
     switch (columnKey) {
       case "member":
         return (
-          <User
-            avatarProps={{ radius: "full", size: "sm", src: claim.avatar }}
-            name={claim.memberName}
-            description={claim.memberId}
-          >
-            {claim.memberName}
-          </User>
+          <div className="flex flex-col">
+            <p className="text-bold text-small">{claim.memberName}</p>
+            <p className="text-bold text-tiny text-default-500">{claim.memberId}</p>
+          </div>
         );
       case "provider":
         return (

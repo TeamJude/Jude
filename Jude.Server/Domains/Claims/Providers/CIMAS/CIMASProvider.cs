@@ -176,12 +176,11 @@ public class CIMASProvider : ICIMASProvider
             "Getting past claims for practice {PracticeNumber}",
             input.PracticeNumber
         );
-
         try
         {
             var request = new HttpRequestMessage(
                 HttpMethod.Get,
-                $"{AppConfig.CIMAS.ClaimsSwitchEndpoint}/claims/past/claims/{input.PracticeNumber}/"
+                $"{AppConfig.CIMAS.ClaimsSwitchEndpoint}/claims/past/claims/0856207/"
             );
             request.Headers.Add("Authorization", $"Bearer {input.AccessToken}");
 

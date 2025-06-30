@@ -149,4 +149,47 @@ public class OrchestrationController : ControllerBase
             return StatusCode(500, new { error = "Internal server error retrieving stats" });
         }
     }
+
+    [HttpPost("demo/ingest-and-process")]
+    public async Task<IActionResult> IngestAndProcessClaimsDemo([FromQuery] string practiceNumber = "12345", [FromQuery] int maxClaims = 3)
+    {
+        try
+        {
+            _logger.LogInformation("Demo: Ingesting and processing {MaxClaims} recent claims from practice {PracticeNumber}", maxClaims, practiceNumber);
+
+            var results = await _orchestrationService.IngestAndProcessRecentClaimsAsync(practiceNumber, maxClaims);
+
+            var summary = new
+            {
+                totalIngested = results.IngestedClaims.Count,
+                totalProcessed = results.ProcessingResults.Count,
+                successful = results.ProcessingResults.Count(r => r.Success),
+                failed = results.ProcessingResults.Count(r => !r.Success),
+                ingestedClaims = results.IngestedClaims.Select(c => new
+                {
+                    claimId = c.Id,
+                    transactionNumber = c.TransactionNumber,
+                    patientName = c.PatientName,
+                    claimAmount = c.ClaimAmount,
+                    status = c.Status.ToString()
+                }),
+                processingResults = results.ProcessingResults.Select(r => new
+                {
+                    claimId = r.ClaimId,
+                    success = r.Success,
+                    recommendation = r.FinalRecommendation?.Recommendation,
+                    confidence = r.FinalRecommendation?.ConsolidatedConfidence,
+                    error = r.FailureReason,
+                    processingTimeMs = (r.CompletedAt - r.StartedAt)?.TotalMilliseconds ?? 0
+                }),
+            };
+
+            return Ok(summary);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in demo ingestion and processing");
+            return StatusCode(500, new { error = "Internal server error during demo processing" });
+        }
+    }
 }

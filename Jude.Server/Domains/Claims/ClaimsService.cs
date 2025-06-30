@@ -1,6 +1,8 @@
 using Jude.Server.Core.Helpers;
+using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Claims.Providers.CIMAS;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Jude.Server.Domains.Claims;
@@ -17,6 +19,8 @@ public interface IClaimsService
         Stream fileStream,
         string fileName
     );
+    Task<Result<List<ClaimModel>>> GetInternalClaimsAsync(int take = 10);
+    Task<Result<ClaimModel>> GetInternalClaimAsync(Guid id);
 }
 
 public class ClaimsService : IClaimsService
@@ -174,6 +178,45 @@ public class ClaimsService : IClaimsService
         );
 
         return await _cimasProvider.UploadDocumentAsync(input);
+    }
+
+    public async Task<Result<List<ClaimModel>>> GetInternalClaimsAsync(int take = 10)
+    {
+        try
+        {
+            var claims = await _repository.Claims
+                .OrderByDescending(c => c.IngestedAt)
+                .Take(take)
+                .ToListAsync();
+
+            return Result.Ok(claims);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving internal claims");
+            return Result.Fail("Failed to retrieve claims from database");
+        }
+    }
+
+    public async Task<Result<ClaimModel>> GetInternalClaimAsync(Guid id)
+    {
+        try
+        {
+            var claim = await _repository.Claims
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (claim == null)
+            {
+                return Result.Fail("Claim not found");
+            }
+
+            return Result.Ok(claim);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving claim {ClaimId}", id);
+            return Result.Fail("Failed to retrieve claim from database");
+        }
     }
 
     private void CacheTokens(TokenPair tokens)

@@ -65,6 +65,7 @@ interface ClaimModalProps {
     }>;
     agentProgress?: number;
     agentReasoning?: string[];
+    agentRecommendation?: string;
   };
   onClose: () => void;
   onReview?: (claimId: string) => void;
@@ -85,7 +86,7 @@ export const ClaimModal: React.FC<ClaimModalProps> = ({ claim, onClose, onReview
         });
 
         const newReasonings = [
-          "Validating medical codes against ICD-10 standards...",
+          "Validating medical codes against ICD-10 sstandards...",
           "Cross-referencing member eligibility database...",
           "Analyzing provider billing patterns...",
           "Detecting potential fraud indicators...",
@@ -315,6 +316,27 @@ export const ClaimModal: React.FC<ClaimModalProps> = ({ claim, onClose, onReview
                     <span className="font-medium text-gray-900">Analysis Complete</span>
                   </div>
                   
+                  {claim.agentRecommendation && (
+                    <div className="bg-white rounded-lg p-4 border border-green-200 mb-4">
+                      <div className="flex items-center mb-2">
+                        <Bot className="w-4 h-4 mr-2 text-green-600" />
+                        <p className="font-medium text-gray-900">AI Recommendation</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Chip 
+                          color={claim.agentRecommendation.toLowerCase().includes('approve') ? 'success' : 'warning'} 
+                          variant="flat" 
+                          size="sm"
+                        >
+                          {claim.agentRecommendation}
+                        </Chip>
+                        {currentProgress === 100 && (
+                          <span className="text-xs text-green-600">100% Confidence</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {reasoningLogs.length > 0 && (
                     <div className="bg-white rounded-lg p-4 border">
                       <p className="font-medium mb-3 text-gray-900">Key Findings:</p>
