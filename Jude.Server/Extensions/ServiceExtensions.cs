@@ -153,8 +153,8 @@ public static class ServiceExtensions
         services.AddScoped<IClaimIngestEventHandler, ClaimIngestEventHandler>();
 
         // AI Agents - Scoped for database and service access
-        services.AddScoped<Ajudicator>();
-        services.AddScoped<AjudicationOrchestrator>();
+        services.AddScoped<Jude>();
+        services.AddScoped<Orchestrator>();
         services.AddScoped<ManualOrchestrationService>();
 
         // Background Services

@@ -15,11 +15,7 @@ public class ClaimIngestEventsQueue : IClaimIngestEventsQueue
     public ClaimIngestEventsQueue()
     {
         _channel = Channel.CreateUnbounded<ClaimIngestEvent>(
-            new UnboundedChannelOptions
-            {
-                SingleReader = true,
-                SingleWriter = false, // Allow multiple producers to enqueue claims
-            }
+            new UnboundedChannelOptions { SingleReader = true, SingleWriter = false }
         );
     }
 

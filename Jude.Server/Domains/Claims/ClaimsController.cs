@@ -66,30 +66,5 @@ public class ClaimsController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("upload/{transactionNumber}/{channel}")]
-    public async Task<IActionResult> UploadDocument(
-        string transactionNumber,
-        string channel,
-        IFormFile file
-    )
-    {
-        if (file == null || file.Length == 0)
-        {
-            return BadRequest("No file provided");
-        }
 
-        using var stream = file.OpenReadStream();
-        var result = await _claimsService.UploadDocumentAsync(
-            transactionNumber,
-            channel,
-            stream,
-            file.FileName
-        );
-
-        if (!result.Success)
-        {
-            return BadRequest(result.Errors);
-        }
-        return Ok();
-    }
 }

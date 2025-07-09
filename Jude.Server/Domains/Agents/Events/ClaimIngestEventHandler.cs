@@ -17,12 +17,12 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
 {
     private readonly JudeDbContext _dbContext;
     private readonly ILogger<ClaimIngestEventHandler> _logger;
-    private readonly AjudicationOrchestrator _orchestrator;
+    private readonly Orchestrator _orchestrator;
 
     public ClaimIngestEventHandler(
         JudeDbContext dbContext,
         ILogger<ClaimIngestEventHandler> logger,
-        AjudicationOrchestrator orchestrator
+        Orchestrator orchestrator
     )
     {
         _dbContext = dbContext;

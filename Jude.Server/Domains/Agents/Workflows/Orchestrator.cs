@@ -5,15 +5,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Jude.Server.Domains.Agents.Workflows;
 
-public class AjudicationOrchestrator
+public class Orchestrator
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<AjudicationOrchestrator> _logger;
+    private readonly ILogger<Orchestrator> _logger;
 
-    public AjudicationOrchestrator(
-        IServiceProvider serviceProvider,
-        ILogger<AjudicationOrchestrator> logger
-    )
+    public Orchestrator(IServiceProvider serviceProvider, ILogger<Orchestrator> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -144,7 +141,7 @@ public class AjudicationOrchestrator
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var adjudicator = scope.ServiceProvider.GetRequiredService<Ajudicator>();
+            var adjudicator = scope.ServiceProvider.GetRequiredService<Jude>();
 
             var success = await adjudicator.ProcessClaimAsync(claim);
 

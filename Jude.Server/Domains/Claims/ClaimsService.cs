@@ -11,12 +11,6 @@ public interface IClaimsService
     Task<Result<List<ClaimResponse>>> GetPastClaimsAsync(string practiceNumber);
     Task<Result<ClaimResponse>> SubmitClaimAsync(ClaimRequest request);
     Task<Result<bool>> ReverseClaimAsync(string transactionNumber);
-    Task<Result<bool>> UploadDocumentAsync(
-        string transactionNumber,
-        string channel,
-        Stream fileStream,
-        string fileName
-    );
 }
 
 public class ClaimsService : IClaimsService
@@ -149,31 +143,6 @@ public class ClaimsService : IClaimsService
         var input = new ReverseClaimInput(transactionNumber, accessToken);
 
         return await _cimasProvider.ReverseClaimAsync(input);
-    }
-
-    public async Task<Result<bool>> UploadDocumentAsync(
-        string transactionNumber,
-        string channel,
-        Stream fileStream,
-        string fileName
-    )
-    {
-        var authResult = await EnsureAuthenticationAsync();
-        if (!authResult.Success)
-        {
-            return Result.Fail(authResult.Errors);
-        }
-
-        var accessToken = _cache.Get<string>(ACCESS_TOKEN_KEY)!;
-        var input = new UploadDocumentInput(
-            transactionNumber,
-            channel,
-            accessToken,
-            fileStream,
-            fileName
-        );
-
-        return await _cimasProvider.UploadDocumentAsync(input);
     }
 
     private void CacheTokens(TokenPair tokens)

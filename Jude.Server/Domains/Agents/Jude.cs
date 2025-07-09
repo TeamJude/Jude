@@ -2,8 +2,6 @@ using Jude.Server.Config;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Agents.Plugins;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -11,13 +9,13 @@ using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 
 namespace Jude.Server.Domains.Agents;
 
-public class Ajudicator
+public class Jude
 {
     private readonly Kernel _kernel;
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<Ajudicator> _logger;
+    private readonly ILogger<Jude> _logger;
 
-    public Ajudicator(IServiceProvider serviceProvider, ILogger<Ajudicator> logger)
+    public Jude(IServiceProvider serviceProvider, ILogger<Jude> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -43,9 +41,9 @@ public class Ajudicator
             var dbContext = scope.ServiceProvider.GetRequiredService<JudeDbContext>();
 
             // Create plugins with scoped dependencies
-            var contextPlugin = new ClaimContextPlugin(
+            var contextPlugin = new GetContextPlugin(
                 dbContext,
-                scope.ServiceProvider.GetRequiredService<ILogger<ClaimContextPlugin>>()
+                scope.ServiceProvider.GetRequiredService<ILogger<GetContextPlugin>>()
             );
             var analysisPlugin = new ClaimAnalysisPlugin(
                 claim,

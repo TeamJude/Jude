@@ -5,12 +5,12 @@ using Microsoft.SemanticKernel;
 
 namespace Jude.Server.Domains.Agents.Plugins;
 
-public class ClaimContextPlugin
+public class GetContextPlugin
 {
     private readonly JudeDbContext _dbContext;
-    private readonly ILogger<ClaimContextPlugin> _logger;
+    private readonly ILogger<GetContextPlugin> _logger;
 
-    public ClaimContextPlugin(JudeDbContext dbContext, ILogger<ClaimContextPlugin> logger)
+    public GetContextPlugin(JudeDbContext dbContext, ILogger<GetContextPlugin> logger)
     {
         _dbContext = dbContext;
         _logger = logger;

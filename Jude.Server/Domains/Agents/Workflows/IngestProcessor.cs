@@ -1,3 +1,4 @@
+using Jude.Server.Config;
 using Jude.Server.Domains.Agents.Events;
 using Jude.Server.Domains.Claims;
 
@@ -93,9 +94,6 @@ public class ClaimsIngestProcessor : BackgroundService
                     ingestEvent.TransactionNumber,
                     ex.Message
                 );
-
-                // TODO: Implement dead letter queue or retry logic in future iterations
-                // For now, we log the error and continue processing other events
             }
         }
     }
@@ -109,38 +107,28 @@ public class ClaimsIngestProcessor : BackgroundService
             using var scope = _serviceScopeFactory.CreateScope();
             var claimsService = scope.ServiceProvider.GetRequiredService<IClaimsService>();
 
-            // TODO: Configure practice numbers from settings
-            // For now, using a hardcoded practice number for testing
-            var practiceNumbers = new[] { "12345", "67890" }; // These should come from configuration
+            var result = await claimsService.GetPastClaimsAsync(AppConfig.CIMAS.PracticeNumber);
 
-            foreach (var practiceNumber in practiceNumbers)
+            if (!result.Success)
             {
-                _logger.LogDebug("Polling claims for practice {PracticeNumber}", practiceNumber);
-
-                var result = await claimsService.GetPastClaimsAsync(practiceNumber);
-
-                if (!result.Success)
-                {
-                    _logger.LogWarning(
-                        "Failed to get past claims for practice {PracticeNumber}: {Errors}",
-                        practiceNumber,
-                        string.Join(", ", result.Errors)
-                    );
-                    continue;
-                }
-
-                var claims = result.Data;
-                _logger.LogInformation(
-                    "Retrieved {ClaimCount} claims for practice {PracticeNumber}",
-                    claims.Count,
-                    practiceNumber
+                _logger.LogWarning(
+                    "Failed to get past claims for practice {PracticeNumber}: {Errors}",
+                    AppConfig.CIMAS.PracticeNumber,
+                    string.Join(", ", result.Errors)
                 );
+            }
 
-                // Process each claim
-                foreach (var claim in claims)
-                {
-                    await EnqueueClaimForProcessing(claim);
-                }
+            var claims = result.Data;
+            _logger.LogInformation(
+                "Retrieved {ClaimCount} claims for practice {PracticeNumber}",
+                claims.Count,
+                AppConfig.CIMAS.PracticeNumber
+            );
+
+            // Process each claim
+            foreach (var claim in claims)
+            {
+                await EnqueueClaimForProcessing(claim);
             }
         }
         catch (Exception ex)
