@@ -4,7 +4,6 @@ using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Agents.Workflows;
 using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace Jude.Server.Domains.Agents.Events;
 
@@ -47,9 +46,23 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
             if (existingClaim != null)
             {
                 _logger.LogDebug(
-                    "Claim with transaction number {TransactionNumber} already exists, skipping",
-                    @event.TransactionNumber
+                    "Claim with transaction number {TransactionNumber} already exists with status {Status}, checking if processing needed",
+                    @event.TransactionNumber,
+                    existingClaim.Status
                 );
+
+                // If claim exists but hasn't been processed yet, trigger processing
+                if (
+                    existingClaim.Status == ClaimStatus.Pending
+                    && !existingClaim.AgentProcessedAt.HasValue
+                )
+                {
+                    _logger.LogInformation(
+                        "Triggering processing for existing pending claim {ClaimId}",
+                        existingClaim.Id
+                    );
+                    await TriggerAdjudicationWorkflow(existingClaim);
+                }
                 return;
             }
 
@@ -66,7 +79,7 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
                 @event.TransactionNumber
             );
 
-            // TODO: Trigger adjudication workflow
+            // Trigger adjudication workflow
             await TriggerAdjudicationWorkflow(claimModel);
         }
         catch (Exception ex)
@@ -202,13 +215,8 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
 
         try
         {
-            // Update status to Processing
-            claim.Status = ClaimStatus.Processing;
-            await _dbContext.SaveChangesAsync();
-
-            // Trigger AI orchestration processing
-            var result = await _orchestrator.ProcessClaimAsync(claim);
-            var success = result.Success;
+            // Use simplified orchestrator to process the claim
+            var success = await _orchestrator.ProcessClaimAsync(claim);
 
             if (success)
             {
@@ -220,11 +228,7 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
             }
             else
             {
-                _logger.LogWarning(
-                    "Orchestration processing failed for claim {ClaimId}, reason: {FailureReason}",
-                    claim.Id,
-                    result.FailureReason ?? "Unknown"
-                );
+                _logger.LogWarning("Orchestration processing failed for claim {ClaimId}", claim.Id);
             }
         }
         catch (Exception ex)
@@ -240,6 +244,7 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
             claim.RequiresHumanReview = true;
             claim.FraudRiskLevel = FraudRiskLevel.Medium;
             claim.AgentReasoning = $"Adjudication workflow failed: {ex.Message}";
+            claim.Status = ClaimStatus.Review;
             await _dbContext.SaveChangesAsync();
         }
     }

@@ -5,6 +5,7 @@ using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Agents;
 using Jude.Server.Domains.Agents.Events;
+
 using Jude.Server.Domains.Agents.Workflows;
 using Jude.Server.Domains.Auth;
 using Jude.Server.Domains.Auth.Authorization;
@@ -151,6 +152,8 @@ public static class ServiceExtensions
 
         // Event Handler - Scoped for database access
         services.AddScoped<IClaimIngestEventHandler, ClaimIngestEventHandler>();
+
+
 
         // AI Agents - Scoped for database and service access
         services.AddScoped<Jude>();

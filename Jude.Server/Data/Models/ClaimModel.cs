@@ -30,6 +30,7 @@ public class ClaimModel
 
     public List<string>? FraudIndicators { get; set; }
     public FraudRiskLevel FraudRiskLevel { get; set; } = FraudRiskLevel.Low;
+    public bool IsFlagged { get; set; } = false;
 
     public bool RequiresHumanReview { get; set; } = true;
     public ClaimDecision? FinalDecision { get; set; }
@@ -45,6 +46,7 @@ public class ClaimModel
 public enum ClaimStatus
 {
     Pending,
+    Processing,
     Review,
     Completed,
 }
@@ -63,6 +65,7 @@ public enum ClaimDecision
 public enum FraudRiskLevel
 {
     Low,
+    Medium,
     High,
     Critical,
 }
