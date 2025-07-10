@@ -1,4 +1,5 @@
 using Jude.Server.Core.Helpers;
+using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Microsoft.Extensions.Caching.Memory;
@@ -11,6 +12,7 @@ public interface IClaimsService
     Task<Result<List<ClaimResponse>>> GetPastClaimsAsync(string practiceNumber);
     Task<Result<ClaimResponse>> SubmitClaimAsync(ClaimRequest request);
     Task<Result<bool>> ReverseClaimAsync(string transactionNumber);
+    Task<Result<bool>> UpdateClaimAsync(ClaimModel claim);
 }
 
 public class ClaimsService : IClaimsService
@@ -143,6 +145,24 @@ public class ClaimsService : IClaimsService
         var input = new ReverseClaimInput(transactionNumber, accessToken);
 
         return await _cimasProvider.ReverseClaimAsync(input);
+    }
+
+    public async Task<Result<bool>> UpdateClaimAsync(ClaimModel claim)
+    {
+        try
+        {
+            claim.UpdatedAt = DateTime.UtcNow;
+            _repository.Claims.Update(claim);
+            await _repository.SaveChangesAsync();
+            
+            _logger.LogDebug("Successfully updated claim {ClaimId}", claim.Id);
+            return Result.Ok(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating claim {ClaimId}", claim.Id);
+            return Result.Fail($"Failed to update claim: {ex.Message}");
+        }
     }
 
     private void CacheTokens(TokenPair tokens)

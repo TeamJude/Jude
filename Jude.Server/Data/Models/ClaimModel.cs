@@ -47,6 +47,7 @@ public enum ClaimStatus
 {
     Pending,
     Processing,
+    Failed,
     Review,
     Completed,
 }

@@ -11,7 +11,16 @@ public record CreateFraudIndicatorRequest(
 public record GetFraudIndicatorsRequest(
     int Page = 1,
     int PageSize = 10
-    // TODO: add more filters in the future
+// TODO: add more filters in the future
 );
 
-public record GetFraudIndicatorsResponse(FraudIndicatorModel[] FraudIndicators, int TotalCount); 
+public record FraudIndicatorResponse(
+    Guid Id,
+    DateTime CreatedAt,
+    string Name,
+    string Description,
+    IndicatorStatus Status,
+    Guid CreatedById
+);
+
+public record GetFraudIndicatorsResponse(FraudIndicatorResponse[] FraudIndicators, int TotalCount);

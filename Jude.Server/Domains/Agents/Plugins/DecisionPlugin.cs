@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using Jude.Server.Data.Models;
-using Jude.Server.Data.Repository;
+using Jude.Server.Domains.Claims;
 using Microsoft.SemanticKernel;
 
 namespace Jude.Server.Domains.Agents.Plugins;
@@ -8,13 +8,13 @@ namespace Jude.Server.Domains.Agents.Plugins;
 public class DecisionPlugin
 {
     private readonly ClaimModel _claim;
-    private readonly JudeDbContext _dbContext;
+    private readonly IClaimsService _claimsService;
     private readonly ILogger<DecisionPlugin> _logger;
 
-    public DecisionPlugin(ClaimModel claim, JudeDbContext dbContext, ILogger<DecisionPlugin> logger)
+    public DecisionPlugin(ClaimModel claim, IClaimsService claimsService, ILogger<DecisionPlugin> logger)
     {
         _claim = claim;
-        _dbContext = dbContext;
+        _claimsService = claimsService;
         _logger = logger;
     }
 
@@ -79,17 +79,20 @@ public class DecisionPlugin
                 _ => ClaimStatus.Review,
             };
 
-            // Set final decision for auto-approved claims
-            if (_claim.Status == ClaimStatus.Completed && recommendation.ToUpper() == "APPROVE")
+        
+            if (_claim.Status == ClaimStatus.Completed && recommendation.Equals("APPROVE", StringComparison.CurrentCultureIgnoreCase))
             {
                 _claim.FinalDecision = ClaimDecision.Approved;
             }
 
             _claim.UpdatedAt = DateTime.UtcNow;
 
-            // Save changes to database
-            _dbContext.Claims.Update(_claim);
-            await _dbContext.SaveChangesAsync();
+            var updateResult = await _claimsService.UpdateClaimAsync(_claim);
+            if (!updateResult.Success)
+            {
+                _logger.LogError("Failed to update claim {ClaimId}: {Error}", _claim.Id, updateResult.Errors.FirstOrDefault());
+                return $"Error updating claim: {updateResult.Errors.FirstOrDefault()}";
+            }
 
             var result =
                 $"Decision recorded successfully for claim {_claim.Id}:\n"

@@ -3,14 +3,17 @@ using System.Runtime.InteropServices;
 using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
+using Jude.Server.Domains.User;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jude.Server.Domains.Rules;
 
 public interface IRulesService
 {
-    public Task<Result<RuleModel>> CreateRule(CreateRuleRequest request, Guid userId);
+    public Task<Result<RuleResponse>> CreateRule(CreateRuleRequest request, Guid userId);
     public Task<Result<GetRulesResponse>> GetRules(GetRulesRequest request);
+    public Task<RuleResponse[]> GetActiveRules();
+    public event Action? OnRulesChanged;
 }
 
 public class RulesService : IRulesService
@@ -22,21 +25,27 @@ public class RulesService : IRulesService
         _repository = repository;
     }
 
-    public async Task<Result<RuleModel>> CreateRule(CreateRuleRequest request, Guid userId)
+    public event Action? OnRulesChanged;
+
+    public async Task<Result<RuleResponse>> CreateRule(CreateRuleRequest request, Guid userId)
     {
         var rule = new RuleModel
         {
             Name = request.Name,
             Description = request.Description,
             Status = request.Status,
-            Priority = request.Priority,
             CreatedById = userId,
         };
 
         await _repository.Rules.AddAsync(rule);
         await _repository.SaveChangesAsync();
 
-        return Result.Ok(rule);
+        var response = new RuleResponse(rule.Id,rule.CreatedAt, rule.Name, rule.Description, rule.Status, rule.CreatedById);
+
+        // Notify that rules have changed
+        OnRulesChanged?.Invoke();
+
+        return Result.Ok(response);
     }
 
     public async Task<Result<GetRulesResponse>> GetRules(GetRulesRequest request)
@@ -45,11 +54,21 @@ public class RulesService : IRulesService
 
         var totalCount = await query.CountAsync();
         var rules = await query
-            .OrderBy(r => r.Priority)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
+            .Select(r => new RuleResponse(r.Id, r.CreatedAt, r.Name, r.Description, r.Status, r.CreatedById))
             .ToArrayAsync();
 
         return Result.Ok(new GetRulesResponse(rules, totalCount));
+    }
+
+    public async Task<RuleResponse[]> GetActiveRules()
+    {
+        var activeRules = await _repository.Rules
+            .Where(r => r.Status == RuleStatus.Active)
+            .Select(r => new RuleResponse(r.Id, r.CreatedAt, r.Name, r.Description, r.Status, r.CreatedById))
+            .ToArrayAsync();
+
+        return activeRules;
     }
 }

@@ -126,7 +126,7 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
             // Patient and Provider Info (extracted from CIMAS data)
             PatientName = patientName,
             MembershipNumber = cimasData.Member?.MedicalSchemeNumber.ToString() ?? "",
-            ProviderPractice = "Unknown", // TODO: Extract from CIMAS data if available
+            ProviderPractice = "Unknown",
 
             // Financial Info
             ClaimAmount = claimAmount,
@@ -244,7 +244,7 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
             claim.RequiresHumanReview = true;
             claim.FraudRiskLevel = FraudRiskLevel.Medium;
             claim.AgentReasoning = $"Adjudication workflow failed: {ex.Message}";
-            claim.Status = ClaimStatus.Review;
+            claim.Status = ClaimStatus.Failed;
             await _dbContext.SaveChangesAsync();
         }
     }

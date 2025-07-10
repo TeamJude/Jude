@@ -9,10 +9,17 @@ public record CreateRuleRequest(
     int Priority = 1
 );
 
-public record GetRulesRequest(
-    int Page = 1,
-    int PageSize = 10
-// TODO: add more filters in the future
-);
+public record GetRulesRequest(int Page = 1, int PageSize = 10);
 
-public record GetRulesResponse(RuleModel[] Rules, int TotalCount);
+public record GetRulesResponse(RuleResponse[] Rules, int TotalCount);
+
+public record GetActiveRulesResponse(RuleResponse[] Rules, int TotalCount);
+
+public record RuleResponse(
+    Guid Id,
+    DateTime CreatedAt,
+    string Name,
+    string Description,
+    RuleStatus Status,
+    Guid CreatedById
+);

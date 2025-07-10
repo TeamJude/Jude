@@ -8,11 +8,11 @@ public class RuleModel
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public int Priority { get; set; } = 0;
     public RuleStatus Status { get; set; } = RuleStatus.Active;
 
     [ForeignKey(nameof(UserModel))]
     public Guid CreatedById { get; set; }
+    public UserModel? CreatedBy { get; set; }
 }
 
 public enum RuleStatus

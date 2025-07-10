@@ -1,16 +1,22 @@
 using Jude.Server.Data.Models;
-using Jude.Server.Data.Repository;
+using Jude.Server.Domains.Claims;
 
 namespace Jude.Server.Domains.Agents.Workflows;
 
 public class Orchestrator
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IAgentManager _agentManager;
+    private readonly IClaimsService _claimsService;
     private readonly ILogger<Orchestrator> _logger;
 
-    public Orchestrator(IServiceProvider serviceProvider, ILogger<Orchestrator> logger)
+    public Orchestrator(
+        IAgentManager agentManager,
+        IClaimsService claimsService,
+        ILogger<Orchestrator> logger
+    )
     {
-        _serviceProvider = serviceProvider;
+        _agentManager = agentManager;
+        _claimsService = claimsService;
         _logger = logger;
     }
 
@@ -36,11 +42,8 @@ public class Orchestrator
             // Update claim status to processing
             await UpdateClaimStatus(claim, ClaimStatus.Processing, "Agent processing started");
 
-            // Create Jude agent and process the claim
-            using var scope = _serviceProvider.CreateScope();
-            var jude = scope.ServiceProvider.GetRequiredService<Jude>();
-
-            var success = await jude.ProcessClaimAsync(claim);
+            // Process the claim using the agent manager
+            var success = await _agentManager.ProcessClaimAsync(claim);
 
             if (success)
             {
@@ -49,9 +52,6 @@ public class Orchestrator
                     claim.Id,
                     claim.AgentRecommendation
                 );
-
-                // Perform any post-processing tasks
-                await PerformPostProcessing(claim);
             }
             else
             {
@@ -86,35 +86,6 @@ public class Orchestrator
         }
     }
 
-    private async Task PerformPostProcessing(ClaimModel claim)
-    {
-        _logger.LogDebug("Performing post-processing for claim {ClaimId}", claim.Id);
-
-        try
-        {
-            // Add any post-processing logic here, such as:
-            // - Notifications
-            // - Audit logging
-            // - Integration with external systems
-            // - Workflow triggers
-
-            // For now, just log the completion
-            _logger.LogInformation(
-                "Post-processing completed for claim {ClaimId} - Status: {Status}, Recommendation: {Recommendation}",
-                claim.Id,
-                claim.Status,
-                claim.AgentRecommendation
-            );
-
-            await Task.CompletedTask;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error in post-processing for claim {ClaimId}", claim.Id);
-            // Don't fail the entire process for post-processing errors
-        }
-    }
-
     private async Task UpdateClaimStatus(ClaimModel claim, ClaimStatus status, string note)
     {
         claim.Status = status;
@@ -129,9 +100,6 @@ public class Orchestrator
             ? formattedNote
             : $"{existingReasoning}\n\n{formattedNote}";
 
-        using var scope = _serviceProvider.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<JudeDbContext>();
-        dbContext.Claims.Update(claim);
-        await dbContext.SaveChangesAsync();
+        await _claimsService.UpdateClaimAsync(claim);
     }
 }
