@@ -22,7 +22,7 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
   helpText
 }) => {
   return (
-    <Card className="dashboard-card shadow-sm border-zinc-200 border-1">
+    <Card className="dashboard-card shadow-none border-zinc-200 border-1">
       <CardBody className="gap-2">
         <div className="flex justify-between items-start">
           <div>

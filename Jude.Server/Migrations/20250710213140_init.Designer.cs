@@ -14,8 +14,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Jude.Server.Migrations
 {
     [DbContext(typeof(JudeDbContext))]
-    [Migration("20250629233838_claims")]
-    partial class claims
+    [Migration("20250710213140_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -203,13 +203,12 @@ namespace Jude.Server.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
 
                     b.ToTable("Rules");
                 });
@@ -270,6 +269,17 @@ namespace Jude.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Jude.Server.Data.Models.RuleModel", b =>
+                {
+                    b.HasOne("Jude.Server.Data.Models.UserModel", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
                 });
 
             modelBuilder.Entity("Jude.Server.Data.Models.UserModel", b =>

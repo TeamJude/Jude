@@ -120,7 +120,7 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
                 cimasData.TransactionResponse?.DateTime,
                 out var submittedDate
             )
-                ? submittedDate
+                ? submittedDate.ToUniversalTime()
                 : @event.IngestedAt,
 
             // Patient and Provider Info (extracted from CIMAS data)

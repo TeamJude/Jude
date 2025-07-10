@@ -14,8 +14,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Jude.Server.Migrations
 {
     [DbContext(typeof(JudeDbContext))]
-    [Migration("20250628183444_update_permissions_structure")]
-    partial class update_permissions_structure
+    [Migration("20250710213943_update_claim_reviewer_relationship")]
+    partial class update_claim_reviewer_relationship
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,6 +26,109 @@ namespace Jude.Server.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Jude.Server.Data.Models.ClaimModel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("AgentConfidenceScore")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("AgentProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AgentReasoning")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AgentRecommendation")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("ApprovedAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("CIMASPayload")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("ClaimAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("ClaimNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("FinalDecision")
+                        .HasColumnType("integer");
+
+                    b.PrimitiveCollection<List<string>>("FraudIndicators")
+                        .HasColumnType("text[]");
+
+                    b.Property<int>("FraudRiskLevel")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("IngestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsFlagged")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MembershipNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PatientName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProviderPractice")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("RequiresHumanReview")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReviewerComments")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TransactionNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewedById");
+
+                    b.ToTable("Claims");
+                });
 
             modelBuilder.Entity("Jude.Server.Data.Models.FraudIndicatorModel", b =>
                 {
@@ -51,6 +154,8 @@ namespace Jude.Server.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
 
                     b.ToTable("FraudIndicators");
                 });
@@ -97,13 +202,12 @@ namespace Jude.Server.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
 
                     b.ToTable("Rules");
                 });
@@ -153,6 +257,37 @@ namespace Jude.Server.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Jude.Server.Data.Models.ClaimModel", b =>
+                {
+                    b.HasOne("Jude.Server.Data.Models.UserModel", "ReviewedBy")
+                        .WithMany()
+                        .HasForeignKey("ReviewedById");
+
+                    b.Navigation("ReviewedBy");
+                });
+
+            modelBuilder.Entity("Jude.Server.Data.Models.FraudIndicatorModel", b =>
+                {
+                    b.HasOne("Jude.Server.Data.Models.UserModel", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("Jude.Server.Data.Models.RuleModel", b =>
+                {
+                    b.HasOne("Jude.Server.Data.Models.UserModel", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
                 });
 
             modelBuilder.Entity("Jude.Server.Data.Models.UserModel", b =>

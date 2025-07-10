@@ -120,12 +120,9 @@ namespace Jude.Server.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ReviewedById");
 
                     b.ToTable("Claims");
                 });
@@ -154,6 +151,8 @@ namespace Jude.Server.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
 
                     b.ToTable("FraudIndicators");
                 });
@@ -200,13 +199,12 @@ namespace Jude.Server.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
 
                     b.ToTable("Rules");
                 });
@@ -260,13 +258,33 @@ namespace Jude.Server.Migrations
 
             modelBuilder.Entity("Jude.Server.Data.Models.ClaimModel", b =>
                 {
-                    b.HasOne("Jude.Server.Data.Models.UserModel", "User")
+                    b.HasOne("Jude.Server.Data.Models.UserModel", "ReviewedBy")
                         .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("ReviewedById");
+
+                    b.Navigation("ReviewedBy");
+                });
+
+            modelBuilder.Entity("Jude.Server.Data.Models.FraudIndicatorModel", b =>
+                {
+                    b.HasOne("Jude.Server.Data.Models.UserModel", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("Jude.Server.Data.Models.RuleModel", b =>
+                {
+                    b.HasOne("Jude.Server.Data.Models.UserModel", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
                 });
 
             modelBuilder.Entity("Jude.Server.Data.Models.UserModel", b =>
