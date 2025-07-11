@@ -45,7 +45,18 @@ public static class AppConfig
             Environment.GetEnvironmentVariable("CIMAS_ACCOUNT_NAME")
                 ?? throw new Exception("CIMAS Account Name is not set"),
             Environment.GetEnvironmentVariable("CIMAS_ACCOUNT_PASSWORD")
-                ?? throw new Exception("CIMAS Account Password is not set")
+                ?? throw new Exception("CIMAS Account Password is not set"),
+            Environment.GetEnvironmentVariable("CIMAS_PRACTICE_NUMBER")
+                ?? throw new Exception("CIMAS Practice number is not set")
+        );
+
+    public static AzureAI AzureAI { get; } =
+        new AzureAI(
+            "gpt-4.1",
+            Environment.GetEnvironmentVariable("AZURE_AI_ENDPOINT")
+                ?? throw new Exception("AZURE AI Endpoint is not set"),
+            Environment.GetEnvironmentVariable("AZURE_AI_APIKEY")
+                ?? throw new Exception("AZURE AI api key is not set")
         );
 }
 
@@ -55,4 +66,11 @@ public record Client(string Url);
 
 public record JwtConfig(string Secret, string Issuer, string Audience);
 
-public record CIMASConfig(string ClaimsSwitchEndpoint, string AccountName, string AccountPassword);
+public record CIMASConfig(
+    string ClaimsSwitchEndpoint,
+    string AccountName,
+    string AccountPassword,
+    string PracticeNumber
+);
+
+public record AzureAI(string ModelId, string Endpoint, string ApiKey);

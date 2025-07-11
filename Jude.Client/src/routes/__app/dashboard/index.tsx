@@ -62,7 +62,7 @@ function Dashboard() {
 		},
 	];
 
-	return (
+	return (	
 		<main className="h-full py-6 px-4">
 			<div className="max-w-7xl mx-auto px-4 space-y-6">
 				{/* Header with Title and Actions */}
@@ -151,7 +151,7 @@ function Dashboard() {
 				{/* Main Charts Section */}
 				<div className="w-full">
 					{/* Weekly Activity Chart - Spans 2 columns */}
-					<Card className="lg:col-span-2 shadow-sm  border-zinc-200 border-1">
+					<Card className="lg:col-span-2 shadow-none   border-zinc-200 border-1">
 						<CardHeader className="flex justify-between items-center pb-2">
 							<div>
 								<h3 className="text-base font-medium">Claims Activity</h3>
@@ -172,7 +172,7 @@ function Dashboard() {
 				</div>
 
 				{/* Recent Claims Table */}
-				<Card className="shadow-sm p-2 border-zinc-200 border-1">
+				<Card className="shadow-none p-2 border-zinc-200 border-1">
 					<CardHeader className="flex justify-between items-center pb-2">
 						<div>
 							<h3 className="text-base font-medium">Recent Claims</h3>
@@ -186,169 +186,7 @@ function Dashboard() {
 					</CardBody>
 				</Card>
 
-				{/* Category Charts */}
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-					{categoryChartData.map((chart, index) => (
-						<CircleChartCard
-							key={index}
-							title={chart.title}
-							categories={chart.categories}
-							color={
-								chart.color as
-									| "primary"
-									| "warning"
-									| "danger"
-									| "default"
-									| "secondary"
-									| "success"
-							}
-							chartData={chart.chartData}
-						/>
-					))}
-				</div>
-
-				{/* AI Performance Metrics */}
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-					<Card className="shadow-sm">
-						<CardHeader className="pb-2">
-							<h3 className="text-base font-medium">AI Agent Performance</h3>
-							<p className="text-xs text-gray-500">
-								Model accuracy and confidence metrics
-							</p>
-						</CardHeader>
-						<CardBody>
-							<div className="space-y-4">
-								<div>
-									<div className="flex justify-between mb-2">
-										<span className="text-sm">Model Accuracy</span>
-										<span className="text-sm font-medium">94%</span>
-									</div>
-									<div className="w-full bg-gray-100 rounded-full h-2">
-										<div
-											className="bg-blue-500 h-2 rounded-full"
-											style={{ width: "94%" }}
-										></div>
-									</div>
-									<p className="text-xs text-gray-500 mt-1">
-										Percentage of correct adjudication decisions vs. human
-										reviewers
-									</p>
-								</div>
-
-								<div>
-									<div className="flex justify-between mb-2">
-										<span className="text-sm">Fraud Detection Rate</span>
-										<span className="text-sm font-medium">89%</span>
-									</div>
-									<div className="w-full bg-gray-100 rounded-full h-2">
-										<div
-											className="bg-green-500 h-2 rounded-full"
-											style={{ width: "89%" }}
-										></div>
-									</div>
-									<p className="text-xs text-gray-500 mt-1">
-										Percentage of fraudulent claims correctly identified
-									</p>
-								</div>
-
-								<div>
-									<div className="flex justify-between mb-2">
-										<span className="text-sm">False Positive Rate</span>
-										<span className="text-sm font-medium">3.2%</span>
-									</div>
-									<div className="w-full bg-gray-100 rounded-full h-2">
-										<div
-											className="bg-yellow-500 h-2 rounded-full"
-											style={{ width: "3.2%" }}
-										></div>
-									</div>
-									<p className="text-xs text-gray-500 mt-1">
-										Percentage of legitimate claims incorrectly flagged as
-										suspicious
-									</p>
-								</div>
-							</div>
-						</CardBody>
-					</Card>
-
-					<Card className="shadow-sm">
-						<CardHeader className="pb-2">
-							<h3 className="text-base font-medium">Processing Queue Status</h3>
-							<p className="text-xs text-gray-500">
-								Current claims awaiting review
-							</p>
-						</CardHeader>
-						<CardBody>
-							<div className="grid grid-cols-2 gap-4">
-								<div className="bg-gray-50 p-4 rounded-lg">
-									<div className="text-sm text-gray-500">
-										Awaiting First Review
-									</div>
-									<div className="text-2xl font-semibold mt-1">27</div>
-									<div className="flex items-center mt-2">
-										<DynamicIcon
-											name="clock"
-											className="text-yellow-500"
-											size={16}
-										/>
-										<span className="text-xs text-gray-500 ml-1">
-											Avg wait: 14 mins
-										</span>
-									</div>
-								</div>
-
-								<div className="bg-gray-50 p-4 rounded-lg">
-									<div className="text-sm text-gray-500">
-										Under Investigation
-									</div>
-									<div className="text-2xl font-semibold mt-1">12</div>
-									<div className="flex items-center mt-2">
-										<DynamicIcon
-											name="alert-circle"
-											className="text-red-500"
-											size={16}
-										/>
-										<span className="text-xs text-gray-500 ml-1">
-											High priority: 5
-										</span>
-									</div>
-								</div>
-
-								<div className="bg-gray-50 p-4 rounded-lg">
-									<div className="text-sm text-gray-500">
-										Pending Documentation
-									</div>
-									<div className="text-2xl font-semibold mt-1">18</div>
-									<div className="flex items-center mt-2">
-										<DynamicIcon
-											name="file-text"
-											className="text-blue-500"
-											size={16}
-										/>
-										<span className="text-xs text-gray-500 ml-1">
-											Overdue: 3
-										</span>
-									</div>
-								</div>
-
-								<div className="bg-gray-50 p-4 rounded-lg">
-									<div className="text-sm text-gray-500">Ready for Payment</div>
-									<div className="text-2xl font-semibold mt-1">43</div>
-									<div className="flex items-center mt-2">
-										<DynamicIcon
-											name="check-circle"
-											className="text-green-500"
-											size={16}
-										/>
-										<span className="text-xs text-gray-500 ml-1">
-											Total: $127,450
-										</span>
-									</div>
-								</div>
-							</div>
-						</CardBody>
-					</Card>
-				</div>
+			
 			</div>
 		</main>
 	);

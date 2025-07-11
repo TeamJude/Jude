@@ -1,4 +1,5 @@
 using Jude.Server.Core.Helpers;
+using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Microsoft.Extensions.Caching.Memory;
@@ -11,12 +12,7 @@ public interface IClaimsService
     Task<Result<List<ClaimResponse>>> GetPastClaimsAsync(string practiceNumber);
     Task<Result<ClaimResponse>> SubmitClaimAsync(ClaimRequest request);
     Task<Result<bool>> ReverseClaimAsync(string transactionNumber);
-    Task<Result<bool>> UploadDocumentAsync(
-        string transactionNumber,
-        string channel,
-        Stream fileStream,
-        string fileName
-    );
+    Task<Result<bool>> UpdateClaimAsync(ClaimModel claim);
 }
 
 public class ClaimsService : IClaimsService
@@ -151,29 +147,22 @@ public class ClaimsService : IClaimsService
         return await _cimasProvider.ReverseClaimAsync(input);
     }
 
-    public async Task<Result<bool>> UploadDocumentAsync(
-        string transactionNumber,
-        string channel,
-        Stream fileStream,
-        string fileName
-    )
+    public async Task<Result<bool>> UpdateClaimAsync(ClaimModel claim)
     {
-        var authResult = await EnsureAuthenticationAsync();
-        if (!authResult.Success)
+        try
         {
-            return Result.Fail(authResult.Errors);
+            claim.UpdatedAt = DateTime.UtcNow;
+            _repository.Claims.Update(claim);
+            await _repository.SaveChangesAsync();
+            
+            _logger.LogDebug("Successfully updated claim {ClaimId}", claim.Id);
+            return Result.Ok(true);
         }
-
-        var accessToken = _cache.Get<string>(ACCESS_TOKEN_KEY)!;
-        var input = new UploadDocumentInput(
-            transactionNumber,
-            channel,
-            accessToken,
-            fileStream,
-            fileName
-        );
-
-        return await _cimasProvider.UploadDocumentAsync(input);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating claim {ClaimId}", claim.Id);
+            return Result.Fail($"Failed to update claim: {ex.Message}");
+        }
     }
 
     private void CacheTokens(TokenPair tokens)

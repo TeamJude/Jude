@@ -10,6 +10,5 @@ export interface Rule {
     name: string;
     description: string;
     status: RuleStatus;
-    priority: number;
     createdById: string;
 }

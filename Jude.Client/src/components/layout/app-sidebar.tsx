@@ -42,7 +42,7 @@ const [isCollapsed, setIsCollapsed] = React.useState<boolean>(() => {
 	const SidebarContent = () => (
 		<div
 			className={cn(
-				"will-change relative flex h-full w-[16	rem] flex-col bg-white  border-gray-200 py-6 px-4 transition-width",
+				"will-change relative flex h-full w-[16	rem] flex-col bg-[#F3F7ED]  border-gray-200 py-6 px-4 transition-width",
 				{
 					"w-[64px] items-center px-[4px] py-6": isCollapsed,
 				},

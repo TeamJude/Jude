@@ -12,6 +12,7 @@ public class FraudIndicatorModel
 
     [ForeignKey(nameof(UserModel))]
     public Guid CreatedById { get; set; }
+    public UserModel? CreatedBy { get; set; }
 }
 
 public enum IndicatorStatus

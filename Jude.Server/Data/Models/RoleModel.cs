@@ -7,7 +7,6 @@ public class RoleModel
     [Key]
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
-
     public Dictionary<string, Permission> Permissions { get; set; } = [];
 }
 

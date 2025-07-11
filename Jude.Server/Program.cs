@@ -55,6 +55,7 @@ builder.Services.ConfigureDatabase();
 builder.Services.ConfigureAuthentication();
 builder.Services.ConfigureAuthorization();
 builder.Services.AddServices();
+builder.Services.AddAgentServices();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 

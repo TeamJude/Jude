@@ -429,7 +429,6 @@ export function   ClaimsTable() {
             isClearable
             className="w-full sm:max-w-[44%]"
             placeholder="Search by claim ID, member, or provider..."
-            size="sm"
             startContent={<Search className="text-default-300" />}
             value={filterValue}
             variant="bordered"
@@ -441,7 +440,6 @@ export function   ClaimsTable() {
               <DropdownTrigger className="hidden sm:flex">
                 <Button
                   endContent={<ChevronDown className="text-small" />}
-                  size="sm"
                   variant="flat"
                 >
                   Status
@@ -466,7 +464,6 @@ export function   ClaimsTable() {
               <DropdownTrigger className="hidden sm:flex">
                 <Button
                   endContent={<ChevronDown className="text-small" />}
-                  size="sm"
                   variant="flat"
                 >
                   Columns
@@ -490,7 +487,6 @@ export function   ClaimsTable() {
             <Button
               className="bg-foreground text-background"
               endContent={<Plus />}
-              size="sm"
             >
               New Claim
             </Button>
