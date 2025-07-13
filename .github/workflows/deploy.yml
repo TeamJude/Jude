@@ -78,6 +78,9 @@ jobs:
             export POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
             export POSTGRES_DB="${{ secrets.POSTGRES_DB }}"
 
+            export AZURE_AI_APIKEY="${{ secrets.AZURE_AI_APIKEY }}"
+            export AZURE_AI_ENDPOINT="${{ secrets.AZURE_AI_ENDPOINT }}"
+
             export GITHUB_ACTOR="${{ github.actor }}"
             export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
                       
