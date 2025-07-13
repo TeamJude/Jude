@@ -22,4 +22,3 @@ function RouteComponent() {
 		</main>
 	);
 }
-

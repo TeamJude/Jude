@@ -5,15 +5,15 @@ import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [TanStackRouterVite({ autoCodeSplitting: true }), viteReact()],
-  test: {
-    globals: true,
-    environment: "jsdom",
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src'),
-      "@lib": resolve(__dirname, './src/lib'),
-    },
-  }
+	plugins: [TanStackRouterVite({ autoCodeSplitting: true }), viteReact()],
+	test: {
+		globals: true,
+		environment: "jsdom",
+	},
+	resolve: {
+		alias: {
+			"@": resolve(__dirname, "./src"),
+			"@lib": resolve(__dirname, "./src/lib"),
+		},
+	},
 });

@@ -1,19 +1,24 @@
 import { config } from "../config";
 
-export type ApiResponse<T = null> = {
-	data: T;
-	success: true;
-} | {
-	success: false;
-	errors: string[];
-};
+export type ApiResponse<T = null> =
+	| {
+			data: T;
+			success: true;
+	  }
+	| {
+			success: false;
+			errors: string[];
+	  };
 
 export const apiRequest = async <T>(
 	endpoint: string,
 	options: RequestInit = {},
 ): Promise<ApiResponse<T>> => {
 	try {
-		const url = config.environment == "production" ? endpoint : `${config.url}${endpoint}`;
+		const url =
+			config.environment == "production"
+				? endpoint
+				: `${config.url}${endpoint}`;
 		const response = await fetch(url, {
 			...options,
 			credentials: "include",
