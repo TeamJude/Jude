@@ -1,4 +1,5 @@
 import { getClaim } from "@/lib/services/claims.service";
+import { FraudRiskLevel } from "@/lib/types/claim";
 import {
 	Button,
 	Card,
@@ -286,21 +287,19 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 											</div>
 											<Progress
 												value={
-													claim.fraudRiskLevel === "Low"
-														? 15
-														: claim.fraudRiskLevel === "Medium"
-															? 40
-															: claim.fraudRiskLevel === "High"
-																? 70
-																: 90
-												}
+													{
+														[FraudRiskLevel.Low]: 15,
+														[FraudRiskLevel.Medium]: 40,
+														[FraudRiskLevel.High]: 70,
+														[FraudRiskLevel.Critical]: 90,
+													}[claim.fraudRiskLevel]}
 												color={
-													claim.fraudRiskLevel === "Low"
-														? "success"
-														: claim.fraudRiskLevel === "Medium"
-															? "warning"
-															: "danger"
-												}
+													{
+														[FraudRiskLevel.Low]: "success" as const,
+														[FraudRiskLevel.Medium]: "warning" as const,
+														[FraudRiskLevel.High]: "danger" as const,
+														[FraudRiskLevel.Critical]: "danger" as const,
+													}[claim.fraudRiskLevel]}
 												className="h-2"
 											/>
 										</div>
