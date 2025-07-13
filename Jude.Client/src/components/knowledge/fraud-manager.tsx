@@ -1,28 +1,28 @@
 import { createFraudIndicator, getFraudIndicators } from '@/lib/services/fraud.service';
 import { IndicatorStatus, type FraudIndicator } from '@/lib/types/fraud';
 import {
-  addToast,
-  Button,
-  Card,
-  CardBody,
-  Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  Switch,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-  Textarea,
-  useDisclosure
+    addToast,
+    Button,
+    Card,
+    CardBody,
+    Input,
+    Modal,
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    Switch,
+    Table,
+    TableBody,
+    TableCell,
+    TableColumn,
+    TableHeader,
+    TableRow,
+    Textarea,
+    useDisclosure
 } from '@heroui/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from '@tanstack/react-form';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import React, { useState } from 'react';
 
@@ -102,10 +102,14 @@ export const FraudManager: React.FC = () => {
               Create New Indicator
             </Button>
           </div>
-          
-          <Table 
+            <Table 
             aria-label="Fraud detection criteria table"
             removeWrapper
+            classNames={{
+              wrapper: "max-h-0 flex-1 overflow-auto",
+              base: "flex flex-col h-full",
+              table: "h-full",
+            }}
           >
             <TableHeader>
               <TableColumn key="name">INDICATOR NAME</TableColumn>

@@ -1,26 +1,28 @@
-import React from 'react';
-import { Tabs, Tab, Card, CardBody, Divider, Chip, Progress, Button, Textarea } from '@heroui/react';
-import { 
-  ClipboardList, 
-  FileText, 
-  BookOpen, 
-  CheckSquare, 
-  History,
-  CheckCircle,
-  AlertCircle,
-  Info,
-  BarChart,
-  UserCheck,
-  Eye,
-  Download,
-  Check,
-  Edit,
-  Clock,
-  X,
-  Inbox,
-  Cpu,
-  User
+import { getClaim } from '@/lib/services/claims.service';
+import { Button, Card, CardBody, Chip, Divider, Progress, Spinner, Tab, Tabs, Textarea } from '@heroui/react';
+import { useQuery } from '@tanstack/react-query';
+import {
+    AlertCircle,
+    BarChart,
+    BookOpen,
+    Check,
+    CheckCircle,
+    CheckSquare,
+    ClipboardList,
+    Clock,
+    Cpu,
+    Download,
+    Edit,
+    Eye,
+    FileText,
+    History,
+    Inbox,
+    Info,
+    User,
+    UserCheck,
+    X
 } from 'lucide-react';
+import React from 'react';
 
 
 interface ClaimTabsProps {
@@ -32,9 +34,38 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
   const [decision, setDecision] = React.useState("");
   const [notes, setNotes] = React.useState("");
 
+  // Fetch claim details
+  const {
+    data: claimResponse,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["claim", claimId],
+    queryFn: () => getClaim(claimId),
+  });
+
   const handleSelectionChange = (key: React.Key) => {
     setSelected(key.toString());
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Spinner label="Loading claim details..." />
+      </div>
+    );
+  }
+
+  if (error || !claimResponse?.success) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8">
+        <AlertCircle className="w-8 h-8 text-danger mb-2" />
+        <p className="text-danger">Failed to load claim details</p>
+      </div>
+    );
+  }
+
+  const claim = claimResponse.data;
 
   return (
     <div className="flex w-full flex-col">
@@ -88,14 +119,13 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                   
                   <div>
                     <h4 className="text-sm font-medium">Financial Details</h4>
-                    <div className="mt-2 space-y-2">
-                      <div className="flex justify-between">
+                    <div className="mt-2 space-y-2">                      <div className="flex justify-between">
                         <span className="text-sm text-foreground-500">Billed Amount</span>
-                        <span className="text-sm">$1,250.00</span>
+                        <span className="text-sm">{claim.currency}{claim.claimAmount.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-foreground-500">Allowed Amount</span>
-                        <span className="text-sm">$950.00</span>
+                        <span className="text-sm">{claim.approvedAmount ? `${claim.currency}${claim.approvedAmount.toLocaleString()}` : 'Pending'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-foreground-500">Member Responsibility</span>
@@ -162,14 +192,12 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                 <div>
                   <h3 className="text-lg font-medium mb-3">Agent's Recommendation</h3>
                   <Card className="bg-warning-50 border-warning">
-                    <CardBody>
-                      <div className="flex items-center gap-2 mb-2">
+                    <CardBody>                      <div className="flex items-center gap-2 mb-2">
                         <UserCheck className="text-warning" width={20} />
-                        <h4 className="font-medium">Requires Human Review - High Value Claim</h4>
+                        <h4 className="font-medium">{claim.agentRecommendation || 'Requires Human Review - High Value Claim'}</h4>
                       </div>
                       <p className="text-sm">
-                        This claim exceeds the automatic approval threshold of $1,000 and requires human verification. 
-                        All other policy checks have passed. Historical data shows similar claims were approved.
+                        {claim.agentReasoning || 'This claim exceeds the automatic approval threshold of $1,000 and requires human verification. All other policy checks have passed. Historical data shows similar claims were approved.'}
                       </p>
                     </CardBody>
                   </Card>
@@ -177,29 +205,20 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                 
                 <div>
                   <h3 className="text-lg font-medium mb-3">Risk Assessment</h3>
-                  <div className="space-y-4">
-                    <div>
+                  <div className="space-y-4">                    <div>
                       <div className="flex justify-between mb-1">
                         <span className="text-sm">Fraud Risk</span>
-                        <span className="text-sm font-medium">15%</span>
+                        <span className="text-sm font-medium">{claim.fraudRiskLevel}</span>
                       </div>
-                      <Progress value={15} color="success" className="h-2" />
+                      <Progress value={claim.fraudRiskLevel === 'Low' ? 15 : claim.fraudRiskLevel === 'Medium' ? 40 : claim.fraudRiskLevel === 'High' ? 70 : 90} color={claim.fraudRiskLevel === 'Low' ? 'success' : claim.fraudRiskLevel === 'Medium' ? 'warning' : 'danger'} className="h-2" />
                     </div>
                     
                     <div>
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm">Policy Compliance</span>
-                        <span className="text-sm font-medium">95%</span>
+                        <span className="text-sm">Agent Confidence</span>
+                        <span className="text-sm font-medium">{claim.agentConfidenceScore ? Math.round(claim.agentConfidenceScore * 100) + '%' : '85%'}</span>
                       </div>
-                      <Progress value={95} color="success" className="h-2" />
-                    </div>
-                    
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm">Overall Confidence</span>
-                        <span className="text-sm font-medium">85%</span>
-                      </div>
-                      <Progress value={85} color="primary" className="h-2" />
+                      <Progress value={claim.agentConfidenceScore ? claim.agentConfidenceScore * 100 : 85} color="primary" className="h-2" />
                     </div>
                   </div>
                 </div>
@@ -455,10 +474,9 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium">Claim Ingested</h4>
                       <Chip size="sm" variant="flat" color="primary">System</Chip>
-                    </div>
-                    <p className="text-sm text-foreground-500 mt-1">May 15, 2023 - 09:32 AM</p>
+                    </div>                    <p className="text-sm text-foreground-500 mt-1">{new Date(claim.ingestedAt).toLocaleString()}</p>
                     <p className="text-sm mt-2">
-                      Claim #{claimId} was received via Portal and entered into the system.
+                      Claim #{claim.transactionNumber} was received via Portal and entered into the system.
                     </p>
                   </div>
                 </div>
@@ -493,10 +511,9 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium">Agent Processing Completed</h4>
                       <Chip size="sm" variant="flat" color="secondary">AI Agent</Chip>
-                    </div>
-                    <p className="text-sm text-foreground-500 mt-1">May 15, 2023 - 09:36 AM</p>
+                    </div>                    <p className="text-sm text-foreground-500 mt-1">{claim.agentProcessedAt ? new Date(claim.agentProcessedAt).toLocaleString() : 'Processing...'}</p>
                     <p className="text-sm mt-2">
-                      AI Agent completed processing and flagged for human review due to high value claim.
+                      AI Agent {claim.agentProcessedAt ? 'completed processing and flagged for human review due to high value claim' : 'is currently processing the claim'}.
                     </p>
                   </div>
                 </div>

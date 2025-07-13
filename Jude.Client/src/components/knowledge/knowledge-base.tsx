@@ -1,28 +1,28 @@
-import React from 'react';
-import { 
-  Card, 
-  CardBody, 
-  Button, 
-  Table, 
-  TableHeader, 
-  TableColumn, 
-  TableBody, 
-  TableRow, 
-  TableCell,
-  Chip,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Input,
-  useDisclosure
+import {
+    Button,
+    Card,
+    CardBody,
+    Chip,
+    Dropdown,
+    DropdownItem,
+    DropdownMenu,
+    DropdownTrigger,
+    Input,
+    Modal,
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    Table,
+    TableBody,
+    TableCell,
+    TableColumn,
+    TableHeader,
+    TableRow,
+    useDisclosure
 } from '@heroui/react';
-import { Upload, Eye, Archive, MoreVertical, UploadCloud } from 'lucide-react';
+import { Archive, Eye, MoreVertical, Upload, UploadCloud } from 'lucide-react';
+import React from 'react';
 
 
 interface PolicyDocument {
@@ -126,10 +126,14 @@ export const PolicyDocumentManager: React.FC = () => {
               Index New Document
             </Button>
           </div>
-          
-          <Table 
+            <Table 
             aria-label="Policy documents table"
             removeWrapper
+            classNames={{
+              wrapper: "max-h-0 flex-1 overflow-auto",
+              base: "flex flex-col h-full",
+              table: "h-full",
+            }}
           >
             <TableHeader>
               <TableColumn key="id">DOCUMENT ID</TableColumn>

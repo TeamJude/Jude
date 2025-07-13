@@ -1,6 +1,7 @@
-import type React from 'react';
-import { Card, CardBody, Button, Avatar } from '@heroui/react';
+import { ClaimStatus } from '@/lib/types/claim';
+import { Avatar, Button, Card, CardBody } from '@heroui/react';
 import { Building2, Calendar, DollarSign, Printer } from 'lucide-react';
+import type React from 'react';
 
 interface ClaimDetailHeaderProps {
   claimId: string;
@@ -11,16 +12,16 @@ interface ClaimDetailHeaderProps {
   dateReceived: string;
   dateOfService: string;
   amount: number;
-  status: string;
+  status: ClaimStatus;
   memberAvatar?: string;
 }
 
-const statusColorMap: Record<string, string> = {
-  approved: 'ring-green-500',
-  rejected: 'ring-red-500',
-  'pending human review': 'ring-yellow-500',
-  'flagged for investigation': 'ring-red-500',
-  default: 'ring-gray-300',
+const statusColorMap: Record<ClaimStatus, string> = {
+  [ClaimStatus.Pending]: 'ring-yellow-500',
+  [ClaimStatus.Processing]: 'ring-blue-500',
+  [ClaimStatus.Failed]: 'ring-red-500',
+  [ClaimStatus.Review]: 'ring-orange-500',
+  [ClaimStatus.Completed]: 'ring-green-500',
 };
 
 export const ClaimDetailHeader: React.FC<ClaimDetailHeaderProps> = ({
@@ -34,8 +35,8 @@ export const ClaimDetailHeader: React.FC<ClaimDetailHeaderProps> = ({
   status,
   memberAvatar,
 }) => {
-  const statusKey = status.toLowerCase();
-  const ringColor = statusColorMap[statusKey] || statusColorMap.default;
+  const statusKey = status;
+  const ringColor = statusColorMap[statusKey];
 
   return (
     <Card shadow="none" className="w-full">

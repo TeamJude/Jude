@@ -1,26 +1,26 @@
 "use client";
 
-import React from "react";
 import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Input,
-  Button,
-  DropdownTrigger,
-  Dropdown,
-  DropdownMenu,
-  DropdownItem,
-  Chip,
-  User,
-  type Selection,
-  type ChipProps,
-  type SortDescriptor,
+    Button,
+    Chip,
+    Dropdown,
+    DropdownItem,
+    DropdownMenu,
+    DropdownTrigger,
+    Input,
+    Table,
+    TableBody,
+    TableCell,
+    TableColumn,
+    TableHeader,
+    TableRow,
+    User,
+    type ChipProps,
+    type Selection,
+    type SortDescriptor,
 } from "@heroui/react";
 import { ChevronDown, EllipsisVertical, Plus, Search } from "lucide-react";
+import React from "react";
 
 const columns = [
   { name: "CLAIM ID", uid: "id", sortable: true },
@@ -323,13 +323,17 @@ export function RecentClaimsTable() {
       </div>
     );
   }, [filterValue, statusFilter, visibleColumns, onSearchChange, onRowsPerPageChange]);
-
   return (
     <Table
       isCompact
       removeWrapper
       aria-label="Recent claims table with custom cells, pagination and sorting"
       bottomContentPlacement="outside"
+      classNames={{
+        wrapper: "max-h-0 flex-1 overflow-auto",
+        base: "flex flex-col h-full",
+        table: "h-full",
+      }}
       checkboxesProps={{
         classNames: {
           wrapper: "after:bg-foreground after:text-background text-background ",

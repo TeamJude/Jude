@@ -66,5 +66,20 @@ public class ClaimsController : ControllerBase
         return Ok();
     }
 
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetClaims([FromQuery] GetClaimsRequest request)
+    {
+        var result = await _claimsService.GetClaimsAsync(request);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
+
+    [HttpGet("{claimId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetClaim(Guid claimId)
+    {
+        var result = await _claimsService.GetClaimAsync(claimId);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
 
 }
