@@ -4,9 +4,9 @@ namespace Jude.Server.Domains.Auth;
 
 //for DTOs we use for auth, could have named this AuthDTOs but AuthContracts is more aesthetic imo
 public record RegisterRequest(
-    string Username, 
-    string Email, 
-    string Password, 
+    string Username,
+    string Email,
+    string Password,
     string RoleName,
     Dictionary<string, Permission>? Permissions = null
 );

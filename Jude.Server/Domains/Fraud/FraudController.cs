@@ -34,4 +34,4 @@ public class FraudController : ControllerBase
         var result = await _fraudService.GetFraudIndicators(request);
         return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
-} 
+}

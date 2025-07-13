@@ -22,4 +22,4 @@ public class CreateFraudIndicatorRequestValidator : AbstractValidator<CreateFrau
             .MaximumLength(500)
             .WithMessage("Fraud indicator description must not exceed 500 characters");
     }
-} 
+}
