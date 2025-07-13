@@ -1,8 +1,8 @@
-import type {
-	Claim,
-	ClaimStatus,
-	ClaimSummary,
-	FraudRiskLevel,
+import {
+    ClaimStatus,
+    FraudRiskLevel,
+    type Claim,
+    type ClaimSummary,
 } from "../types/claim";
 import { apiRequest, type ApiResponse } from "../utils/api";
 
@@ -25,7 +25,6 @@ const getClaims = async (data: {
 			if (Array.isArray(value)) {
 				value.forEach((item) => {
 					if (item !== undefined && item !== null) {
-						// Convert enum values to their string names for the API
 						if (key === "status") {
 							searchParams.append(key, ClaimStatus[item as ClaimStatus]);
 						} else if (key === "riskLevel") {
@@ -57,3 +56,4 @@ const getClaim = async (claimId: string): Promise<ApiResponse<Claim>> => {
 };
 
 export { getClaim, getClaims };
+
