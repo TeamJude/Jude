@@ -14,7 +14,9 @@ services:
       - JWT_SECRET_KEY
       - JWT_ISSUER
       - JWT_AUDIENCE
-      - VITE_SERVER_URL
+      - VITE_SERVER_URL     
+      - AZURE_AI_APIKEY
+      - AZURE_AI_ENDPOINT
     networks:
       - jude-network
     restart: unless-stopped
