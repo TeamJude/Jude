@@ -85,7 +85,7 @@ public class AuthService : IAuthService
             return Result.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
 
         RoleModel role;
-        
+
         // Check if role exists
         var existingRole = await _repository.Roles
             .FirstOrDefaultAsync(r => r.Name == request.RoleName);
@@ -95,7 +95,7 @@ public class AuthService : IAuthService
             // If role exists but permissions are provided, return error
             if (request.Permissions != null)
                 return Result.Fail("Cannot specify permissions when using an existing role");
-            
+
             role = existingRole;
         }
         else

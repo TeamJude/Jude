@@ -40,7 +40,7 @@ public class RulesService : IRulesService
         await _repository.Rules.AddAsync(rule);
         await _repository.SaveChangesAsync();
 
-        var response = new RuleResponse(rule.Id,rule.CreatedAt, rule.Name, rule.Description, rule.Status, rule.CreatedById);
+        var response = new RuleResponse(rule.Id, rule.CreatedAt, rule.Name, rule.Description, rule.Status, rule.CreatedById);
 
         // Notify that rules have changed
         OnRulesChanged?.Invoke();

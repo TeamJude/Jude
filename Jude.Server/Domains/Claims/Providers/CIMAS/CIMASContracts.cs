@@ -8,7 +8,7 @@ public record CIMASTokens
 {
     [JsonPropertyName("access")]
     public string Access { get; set; } = string.Empty;
-    
+
     [JsonPropertyName("refresh")]
     public string? Refresh { get; set; }
 }
@@ -498,7 +498,7 @@ public record ClaimsResponse
 {
     [JsonPropertyName("count")]
     public int Count { get; set; }
-    
+
     [JsonPropertyName("next")]
     public object? Next { get; set; }
 
@@ -513,4 +513,4 @@ public record ClaimWrapper
 {
     [JsonPropertyName("Response")]
     public ClaimResponse Response { get; set; } = new();
-} 
+}

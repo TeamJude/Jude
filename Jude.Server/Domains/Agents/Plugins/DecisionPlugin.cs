@@ -79,7 +79,7 @@ public class DecisionPlugin
                 _ => ClaimStatus.Review,
             };
 
-        
+
             if (_claim.Status == ClaimStatus.Completed && recommendation.Equals("APPROVE", StringComparison.CurrentCultureIgnoreCase))
             {
                 _claim.FinalDecision = ClaimDecision.Approved;

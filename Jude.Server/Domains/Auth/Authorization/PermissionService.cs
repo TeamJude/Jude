@@ -17,12 +17,12 @@ public class PermissionService : IPermissionService
     private readonly JudeDbContext _repository;
     private readonly IMemoryCache _cache;
     private readonly ILogger<PermissionService> _logger;
-    
+
     private static readonly TimeSpan CacheExpiry = TimeSpan.FromMinutes(30);
     private const string ROLE_PERMISSIONS_KEY_PREFIX = "role_permissions_";
 
     public PermissionService(
-        JudeDbContext repository, 
+        JudeDbContext repository,
         IMemoryCache cache,
         ILogger<PermissionService> logger)
     {
@@ -38,7 +38,7 @@ public class PermissionService : IPermissionService
     )
     {
         var rolePermissions = await GetRolePermissionsAsync(roleId);
-        
+
         if (rolePermissions == null)
         {
             return false;
@@ -62,7 +62,7 @@ public class PermissionService : IPermissionService
     private async Task<Dictionary<string, Permission>?> GetRolePermissionsAsync(Guid roleId)
     {
         var cacheKey = $"{ROLE_PERMISSIONS_KEY_PREFIX}{roleId}";
-        
+
         if (_cache.TryGetValue(cacheKey, out Dictionary<string, Permission>? cachedPermissions))
         {
             _logger.LogDebug("Retrieved permissions from cache for role {RoleId}", roleId);
@@ -70,7 +70,7 @@ public class PermissionService : IPermissionService
         }
 
         _logger.LogDebug("Loading permissions from database for role {RoleId}", roleId);
-        
+
         var rolePermissions = await _repository
             .Roles
             .AsNoTracking()
