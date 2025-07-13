@@ -1,0 +1,1 @@
+[ ] Filter by status and risk level on the claims table is not working
