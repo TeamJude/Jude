@@ -9,15 +9,12 @@ const login = (data: {
 		method: "POST",
 		body: JSON.stringify(data),
 	});
-}
+};
 
 const me = (): Promise<ApiResponse<User>> => {
-    return apiRequest<User>("/api/auth/me", {
-        method: "GET",
-    });
-}
-
-export {
-	login,
-	me
+	return apiRequest<User>("/api/auth/me", {
+		method: "GET",
+	});
 };
+
+export { login, me };

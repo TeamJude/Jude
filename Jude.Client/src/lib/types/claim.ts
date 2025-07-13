@@ -1,56 +1,81 @@
 export enum ClaimStatus {
-  Pending = "Pending",
-  Processing = "Processing",
-  PendingReview = "PendingReview",
-  Approved = "Approved",
-  Rejected = "Rejected",
-  RequestMoreInfo = "RequestMoreInfo",
-  Resubmitted = "Resubmitted",
-  Completed = "Completed",
+	Pending,
+	Processing,
+	Failed,
+	Review,
+	Completed,
 }
 
 export enum ClaimSource {
-  CIMAS = "CIMAS",
-  Manual = "Manual",
+	CIMAS,
 }
 
 export enum ClaimDecision {
-  Approve = "Approve",
-  Reject = "Reject",
-  RequestMoreInfo = "RequestMoreInfo",
-  Escalate = "Escalate",
+	Approved,
+	Rejected,
 }
 
 export enum FraudRiskLevel {
-  Low = "Low",
-  Medium = "Medium",
-  High = "High",
-  Critical = "Critical",
+	Low,
+	Medium,
+	High,
+	Critical,
 }
 
 export interface Claim {
-  id: string;
-  ingestedAt: string;
-  updatedAt: string;
-  status: ClaimStatus;
-  source: ClaimSource;
-  submittedAt?: string;
-  processedAt?: string;
-  agentRecommendation?: string;
-  agentReasoning?: string;
-  agentConfidenceScore?: number;
-  agentProcessedAt?: string;
-  isFlagged: boolean;
-  fraudIndicators?: string[];
-  fraudRiskLevel: FraudRiskLevel;
-  requiresHumanReview: boolean;
-  finalDecision?: ClaimDecision;
-  reviewerComments?: string;
-  rejectionReason?: string;
-  reviewedAt?: string;
-  reviewedById?: string;
-  user?: {
-    id: string;
-    name: string;
-  };
+	id: string;
+	transactionNumber: string;
+	claimNumber: string;
+	patientName: string;
+	membershipNumber: string;
+	providerPractice: string;
+	claimAmount: number;
+	approvedAmount?: number;
+	currency: string;
+	status: ClaimStatus;
+	source: ClaimSource;
+	submittedAt?: string;
+	processedAt?: string;
+	agentRecommendation?: string;
+	agentReasoning?: string;
+	agentConfidenceScore?: number;
+	agentProcessedAt?: string;
+	fraudIndicators?: string[];
+	fraudRiskLevel: FraudRiskLevel;
+	isFlagged: boolean;
+	requiresHumanReview: boolean;
+	finalDecision?: ClaimDecision;
+	reviewerComments?: string;
+	rejectionReason?: string;
+	reviewedAt?: string;
+	reviewedBy?: {
+		id: string;
+		username?: string;
+		email: string;
+	};
+	ingestedAt: string;
+	updatedAt: string;
+	cimasPayload?: string;
 }
+
+export type ClaimSummary = Pick<
+	Claim,
+	| "id"
+	| "transactionNumber"
+	| "patientName"
+	| "membershipNumber"
+	| "providerPractice"
+	| "claimAmount"
+	| "approvedAmount"
+	| "currency"
+	| "status"
+	| "source"
+	| "fraudRiskLevel"
+	| "isFlagged"
+	| "requiresHumanReview"
+	| "agentRecommendation"
+	| "ingestedAt"
+	| "updatedAt"
+> & {
+	submittedAt: string;
+};

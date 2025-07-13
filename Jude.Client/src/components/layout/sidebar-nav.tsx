@@ -53,8 +53,8 @@ const SidebarNav = React.forwardRef<HTMLElement, SidebarProps>(
 							"flex items-center gap-2 px-3 min-h-11 rounded-lg transition-colors group cursor-pointer border-transparent",
 							{
 								"w-12 h-11 justify-center": isCompact,
-								" border-l-3 border-black rounded-none": isActive,
-								"hover:bg-zinc-200/40": !isActive,
+								"bg-zinc-900/5": isActive,
+								"hover:bg-zinc-700/5": !isActive,
 							},
 						)}
 					>
@@ -69,7 +69,7 @@ const SidebarNav = React.forwardRef<HTMLElement, SidebarProps>(
 						{!isCompact && (
 							<span
 								className={cn("text-sm font-medium", {
-									"text-zinc-900 font-semibold": isActive,
+									"text-zinc-700 font-semibold": isActive,
 									"text-gray-700": !isActive,
 								})}
 							>

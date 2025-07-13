@@ -3,6 +3,7 @@ using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jude.Server.Domains.Claims;
 
@@ -13,6 +14,8 @@ public interface IClaimsService
     Task<Result<ClaimResponse>> SubmitClaimAsync(ClaimRequest request);
     Task<Result<bool>> ReverseClaimAsync(string transactionNumber);
     Task<Result<bool>> UpdateClaimAsync(ClaimModel claim);
+    Task<Result<GetClaimsResponse>> GetClaimsAsync(GetClaimsRequest request);
+    Task<Result<ClaimDetailResponse>> GetClaimAsync(Guid claimId);
 }
 
 public class ClaimsService : IClaimsService
@@ -154,7 +157,7 @@ public class ClaimsService : IClaimsService
             claim.UpdatedAt = DateTime.UtcNow;
             _repository.Claims.Update(claim);
             await _repository.SaveChangesAsync();
-            
+
             _logger.LogDebug("Successfully updated claim {ClaimId}", claim.Id);
             return Result.Ok(true);
         }
@@ -162,6 +165,129 @@ public class ClaimsService : IClaimsService
         {
             _logger.LogError(ex, "Error updating claim {ClaimId}", claim.Id);
             return Result.Fail($"Failed to update claim: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<GetClaimsResponse>> GetClaimsAsync(GetClaimsRequest request)
+    {
+        try
+        {
+            var query = _repository.Claims.AsQueryable();            // Apply filters
+            if (request.Status != null && request.Status.Length > 0)
+            {
+                query = query.Where(c => request.Status.Contains(c.Status));
+            }
+            if (request.RiskLevel != null && request.RiskLevel.Length > 0)
+            {
+                query = query.Where(c => request.RiskLevel.Contains(c.FraudRiskLevel));
+            }
+
+            if (request.RequiresHumanReview.HasValue)
+            {
+                query = query.Where(c => c.RequiresHumanReview == request.RequiresHumanReview.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Search))
+            {
+                var searchTerm = request.Search.ToLower();
+                query = query.Where(c =>
+                    c.PatientName.ToLower().Contains(searchTerm) ||
+                    c.TransactionNumber.ToLower().Contains(searchTerm) ||
+                    c.MembershipNumber.ToLower().Contains(searchTerm) ||
+                    c.ProviderPractice.ToLower().Contains(searchTerm));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var claims = await query
+                .OrderByDescending(c => c.IngestedAt)
+                .Skip((request.Page - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .Select(c => new ClaimSummaryResponse(
+                    c.Id,
+                    c.TransactionNumber,
+                    c.PatientName,
+                    c.MembershipNumber,
+                    c.ProviderPractice,
+                    c.ClaimAmount,
+                    c.ApprovedAmount,
+                    c.Currency,
+                    c.Status,
+                    c.Source,
+                    c.SubmittedAt ?? c.IngestedAt,
+                    c.FraudRiskLevel,
+                    c.IsFlagged,
+                    c.RequiresHumanReview,
+                    c.AgentRecommendation,
+                    c.IngestedAt,
+                    c.UpdatedAt
+                ))
+                .ToArrayAsync();
+
+            return Result.Ok(new GetClaimsResponse(claims, totalCount));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving claims");
+            return Result.Fail($"Failed to retrieve claims: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<ClaimDetailResponse>> GetClaimAsync(Guid claimId)
+    {
+        try
+        {
+            var claim = await _repository.Claims
+                .Include(c => c.ReviewedBy)
+                .FirstOrDefaultAsync(c => c.Id == claimId);
+
+            if (claim == null)
+            {
+                return Result.Fail("Claim not found");
+            }
+
+            var reviewerInfo = claim.ReviewedBy != null
+                ? new ReviewerInfo(claim.ReviewedBy.Id, claim.ReviewedBy.Username, claim.ReviewedBy.Email)
+                : null;
+
+            var response = new ClaimDetailResponse(
+                claim.Id,
+                claim.TransactionNumber,
+                claim.ClaimNumber,
+                claim.PatientName,
+                claim.MembershipNumber,
+                claim.ProviderPractice,
+                claim.ClaimAmount,
+                claim.ApprovedAmount,
+                claim.Currency,
+                claim.Status,
+                claim.Source,
+                claim.SubmittedAt,
+                claim.ProcessedAt,
+                claim.AgentRecommendation,
+                claim.AgentReasoning,
+                claim.AgentConfidenceScore,
+                claim.AgentProcessedAt,
+                claim.FraudIndicators,
+                claim.FraudRiskLevel,
+                claim.IsFlagged,
+                claim.RequiresHumanReview,
+                claim.FinalDecision,
+                claim.ReviewerComments,
+                claim.RejectionReason,
+                claim.ReviewedAt,
+                reviewerInfo,
+                claim.IngestedAt,
+                claim.UpdatedAt,
+                claim.CIMASPayload
+            );
+
+            return Result.Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving claim {ClaimId}", claimId);
+            return Result.Fail($"Failed to retrieve claim: {ex.Message}");
         }
     }
 

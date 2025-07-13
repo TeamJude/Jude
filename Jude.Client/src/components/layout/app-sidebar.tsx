@@ -6,15 +6,15 @@ import Avatar from "boring-avatars";
 import SidebarNav from "./sidebar-nav";
 import SidebarDrawer from "./sidebar-drawer";
 import { authState } from "@/lib/state/auth.state";
+import { Logo } from "../Logo";
 
 const SIDEBAR_COLLAPSED_KEY = "jude-sidebar-collapsed";
 
 export default function AppSidebar() {
 	const { user } = authState.state;
 	const [isOpen, setIsOpen] = React.useState(false);
-	
 
-const [isCollapsed, setIsCollapsed] = React.useState<boolean>(() => {
+	const [isCollapsed, setIsCollapsed] = React.useState<boolean>(() => {
 		if (typeof window !== "undefined") {
 			const savedState = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
 			return savedState ? JSON.parse(savedState) : false;
@@ -49,18 +49,21 @@ const [isCollapsed, setIsCollapsed] = React.useState<boolean>(() => {
 			)}
 		>
 			<div
-				className={cn("flex items-center justify-between gap-2 pl-2", {
+				className={cn("flex items-center justify-between gap-2 pl-4", {
 					"justify-center gap-0 pl-0": isCollapsed,
 				})}
 			>
 				<div className="flex items-center justify-center rounded-full gap-2">
-					<img className="w-10" src="/logo.svg" />
+					<Logo width={40} />
 					<span
-						className={cn("w-full uppercase font-bold text-xs  text-zinc-600", {
-							hidden: isCollapsed,
-						})}
+						className={cn(
+							"w-full uppercase text-lg font-sans font-bold text-zinc-700",
+							{
+								hidden: isCollapsed,
+							},
+						)}
 					>
-						Claims Ajudication
+						Jude
 					</span>
 				</div>
 

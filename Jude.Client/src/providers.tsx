@@ -4,12 +4,13 @@ import type { ReactNode } from "@tanstack/react-router";
 
 const queryClient = new QueryClient();
 
-
 export default function Providers({ children }: { children: ReactNode }) {
-	return <QueryClientProvider client={queryClient}>
-		<HeroUIProvider>
-			<ToastProvider/>
-			{children}
-		</HeroUIProvider>
-	</QueryClientProvider>
+	return (
+		<QueryClientProvider client={queryClient}>
+			<HeroUIProvider>
+				<ToastProvider />
+				{children}
+			</HeroUIProvider>
+		</QueryClientProvider>
+	);
 }

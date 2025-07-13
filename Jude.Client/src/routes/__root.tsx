@@ -43,9 +43,7 @@ function RootComponent() {
 	return (
 		<main>
 			<Outlet />
-			{config.environment=="development" && (
-				<TanStackRouterDevtools />
-			)}
+			{config.environment == "development" && <TanStackRouterDevtools />}
 		</main>
 	);
 }

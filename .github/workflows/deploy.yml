@@ -58,6 +58,9 @@ jobs:
             export CIMAS_ACCOUNT_NAME="${{ secrets.CIMAS_ACCOUNT_NAME }}"
             export CIMAS_ACCOUNT_PASSWORD="${{ secrets.CIMAS_ACCOUNT_PASSWORD }}"
             export CIMAS_CLAIMS_SWITCH_ENDPOINT="${{ secrets.CIMAS_CLAIMS_SWITCH_ENDPOINT }}"
+
+            export CIMAS_PRACTICE_NUMBER="995630"
+
             export DATABASE_URL="Host=${{secrets.POSTGRES_HOST}};Port=${{secrets.POSTGRES_PORT}};Database=${{secrets.POSTGRES_DB}};Username=${{secrets.POSTGRES_USER}};Password=${{secrets.POSTGRES_PASSWORD}}"
             export JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}"
 

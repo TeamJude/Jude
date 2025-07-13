@@ -1,4 +1,4 @@
-import Logo from "@/components/Logo";
+import CIMASLogo, { Logo } from "@/components/Logo";
 import { login } from "@/lib/services/auth.service";
 import { Alert, Button, Input } from "@heroui/react";
 import { authState } from "@lib/state/auth.state";
