@@ -37,6 +37,10 @@ jobs:
           docker push ghcr.io/teamjude/jude:${{ steps.tag.outputs.tag }} 
           docker push ghcr.io/teamjude/jude:latest
 
+      - name: Create Caddyfile from template
+        run: |
+          sed 's/\$\$APP_DOMAIN\$\$/${{ vars.APP_DOMAIN }}/g' Caddyfile.template > Caddyfile
+
       - name: Copy files to server
         uses: appleboy/scp-action@v1
         with:
