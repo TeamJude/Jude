@@ -57,7 +57,6 @@ builder.Services.ConfigureAuthorization();
 builder.Services.AddServices();
 builder.Services.AddAgentServices();
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
 
 builder.Services.ConfigureCors();
 
@@ -80,7 +79,6 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
