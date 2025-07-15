@@ -16,6 +16,10 @@ public interface IClaimsService
     Task<Result<bool>> UpdateClaimAsync(ClaimModel claim);
     Task<Result<GetClaimsResponse>> GetClaimsAsync(GetClaimsRequest request);
     Task<Result<ClaimDetailResponse>> GetClaimAsync(Guid claimId);
+
+    // Dashboard Statistics methods
+    Task<Result<ClaimStats>> GetClaimStatsAsync(GetClaimStatsInput input);
+    Task<Result<MemberStats>> GetMemberStatsAsync(GetMemberStatsInput input);
 }
 
 public class ClaimsService : IClaimsService
@@ -289,6 +293,34 @@ public class ClaimsService : IClaimsService
             _logger.LogError(ex, "Error retrieving claim {ClaimId}", claimId);
             return Result.Fail($"Failed to retrieve claim: {ex.Message}");
         }
+    }
+
+    public async Task<Result<ClaimStats>> GetClaimStatsAsync(GetClaimStatsInput input)
+    {
+        var authResult = await EnsureAuthenticationAsync();
+        if (!authResult.Success)
+        {
+            return Result.Fail(authResult.Errors);
+        }
+
+        var accessToken = _cache.Get<string>(ACCESS_TOKEN_KEY)!;
+        var statsInput = new GetClaimStatsInput(accessToken, input.PracticeNumber, input.FromDate, input.ToDate);
+
+        return await _cimasProvider.GetClaimStatsAsync(statsInput);
+    }
+
+    public async Task<Result<MemberStats>> GetMemberStatsAsync(GetMemberStatsInput input)
+    {
+        var authResult = await EnsureAuthenticationAsync();
+        if (!authResult.Success)
+        {
+            return Result.Fail(authResult.Errors);
+        }
+
+        var accessToken = _cache.Get<string>(ACCESS_TOKEN_KEY)!;
+        var statsInput = new GetMemberStatsInput(accessToken, input.PracticeNumber, input.FromDate, input.ToDate);
+
+        return await _cimasProvider.GetMemberStatsAsync(statsInput);
     }
 
     private void CacheTokens(TokenPair tokens)

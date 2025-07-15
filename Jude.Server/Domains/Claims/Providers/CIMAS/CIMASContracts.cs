@@ -514,3 +514,216 @@ public record ClaimWrapper
     [JsonPropertyName("Response")]
     public ClaimResponse Response { get; set; } = new();
 }
+
+// Pricing API Contracts
+public record PricingApiTokenRequest
+{
+    [JsonPropertyName("username")]
+    public string Username { get; set; } = string.Empty;
+
+    [JsonPropertyName("password")]
+    public string Password { get; set; } = string.Empty;
+}
+
+public record PricingApiTokenResponse
+{
+    [JsonPropertyName("access_token")]
+    public string AccessToken { get; set; } = string.Empty;
+}
+
+public record PricingApiErrorResponse
+{
+    [JsonPropertyName("errorMsg")]
+    public string ErrorMsg { get; set; } = string.Empty;
+
+    [JsonPropertyName("developerMsg")]
+    public string DeveloperMsg { get; set; } = string.Empty;
+
+    [JsonPropertyName("responseStatus")]
+    public string ResponseStatus { get; set; } = string.Empty;
+
+    [JsonPropertyName("responseCode")]
+    public int ResponseCode { get; set; }
+}
+
+public record TariffLookupInput(string TariffCode, string PricingAccessToken);
+
+// Dashboard Statistics Inputs
+public record GetClaimStatsInput(string AccessToken, string? PracticeNumber = null, DateTime? FromDate = null, DateTime? ToDate = null);
+
+public record GetMemberStatsInput(string AccessToken, string? PracticeNumber = null, DateTime? FromDate = null, DateTime? ToDate = null);
+
+public record TariffPackage
+{
+    [JsonPropertyName("createdAt")]
+    public string CreatedAt { get; set; } = string.Empty;
+
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public PackageName Name { get; set; } = new();
+
+    [JsonPropertyName("currency")]
+    public string Currency { get; set; } = string.Empty;
+
+    [JsonPropertyName("amount")]
+    public decimal Amount { get; set; }
+}
+
+public record PackageName
+{
+    [JsonPropertyName("createdAt")]
+    public string? CreatedAt { get; set; }
+
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("package")]
+    public string Package { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+}
+
+public record TariffCategory
+{
+    [JsonPropertyName("createdAt")]
+    public string CreatedAt { get; set; } = string.Empty;
+
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("code")]
+    public string Code { get; set; } = string.Empty;
+}
+
+public record TariffSubCategory
+{
+    [JsonPropertyName("createdAt")]
+    public string CreatedAt { get; set; } = string.Empty;
+
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("code")]
+    public string Code { get; set; } = string.Empty;
+}
+
+public record TariffResponse
+{
+    [JsonPropertyName("createdAt")]
+    public string CreatedAt { get; set; } = string.Empty;
+
+    [JsonPropertyName("packages")]
+    public List<TariffPackage> Packages { get; set; } = [];
+
+    [JsonPropertyName("category")]
+    public List<TariffCategory> Category { get; set; } = [];
+
+    [JsonPropertyName("subCategory")]
+    public List<TariffSubCategory> SubCategory { get; set; } = [];
+
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("code")]
+    public string Code { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+}
+
+// Dashboard Statistics Response Models
+public record ClaimStats
+{
+    [JsonPropertyName("totalClaims")]
+    public int TotalClaims { get; set; }
+
+    [JsonPropertyName("totalClaimValue")]
+    public decimal TotalClaimValue { get; set; }
+
+    [JsonPropertyName("totalApprovedValue")]
+    public decimal TotalApprovedValue { get; set; }
+
+    [JsonPropertyName("averageClaimValue")]
+    public decimal AverageClaimValue { get; set; }
+
+    [JsonPropertyName("approvalRate")]
+    public decimal ApprovalRate { get; set; }
+
+    [JsonPropertyName("claimsByStatus")]
+    public Dictionary<string, int> ClaimsByStatus { get; set; } = new();
+
+    [JsonPropertyName("claimsByMonth")]
+    public List<MonthlyClaimStats> ClaimsByMonth { get; set; } = [];
+
+    [JsonPropertyName("topProviders")]
+    public List<ProviderStats> TopProviders { get; set; } = [];
+}
+
+public record MemberStats
+{
+    [JsonPropertyName("totalMembers")]
+    public int TotalMembers { get; set; }
+
+    [JsonPropertyName("activeMembers")]
+    public int ActiveMembers { get; set; }
+
+    [JsonPropertyName("newMembersThisMonth")]
+    public int NewMembersThisMonth { get; set; }
+
+    [JsonPropertyName("membersByProduct")]
+    public Dictionary<string, int> MembersByProduct { get; set; } = new();
+
+    [JsonPropertyName("membersByGender")]
+    public Dictionary<string, int> MembersByGender { get; set; } = new();
+
+    [JsonPropertyName("averageAge")]
+    public decimal AverageAge { get; set; }
+
+    [JsonPropertyName("membershipGrowth")]
+    public List<MonthlyMemberStats> MembershipGrowth { get; set; } = [];
+}
+
+public record MonthlyClaimStats
+{
+    [JsonPropertyName("month")]
+    public string Month { get; set; } = string.Empty;
+
+    [JsonPropertyName("claimCount")]
+    public int ClaimCount { get; set; }
+
+    [JsonPropertyName("totalValue")]
+    public decimal TotalValue { get; set; }
+}
+
+public record ProviderStats
+{
+    [JsonPropertyName("providerName")]
+    public string ProviderName { get; set; } = string.Empty;
+
+    [JsonPropertyName("claimCount")]
+    public int ClaimCount { get; set; }
+
+    [JsonPropertyName("totalValue")]
+    public decimal TotalValue { get; set; }
+}
+
+public record MonthlyMemberStats
+{
+    [JsonPropertyName("month")]
+    public string Month { get; set; } = string.Empty;
+
+    [JsonPropertyName("memberCount")]
+    public int MemberCount { get; set; }
+
+    [JsonPropertyName("newMembers")]
+    public int NewMembers { get; set; }
+}

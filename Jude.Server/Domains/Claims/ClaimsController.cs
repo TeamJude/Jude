@@ -82,4 +82,22 @@ public class ClaimsController : ControllerBase
         return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
 
+    [HttpGet("dashboard/claims/stats")]
+    [Authorize]
+    public async Task<IActionResult> GetClaimStats([FromQuery] string? practiceNumber = null, [FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null)
+    {
+        var input = new GetClaimStatsInput(string.Empty, practiceNumber, fromDate, toDate);
+        var result = await _claimsService.GetClaimStatsAsync(input);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
+
+    [HttpGet("dashboard/members/stats")]
+    [Authorize]
+    public async Task<IActionResult> GetMemberStats([FromQuery] string? practiceNumber = null, [FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null)
+    {
+        var input = new GetMemberStatsInput(string.Empty, practiceNumber, fromDate, toDate);
+        var result = await _claimsService.GetMemberStatsAsync(input);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
+
 }
