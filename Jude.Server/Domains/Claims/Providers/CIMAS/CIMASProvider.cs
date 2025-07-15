@@ -20,6 +20,10 @@ public interface ICIMASProvider
     // Pricing API methods
     Task<Result<string>> GetPricingAccessTokenAsync();
     Task<Result<TariffResponse>> GetTariffByCodeAsync(TariffLookupInput input);
+
+    // Dashboard Statistics methods
+    Task<Result<ClaimStats>> GetClaimStatsAsync(GetClaimStatsInput input);
+    Task<Result<MemberStats>> GetMemberStatsAsync(GetMemberStatsInput input);
 }
 
 public class CIMASProvider : ICIMASProvider
@@ -447,6 +451,124 @@ public class CIMASProvider : ICIMASProvider
         {
             _logger.LogError(ex, "Error getting tariff info for code {TariffCode}", input.TariffCode);
             return Result.Exception("Error getting tariff info");
+        }
+    }
+
+    public async Task<Result<ClaimStats>> GetClaimStatsAsync(GetClaimStatsInput input)
+    {
+        _logger.LogInformation("Getting claim statistics for practice {PracticeNumber}", input.PracticeNumber ?? "all");
+
+        try
+        {
+            var url = $"{AppConfig.CIMAS.ClaimsSwitchEndpoint}/dashboard/claims/stats";
+            var queryParams = new List<string>();
+
+            if (!string.IsNullOrEmpty(input.PracticeNumber))
+            {
+                queryParams.Add($"practice_number={Uri.EscapeDataString(input.PracticeNumber)}");
+            }
+
+            if (input.FromDate.HasValue)
+            {
+                queryParams.Add($"from_date={input.FromDate.Value:yyyy-MM-dd}");
+            }
+
+            if (input.ToDate.HasValue)
+            {
+                queryParams.Add($"to_date={input.ToDate.Value:yyyy-MM-dd}");
+            }
+
+            if (queryParams.Count > 0)
+            {
+                url += "?" + string.Join("&", queryParams);
+            }
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("Authorization", $"Bearer {input.AccessToken}");
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(
+                    "Failed to get claim statistics. Status: {Status}",
+                    response.StatusCode
+                );
+                return Result.Fail("Failed to get claim statistics");
+            }
+
+            var data = await response.Content.ReadFromJsonAsync<APIResponse<ClaimStats>>();
+            if (data == null)
+            {
+                _logger.LogError("Failed to deserialize claim statistics response");
+                return Result.Fail("Failed to deserialize claim statistics response");
+            }
+
+            return Result.Ok(data.Data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting claim statistics");
+            return Result.Exception("Error getting claim statistics");
+        }
+    }
+
+    public async Task<Result<MemberStats>> GetMemberStatsAsync(GetMemberStatsInput input)
+    {
+        _logger.LogInformation("Getting member statistics for practice {PracticeNumber}", input.PracticeNumber ?? "all");
+
+        try
+        {
+            var url = $"{AppConfig.CIMAS.ClaimsSwitchEndpoint}/dashboard/members/stats";
+            var queryParams = new List<string>();
+
+            if (!string.IsNullOrEmpty(input.PracticeNumber))
+            {
+                queryParams.Add($"practice_number={Uri.EscapeDataString(input.PracticeNumber)}");
+            }
+
+            if (input.FromDate.HasValue)
+            {
+                queryParams.Add($"from_date={input.FromDate.Value:yyyy-MM-dd}");
+            }
+
+            if (input.ToDate.HasValue)
+            {
+                queryParams.Add($"to_date={input.ToDate.Value:yyyy-MM-dd}");
+            }
+
+            if (queryParams.Count > 0)
+            {
+                url += "?" + string.Join("&", queryParams);
+            }
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("Authorization", $"Bearer {input.AccessToken}");
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(
+                    "Failed to get member statistics. Status: {Status}",
+                    response.StatusCode
+                );
+                return Result.Fail("Failed to get member statistics");
+            }
+
+            var data = await response.Content.ReadFromJsonAsync<APIResponse<MemberStats>>();
+            if (data == null)
+            {
+                _logger.LogError("Failed to deserialize member statistics response");
+                return Result.Fail("Failed to deserialize member statistics response");
+            }
+
+            return Result.Ok(data.Data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting member statistics");
+            return Result.Exception("Error getting member statistics");
         }
     }
 }

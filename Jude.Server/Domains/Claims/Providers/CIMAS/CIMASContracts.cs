@@ -548,6 +548,11 @@ public record PricingApiErrorResponse
 
 public record TariffLookupInput(string TariffCode, string PricingAccessToken);
 
+// Dashboard Statistics Inputs
+public record GetClaimStatsInput(string AccessToken, string? PracticeNumber = null, DateTime? FromDate = null, DateTime? ToDate = null);
+
+public record GetMemberStatsInput(string AccessToken, string? PracticeNumber = null, DateTime? FromDate = null, DateTime? ToDate = null);
+
 public record TariffPackage
 {
     [JsonPropertyName("createdAt")]
@@ -633,4 +638,92 @@ public record TariffResponse
 
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
+}
+
+// Dashboard Statistics Response Models
+public record ClaimStats
+{
+    [JsonPropertyName("totalClaims")]
+    public int TotalClaims { get; set; }
+
+    [JsonPropertyName("totalClaimValue")]
+    public decimal TotalClaimValue { get; set; }
+
+    [JsonPropertyName("totalApprovedValue")]
+    public decimal TotalApprovedValue { get; set; }
+
+    [JsonPropertyName("averageClaimValue")]
+    public decimal AverageClaimValue { get; set; }
+
+    [JsonPropertyName("approvalRate")]
+    public decimal ApprovalRate { get; set; }
+
+    [JsonPropertyName("claimsByStatus")]
+    public Dictionary<string, int> ClaimsByStatus { get; set; } = new();
+
+    [JsonPropertyName("claimsByMonth")]
+    public List<MonthlyClaimStats> ClaimsByMonth { get; set; } = [];
+
+    [JsonPropertyName("topProviders")]
+    public List<ProviderStats> TopProviders { get; set; } = [];
+}
+
+public record MemberStats
+{
+    [JsonPropertyName("totalMembers")]
+    public int TotalMembers { get; set; }
+
+    [JsonPropertyName("activeMembers")]
+    public int ActiveMembers { get; set; }
+
+    [JsonPropertyName("newMembersThisMonth")]
+    public int NewMembersThisMonth { get; set; }
+
+    [JsonPropertyName("membersByProduct")]
+    public Dictionary<string, int> MembersByProduct { get; set; } = new();
+
+    [JsonPropertyName("membersByGender")]
+    public Dictionary<string, int> MembersByGender { get; set; } = new();
+
+    [JsonPropertyName("averageAge")]
+    public decimal AverageAge { get; set; }
+
+    [JsonPropertyName("membershipGrowth")]
+    public List<MonthlyMemberStats> MembershipGrowth { get; set; } = [];
+}
+
+public record MonthlyClaimStats
+{
+    [JsonPropertyName("month")]
+    public string Month { get; set; } = string.Empty;
+
+    [JsonPropertyName("claimCount")]
+    public int ClaimCount { get; set; }
+
+    [JsonPropertyName("totalValue")]
+    public decimal TotalValue { get; set; }
+}
+
+public record ProviderStats
+{
+    [JsonPropertyName("providerName")]
+    public string ProviderName { get; set; } = string.Empty;
+
+    [JsonPropertyName("claimCount")]
+    public int ClaimCount { get; set; }
+
+    [JsonPropertyName("totalValue")]
+    public decimal TotalValue { get; set; }
+}
+
+public record MonthlyMemberStats
+{
+    [JsonPropertyName("month")]
+    public string Month { get; set; } = string.Empty;
+
+    [JsonPropertyName("memberCount")]
+    public int MemberCount { get; set; }
+
+    [JsonPropertyName("newMembers")]
+    public int NewMembers { get; set; }
 }
