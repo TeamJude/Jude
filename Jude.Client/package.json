@@ -20,6 +20,7 @@
     "@tanstack/react-query": "^5.79.2",
     "@tanstack/react-router": "^1.114.3",
     "@tanstack/react-router-devtools": "^1.114.3",
+    "@tanstack/react-store": "^0.7.3",
     "@tanstack/router-plugin": "^1.114.3",
     "boring-avatars": "^1.11.2",
     "framer-motion": "^12.12.1",
