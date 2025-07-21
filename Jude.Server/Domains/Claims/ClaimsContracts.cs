@@ -70,3 +70,37 @@ public record ReviewerInfo(
     string? Username,
     string Email
 );
+
+
+public enum ClaimsDashboardPeriod
+{
+    Last24Hours,
+    Last7Days,
+    Last30Days,
+    LastQuarter
+}
+
+public record ClaimsDashboardRequest(
+ClaimsDashboardPeriod Period
+);
+
+public record ClaimsDashboardResponse(
+    int TotalClaims,
+    double AutoApprovedRate,
+    double AvgProcessingTime,
+    int ClaimsFlagged,
+    double TotalClaimsChangePercent,
+    double AutoApprovedRateChangePercent,
+    double AvgProcessingTimeChangePercent,
+    double ClaimsFlaggedChangePercent,
+    List<ClaimsActivityResponse> ClaimsActivity
+);
+
+public record ClaimsActivityResponse(
+    string Day,
+    int NewClaims,
+    int Processed,
+    int Approved,
+    int Rejected
+);
+

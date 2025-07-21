@@ -1,6 +1,6 @@
-import type React from "react";
 import { Card, CardBody, CardFooter, Tooltip } from "@heroui/react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
+import type React from "react";
 
 interface MetricsCardProps {
 	title: string;
@@ -9,6 +9,7 @@ interface MetricsCardProps {
 	icon: IconName;
 	color: "default" | "primary" | "secondary" | "success" | "warning" | "danger";
 	subtitle?: string;
+	period?: string;
 	helpText?: string;
 }
 
@@ -18,6 +19,7 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
 	change,
 	icon,
 	color,
+	period,
 	subtitle,
 	helpText,
 }) => {
@@ -63,7 +65,7 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
 						>
 							{Math.abs(change)}% {change >= 0 ? "increase" : "decrease"}
 						</span>
-						<span className="text-xs text-foreground-400">vs last week</span>
+						<span className="text-xs text-foreground-400">{period}</span>
 					</div>
 				</CardFooter>
 			)}

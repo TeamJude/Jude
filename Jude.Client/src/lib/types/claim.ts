@@ -22,6 +22,13 @@ export enum FraudRiskLevel {
 	Critical,
 }
 
+export enum ClaimsDashboardPeriod {
+	Last24Hours,
+    Last7Days,
+    Last30Days,
+    LastQuarter
+}
+
 export interface Claim {
 	id: string;
 	transactionNumber: string;

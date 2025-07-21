@@ -1,8 +1,7 @@
-import React, { useMemo } from "react";
-import { cn } from "@heroui/react";
+import { cn, Tooltip } from "@heroui/react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Tooltip } from "@heroui/react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
+import React, { useMemo } from "react";
 
 export type SidebarItem = {
 	key: string;
@@ -15,7 +14,7 @@ export const sidebarItems: SidebarItem[] = [
 	{
 		key: "dashboard",
 		href: "/dashboard",
-		iconName: "layout-dashboard",
+		iconName: "home",
 		title: "Dashboard",
 	},
 	{
@@ -27,7 +26,7 @@ export const sidebarItems: SidebarItem[] = [
 	{
 		key: "knowledge",
 		href: "/knowledge",
-		iconName: "book-text",
+		iconName: "library-big",
 		title: "Knowledge Base",
 	},
 ];
