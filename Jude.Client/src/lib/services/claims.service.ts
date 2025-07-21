@@ -1,8 +1,9 @@
 import {
-    ClaimStatus,
-    FraudRiskLevel,
-    type Claim,
-    type ClaimSummary,
+	ClaimsDashboardPeriod,
+	ClaimStatus,
+	FraudRiskLevel,
+	type Claim,
+	type ClaimSummary,
 } from "../types/claim";
 import { apiRequest, type ApiResponse } from "../utils/api";
 
@@ -55,5 +56,27 @@ const getClaim = async (claimId: string): Promise<ApiResponse<Claim>> => {
 	});
 };
 
-export { getClaim, getClaims };
+const getClaimsDashboard = async (period: ClaimsDashboardPeriod) => {
+	return apiRequest<{
+		totalClaims: number;
+		autoApprovedRate: number;
+		avgProcessingTime: number;
+		claimsFlagged: number;
+		totalClaimsChangePercent: number;
+		autoApprovedRateChangePercent: number;
+		avgProcessingTimeChangePercent: number;
+		claimsFlaggedChangePercent: number;
+		claimsActivity: Array<{
+			day: string;
+			newClaims: number;
+			processed: number;
+			approved: number;
+			rejected: number;
+		}>;
+	}>(`/api/claims/dashboard?period=${period}`, {
+		method: "GET",
+	});
+};
+
+export { getClaim, getClaims, getClaimsDashboard };
 

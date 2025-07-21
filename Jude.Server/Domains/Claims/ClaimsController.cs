@@ -22,6 +22,17 @@ public class ClaimsController : ControllerBase
         _logger = logger;
     }
 
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> GetDashboardStats([FromQuery] ClaimsDashboardRequest request)
+    {
+        var result = await _claimsService.GetDashboardStatsAsync(request);
+        if (!result.Success)
+        {
+            return BadRequest(result.Errors);
+        }
+        return Ok(result.Data);
+    }
+
     [HttpGet("member/{membershipNumber}/{suffix}")]
     public async Task<IActionResult> GetMember(int membershipNumber, int suffix)
     {
@@ -81,5 +92,8 @@ public class ClaimsController : ControllerBase
         var result = await _claimsService.GetClaimAsync(claimId);
         return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
+
+
+
 
 }

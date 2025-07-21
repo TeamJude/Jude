@@ -47,7 +47,13 @@ public static class AppConfig
             Environment.GetEnvironmentVariable("CIMAS_ACCOUNT_PASSWORD")
                 ?? throw new Exception("CIMAS Account Password is not set"),
             Environment.GetEnvironmentVariable("CIMAS_PRACTICE_NUMBER")
-                ?? throw new Exception("CIMAS Practice number is not set")
+                ?? throw new Exception("CIMAS Practice number is not set"),
+            Environment.GetEnvironmentVariable("CIMAS_PRICING_API_ENDPOINT")
+                ?? throw new Exception("CIMAS Pricing API Endpoint is not set"),
+            Environment.GetEnvironmentVariable("CIMAS_PRICING_API_USERNAME")
+                ?? throw new Exception("CIMAS Pricing API Username is not set"),
+            Environment.GetEnvironmentVariable("CIMAS_PRICING_API_PASSWORD")
+                ?? throw new Exception("CIMAS Pricing API Password is not set")
         );
 
     public static AzureAI AzureAI { get; } =
@@ -70,7 +76,10 @@ public record CIMASConfig(
     string ClaimsSwitchEndpoint,
     string AccountName,
     string AccountPassword,
-    string PracticeNumber
+    string PracticeNumber,
+    string PricingApiEndpoint,
+    string PricingApiUsername,
+    string PricingApiPassword
 );
 
 public record AzureAI(string ModelId, string Endpoint, string ApiKey);
