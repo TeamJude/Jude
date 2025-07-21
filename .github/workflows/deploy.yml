@@ -83,7 +83,11 @@ jobs:
 
             export GITHUB_ACTOR="${{ github.actor }}"
             export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-                      
+
+            CIMAS_PRICING_API_ENDPOINT="${{ secrets.CIMAS_PRICING_API_ENDPOINT }}"
+            CIMAS_PRICING_API_USERNAME="${{ secrets.CIMAS_PRICING_API_USERNAME }}"
+            CIMAS_PRICING_API_PASSWORD="${{ secrets.CIMAS_PRICING_API_PASSWORD }}"
+
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             docker compose  -f docker-compose.prod.yml pull
