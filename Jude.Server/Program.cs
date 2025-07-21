@@ -108,60 +108,6 @@ using (var scope = app.Services.CreateScope())
 
     var passwordHasher = services.GetRequiredService<IPasswordHasher<UserModel>>();
     await DbSeeder.SeedData(context, passwordHasher);
-
-    // Test CIMAS Pricing API
-    try
-    {
-        var cimasProvider = services.GetRequiredService<Jude.Server.Domains.Claims.Providers.CIMAS.ICIMASProvider>();
-        var logger = services.GetRequiredService<ILogger<Program>>();
-
-        logger.LogInformation("=== Testing CIMAS Pricing API ===");
-
-        // Test with tariff code - replace with your actual tariff number
-        string testTariffCode = "01011"; // You can replace this with your tariff number
-
-        logger.LogInformation("Getting pricing access token...");
-        var tokenResult = await cimasProvider.GetPricingAccessTokenAsync();
-
-        if (tokenResult.Success)
-        {
-            logger.LogInformation("✅ Successfully obtained pricing access token");
-
-            logger.LogInformation("Looking up tariff code: {TariffCode}", testTariffCode);
-            var tariffInput = new Jude.Server.Domains.Claims.Providers.CIMAS.TariffLookupInput(testTariffCode, tokenResult.Data!);
-            var tariffResult = await cimasProvider.GetTariffByCodeAsync(tariffInput);
-
-            if (tariffResult.Success)
-            {
-                var tariff = tariffResult.Data!;
-                logger.LogInformation("✅ Successfully retrieved tariff:");
-                logger.LogInformation("   Code: {Code}", tariff.Code);
-                logger.LogInformation("   Description: {Description}", tariff.Description);
-                logger.LogInformation("   Packages Count: {PackageCount}", tariff.Packages.Count);
-
-                foreach (var package in tariff.Packages.Take(3)) // Show first 3 packages
-                {
-                    logger.LogInformation("   Package: {PackageName} - {Currency} {Amount}",
-                        package.Name.Package, package.Currency, package.Amount);
-                }
-            }
-            else
-            {
-                logger.LogError("❌ Failed to get tariff: {Errors}", string.Join(", ", tariffResult.Errors));
-            }
-        }
-        else
-        {
-            logger.LogError("❌ Failed to get pricing access token: {Errors}", string.Join(", ", tokenResult.Errors));
-        }
-
-        logger.LogInformation("=== End CIMAS Pricing API Test ===");
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "❌ Error during CIMAS Pricing API test");
-    }
 }
 
 app.Run();
