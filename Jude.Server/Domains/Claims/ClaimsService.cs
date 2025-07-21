@@ -313,96 +313,91 @@ public class ClaimsService : IClaimsService
             _logger.LogDebug("Cached access token only (no refresh token provided)");
         }
     }
+    private double CalculateChangePercent(double current, double previous)
+    {
+        if (previous == 0)
+        {
+            return current > 0 ? 100.0 : 0.0;
+        }
+        return ((current - previous) / previous) * 100;
+    }
+
     public async Task<Result<ClaimsDashboardResponse>> GetDashboardStatsAsync(ClaimsDashboardRequest request)
     {
         try
         {
             var now = DateTime.UtcNow;
-            IQueryable<ClaimModel> query = _repository.Claims;
-            DateTime start;
-            List<string> timeLabels = new();
-            List<ClaimsActivityResponse> activity = new();
+            DateTime currentPeriodStart, previousPeriodStart, previousPeriodEnd;
 
             switch (request.Period)
             {
                 case ClaimsDashboardPeriod.Last24Hours:
-                    start = now.Date;
-                    for (int h = 0; h < 24; h++)
-                        timeLabels.Add(h.ToString("D2") + ":00");
+                    currentPeriodStart = now.Date;
+                    previousPeriodEnd = currentPeriodStart;
+                    previousPeriodStart = previousPeriodEnd.AddDays(-1);
                     break;
                 case ClaimsDashboardPeriod.Last7Days:
-                    start = now.Date.AddDays(-6);
-                    for (int d = 0; d < 7; d++)
-                        timeLabels.Add(start.AddDays(d).ToString("ddd"));
+                    currentPeriodStart = now.Date.AddDays(-6);
+                    previousPeriodEnd = currentPeriodStart;
+                    previousPeriodStart = previousPeriodEnd.AddDays(-7);
                     break;
                 case ClaimsDashboardPeriod.Last30Days:
-                    start = now.Date.AddDays(-29);
-                    for (int d = 0; d < 30; d++)
-                        timeLabels.Add(start.AddDays(d).ToString("MM-dd"));
+                    currentPeriodStart = now.Date.AddDays(-29);
+                    previousPeriodEnd = currentPeriodStart;
+                    previousPeriodStart = previousPeriodEnd.AddDays(-30);
                     break;
                 case ClaimsDashboardPeriod.LastQuarter:
-                    start = now.Date.AddMonths(-3);
-                    for (int m = 0; m < 4; m++)
-                        timeLabels.Add(start.AddMonths(m).ToString("MMM yyyy"));
+                    currentPeriodStart = now.Date.AddMonths(-3);
+                    previousPeriodEnd = currentPeriodStart;
+                    previousPeriodStart = previousPeriodEnd.AddMonths(-3);
                     break;
                 default:
-                    start = now.Date.AddDays(-6);
-                    for (int d = 0; d < 7; d++)
-                        timeLabels.Add(start.AddDays(d).ToString("ddd"));
+                    currentPeriodStart = now.Date.AddDays(-6);
+                    previousPeriodEnd = currentPeriodStart;
+                    previousPeriodStart = previousPeriodEnd.AddDays(-7);
                     break;
             }
 
-            var filteredClaims = await query.Where(c => c.IngestedAt >= start && c.IngestedAt <= now).ToListAsync();
+            var currentPeriodQuery = _repository.Claims.Where(c => c.IngestedAt >= currentPeriodStart && c.IngestedAt <= now);
+            var previousPeriodQuery = _repository.Claims.Where(c => c.IngestedAt >= previousPeriodStart && c.IngestedAt < previousPeriodEnd);
 
-            // Timeseries aggregation
-            foreach (var label in timeLabels)
-            {
-                IEnumerable<ClaimModel> claimsForPoint;
-                switch (request.Period)
-                {
-                    case ClaimsDashboardPeriod.Last24Hours:
-                        var hour = int.Parse(label.Substring(0, 2));
-                        claimsForPoint = filteredClaims.Where(c => c.IngestedAt.Hour == hour && c.IngestedAt.Date == now.Date);
-                        break;
-                    case ClaimsDashboardPeriod.Last7Days:
-                        var day = label;
-                        claimsForPoint = filteredClaims.Where(c => c.IngestedAt.ToString("ddd") == day);
-                        break;
-                    case ClaimsDashboardPeriod.Last30Days:
-                        var date = label;
-                        claimsForPoint = filteredClaims.Where(c => c.IngestedAt.ToString("MM-dd") == date);
-                        break;
-                    case ClaimsDashboardPeriod.LastQuarter:
-                        var monthYear = label;
-                        claimsForPoint = filteredClaims.Where(c => c.IngestedAt.ToString("MMM yyyy") == monthYear);
-                        break;
-                    default:
-                        claimsForPoint = Enumerable.Empty<ClaimModel>();
-                        break;
-                }
-                activity.Add(new ClaimsActivityResponse(
-                    label,
-                    claimsForPoint.Count(),
-                    claimsForPoint.Count(c => c.Status != ClaimStatus.Pending),
-                    claimsForPoint.Count(c => c.FinalDecision == ClaimDecision.Approved),
-                    claimsForPoint.Count(c => c.FinalDecision == ClaimDecision.Rejected)
-                ));
-            }
+            // --- Current Period Stats ---
+            int totalClaims = await currentPeriodQuery.CountAsync();
+            int autoApproved = await currentPeriodQuery.CountAsync(c => c.FinalDecision == ClaimDecision.Approved && c.AgentRecommendation == "Auto-Approved");
+            var processingTimes = await currentPeriodQuery
+                .Where(c => c.AgentProcessedAt.HasValue)
+                .Select(c => new { c.IngestedAt, c.AgentProcessedAt })
+                .ToListAsync();
+            int claimsFlagged = await currentPeriodQuery.CountAsync(c => c.IsFlagged);
 
-            // Stats
-            int totalClaims = filteredClaims.Count;
-            int autoApproved = filteredClaims.Count(c => c.FinalDecision == ClaimDecision.Approved && c.AgentRecommendation == "Auto-Approved");
+            // --- Previous Period Stats ---
+            int prevTotalClaims = await previousPeriodQuery.CountAsync();
+            int prevAutoApproved = await previousPeriodQuery.CountAsync(c => c.FinalDecision == ClaimDecision.Approved && c.AgentRecommendation == "Auto-Approved");
+            var prevProcessingTimes = await previousPeriodQuery
+                .Where(c => c.AgentProcessedAt.HasValue)
+                .Select(c => new { c.IngestedAt, c.AgentProcessedAt })
+                .ToListAsync();
+            int prevClaimsFlagged = await previousPeriodQuery.CountAsync(c => c.IsFlagged);
+
+            // --- Calculate Final Stats ---
+            double avgProcessingTime = processingTimes.Any()
+                ? processingTimes.Average(c => (c.AgentProcessedAt.Value - c.IngestedAt).TotalMinutes)
+                : 0;
+            double prevAvgProcessingTime = prevProcessingTimes.Any()
+                ? prevProcessingTimes.Average(c => (c.AgentProcessedAt.Value - c.IngestedAt).TotalMinutes)
+                : 0;
+
             double autoApprovedRate = totalClaims > 0 ? (double)autoApproved / totalClaims * 100 : 0;
-            double avgProcessingTime = filteredClaims.Where(c => c.ProcessedAt.HasValue && c.SubmittedAt.HasValue && c.ProcessedAt != null && c.SubmittedAt != null)
-                .Select(c => (c.ProcessedAt.Value - c.SubmittedAt.Value).TotalMinutes)
-                .DefaultIfEmpty(0).Average();
-            int claimsFlagged = filteredClaims.Count(c => c.IsFlagged);
+            double prevAutoApprovedRate = prevTotalClaims > 0 ? (double)prevAutoApproved / prevTotalClaims * 100 : 0;
 
-            // Change percents (dummy for now)
-            double totalClaimsChangePercent = 8;
-            double autoApprovedRateChangePercent = 3;
-            double avgProcessingTimeChangePercent = -12;
-            double claimsFlaggedChangePercent = 5;
+            // --- Calculate Change Percentages ---
+            double totalClaimsChangePercent = CalculateChangePercent(totalClaims, prevTotalClaims);
+            double autoApprovedRateChangePercent = CalculateChangePercent(autoApprovedRate, prevAutoApprovedRate);
+            double avgProcessingTimeChangePercent = CalculateChangePercent(avgProcessingTime, prevAvgProcessingTime);
+            double claimsFlaggedChangePercent = CalculateChangePercent(claimsFlagged, prevClaimsFlagged);
+
+            // --- Activity Chart Data ---
+            var activity = await GetClaimsActivityAsync(currentPeriodQuery, request.Period, currentPeriodStart);
 
             var response = new ClaimsDashboardResponse(
                 totalClaims,
@@ -422,5 +417,94 @@ public class ClaimsService : IClaimsService
             _logger.LogError(ex, "Error generating dashboard stats");
             return Result.Fail($"Failed to generate dashboard stats: {ex.Message}");
         }
+    }
+
+    private async Task<List<ClaimsActivityResponse>> GetClaimsActivityAsync(IQueryable<ClaimModel> query, ClaimsDashboardPeriod period, DateTime startDate)
+    {
+        var activity = new List<ClaimsActivityResponse>();
+
+        switch (period)
+        {
+            case ClaimsDashboardPeriod.Last7Days:
+                var dailyData = await query
+                    .GroupBy(c => c.IngestedAt.Date)
+                    .Select(g => new { Date = g.Key, Total = g.Count(), Processed = g.Count(c => c.Status != ClaimStatus.Pending), Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved), Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected) })
+                    .ToDictionaryAsync(x => x.Date, x => x);
+
+                for (int i = 0; i < 7; i++)
+                {
+                    var date = startDate.AddDays(i).Date;
+                    if (dailyData.TryGetValue(date, out var data))
+                    {
+                        activity.Add(new ClaimsActivityResponse(date.ToString("ddd"), data.Total, data.Processed, data.Approved, data.Rejected));
+                    }
+                    else
+                    {
+                        activity.Add(new ClaimsActivityResponse(date.ToString("ddd"), 0, 0, 0, 0));
+                    }
+                }
+                break;
+
+            case ClaimsDashboardPeriod.Last30Days:
+                var monthlyData = await query
+                    .GroupBy(c => c.IngestedAt.Date)
+                    .Select(g => new { Date = g.Key, Total = g.Count(), Processed = g.Count(c => c.Status != ClaimStatus.Pending), Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved), Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected) })
+                    .ToDictionaryAsync(x => x.Date, x => x);
+
+                for (int i = 0; i < 30; i++)
+                {
+                    var date = startDate.AddDays(i).Date;
+                    if (monthlyData.TryGetValue(date, out var data))
+                    {
+                        activity.Add(new ClaimsActivityResponse(date.ToString("MM-dd"), data.Total, data.Processed, data.Approved, data.Rejected));
+                    }
+                    else
+                    {
+                        activity.Add(new ClaimsActivityResponse(date.ToString("MM-dd"), 0, 0, 0, 0));
+                    }
+                }
+                break;
+
+            case ClaimsDashboardPeriod.LastQuarter:
+                var quarterlyData = await query
+                    .GroupBy(c => new { c.IngestedAt.Year, c.IngestedAt.Month })
+                    .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Count(), Processed = g.Count(c => c.Status != ClaimStatus.Pending), Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved), Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected) })
+                    .ToDictionaryAsync(x => new { x.Year, x.Month }, x => x);
+
+                for (int i = 0; i < 4; i++)
+                {
+                    var date = startDate.AddMonths(i);
+                    if (quarterlyData.TryGetValue(new { date.Year, date.Month }, out var data))
+                    {
+                        activity.Add(new ClaimsActivityResponse(date.ToString("MMM yyyy"), data.Total, data.Processed, data.Approved, data.Rejected));
+                    }
+                    else
+                    {
+                        activity.Add(new ClaimsActivityResponse(date.ToString("MMM yyyy"), 0, 0, 0, 0));
+                    }
+                }
+                break;
+
+            case ClaimsDashboardPeriod.Last24Hours:
+                var hourlyData = await query
+                    .Where(c => c.IngestedAt.Date == DateTime.UtcNow.Date)
+                    .GroupBy(c => c.IngestedAt.Hour)
+                    .Select(g => new { Hour = g.Key, Total = g.Count(), Processed = g.Count(c => c.Status != ClaimStatus.Pending), Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved), Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected) })
+                    .ToDictionaryAsync(x => x.Hour, x => x);
+
+                for (int i = 0; i < 24; i++)
+                {
+                    if (hourlyData.TryGetValue(i, out var data))
+                    {
+                        activity.Add(new ClaimsActivityResponse(i.ToString("D2") + ":00", data.Total, data.Processed, data.Approved, data.Rejected));
+                    }
+                    else
+                    {
+                        activity.Add(new ClaimsActivityResponse(i.ToString("D2") + ":00", 0, 0, 0, 0));
+                    }
+                }
+                break;
+        }
+        return activity;
     }
 }
