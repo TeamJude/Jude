@@ -24,9 +24,9 @@ public class Jude
         _kernel = Kernel
             .CreateBuilder()
             .AddAzureOpenAIChatCompletion(
-                AppConfig.AzureAI.ModelId,
-                AppConfig.AzureAI.Endpoint,
-                AppConfig.AzureAI.ApiKey
+                AppConfig.Azure.AI.ModelId,
+                AppConfig.Azure.AI.Endpoint,
+                AppConfig.Azure.AI.ApiKey
             )
             .Build();
     }

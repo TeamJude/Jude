@@ -56,13 +56,40 @@ public static class AppConfig
                 ?? throw new Exception("CIMAS Pricing API Password is not set")
         );
 
-    public static AzureAI AzureAI { get; } =
-        new AzureAI(
-            "gpt-4.1",
-            Environment.GetEnvironmentVariable("AZURE_AI_ENDPOINT")
-                ?? throw new Exception("AZURE AI Endpoint is not set"),
-            Environment.GetEnvironmentVariable("AZURE_AI_APIKEY")
-                ?? throw new Exception("AZURE AI api key is not set")
+    public static Azure Azure { get; } =
+        new Azure(
+            new AzureAI(
+                "gpt-4.1",
+                Environment.GetEnvironmentVariable("AZURE_AI_ENDPOINT")
+                    ?? throw new Exception("AZURE AI Endpoint is not set"),
+                Environment.GetEnvironmentVariable("AZURE_AI_APIKEY")
+                    ?? throw new Exception("AZURE AI api key is not set")
+            ),
+            new AzureSearch(
+                Environment.GetEnvironmentVariable("AZURE_AI_SEARCH_ENDPOINT")
+                    ?? throw new Exception("AZURE AI Search Endpoint is not set"),
+                Environment.GetEnvironmentVariable("AZURE_AI_SEARCH_APIKEY")
+                    ?? throw new Exception("AZURE AI Search API Key is not set")
+            ),
+            new AzureBlob(
+                Environment.GetEnvironmentVariable("AZURE_BLOB_ACCOUNT")
+                    ?? throw new Exception("AZURE Blob Account is not set"),
+                Environment.GetEnvironmentVariable("AZURE_BLOB_ACESS_KEY")
+                    ?? throw new Exception("AZURE Blob Access Key is not set"),
+                Environment.GetEnvironmentVariable("AZURE_BLOB_CONTAINER")
+                    ?? throw new Exception("AZURE Blob Container is not set"),
+                Environment.GetEnvironmentVariable("AZURE_BLOB_CONNECTION_STRING")
+                    ?? throw new Exception("AZURE Blob Connection String is not set")
+            )
+        );
+
+    public static CustomAzureAI CustomAzureAI { get; } =
+        new CustomAzureAI(
+            "text-embedding-3-small",
+            Environment.GetEnvironmentVariable("CUSTOM_AZURE_AI_ENDPOINT")
+                ?? throw new Exception("Customer azure ai endpoint is not set"),
+            Environment.GetEnvironmentVariable("CUSTOM_AZURE_AI_APIKEY")
+                ?? throw new Exception("custom azure ai apikey is not set")
         );
 }
 
@@ -82,4 +109,17 @@ public record CIMASConfig(
     string PricingApiPassword
 );
 
+public record Azure(AzureAI AI, AzureSearch Search, AzureBlob Blob);
+
 public record AzureAI(string ModelId, string Endpoint, string ApiKey);
+
+public record AzureSearch(string Endpoint, string ApiKey);
+
+public record AzureBlob(
+    string Account,
+    string AccessKey,
+    string Container,
+    string ConnectionString
+);
+
+public record CustomAzureAI(string ModelId, string Endpoint, string ApiKey);

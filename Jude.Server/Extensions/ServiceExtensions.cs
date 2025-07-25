@@ -12,6 +12,7 @@ using Jude.Server.Domains.Auth.Authorization;
 using Jude.Server.Domains.Claims;
 using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Jude.Server.Domains.Fraud;
+using Jude.Server.Domains.Policies;
 using Jude.Server.Domains.Rules;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -157,6 +158,8 @@ public static class ServiceExtensions
         services.AddScoped<Domains.Agents.Jude>();
         services.AddScoped<IAgentManager, AgentManager>();
         services.AddScoped<Orchestrator>();
+
+        services.AddScoped<IPolicyContext, PolicyContext>();
 
         // Background Services
         services.AddHostedService<ClaimsIngestProcessor>();
