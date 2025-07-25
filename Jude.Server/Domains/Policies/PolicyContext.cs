@@ -1,5 +1,6 @@
 using Jude.Server.Config;
 using Jude.Server.Core.Helpers;
+using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory;
 
 namespace Jude.Server.Domains.Policies;
@@ -13,29 +14,16 @@ public interface IPolicyContext
 public class PolicyContext : IPolicyContext
 {
     private readonly MemoryServerless _memory;
+    private readonly ILogger<PolicyContext> _logger;
 
-    public PolicyContext()
+    public PolicyContext(ILogger<PolicyContext> logger)
     {
+        _logger = logger;
         _memory = new KernelMemoryBuilder()
-            .WithSimpleVectorDb()
             .WithSimpleQueuesPipeline()
             .With(new KernelMemoryConfig { DefaultIndexName = "jude" })
-            .WithAzureBlobsDocumentStorage(
-                new()
-                {
-                    Auth = AzureBlobsConfig.AuthTypes.ConnectionString,
-                    ConnectionString = AppConfig.Azure.Blob.ConnectionString,
-                }
-            )
-            .WithAzureAISearchMemoryDb(
-                new()
-                {
-                    Auth = AzureAISearchConfig.AuthTypes.APIKey,
-                    APIKey = AppConfig.Azure.AI.ApiKey,
-                    Endpoint = AppConfig.Azure.AI.Endpoint,
-                    UseHybridSearch = false,
-                }
-            )
+            .WithPostgresMemoryDb(AppConfig.VectorDbUrl)
+            .WithSimpleFileStorage("C:\\Users\\devma\\Desktop\\policies")
             .WithAzureOpenAITextEmbeddingGeneration(
                 new()
                 {
@@ -59,21 +47,21 @@ public class PolicyContext : IPolicyContext
                 }
             )
             .WithSearchClientConfig(new() { AnswerTokens = 16768, MaxAskPromptSize = 8000 })
-            .Build<MemoryServerless>(
-                //this is fine because i am not storing any documents at the moment
-                new() { AllowMixingVolatileAndPersistentData = true }
-            );
+            .Build<MemoryServerless>();
     }
 
     public async Task<Result<string>> Ingest(Stream document, TagCollection tags)
     {
+        _logger.LogInformation("Starting document ingestion with tags: {Tags}", tags);
         var docId = await _memory.ImportDocumentAsync(document, tags: tags);
 
         if (docId == null)
         {
+            _logger.LogError("Failed to ingest document.");
             return Result.Fail("Failed to ingest document.");
         }
 
+        _logger.LogInformation("Document ingested successfully. DocumentId: {DocumentId}", docId);
         return Result.Ok(docId);
     }
 
@@ -82,6 +70,9 @@ public class PolicyContext : IPolicyContext
         CancellationToken cancellationToken = default
     )
     {
-        return await _memory.SearchAsync(query, cancellationToken: cancellationToken);
+        _logger.LogInformation("Searching policies with query: {Query}", query);
+        var result = await _memory.SearchAsync(query, cancellationToken: cancellationToken);
+        _logger.LogInformation("Search completed for query: {Query}", query);
+        return result;
     }
 }

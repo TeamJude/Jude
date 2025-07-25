@@ -5,6 +5,7 @@ using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Jude.Server.Migrations
 {
     [DbContext(typeof(JudeDbContext))]
-    partial class JudeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250725103713_removeDocUrl")]
+    partial class removeDocUrl
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -172,10 +175,6 @@ namespace Jude.Server.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("DocumentId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("DocumentUrl")
                         .IsRequired()
                         .HasColumnType("text");
 

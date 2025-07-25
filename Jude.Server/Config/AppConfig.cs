@@ -91,6 +91,10 @@ public static class AppConfig
             Environment.GetEnvironmentVariable("CUSTOM_AZURE_AI_APIKEY")
                 ?? throw new Exception("custom azure ai apikey is not set")
         );
+
+    public static string VectorDbUrl { get; } =
+        Environment.GetEnvironmentVariable("VECTOR_DB_URL")
+        ?? throw new Exception("Vector DB URL is not set");
 }
 
 public record Database(string ConnectionString);

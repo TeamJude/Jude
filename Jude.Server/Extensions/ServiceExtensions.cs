@@ -160,6 +160,7 @@ public static class ServiceExtensions
         services.AddScoped<Orchestrator>();
 
         services.AddScoped<IPolicyContext, PolicyContext>();
+        services.AddScoped<IPolicyService, PolicyService>();
 
         // Background Services
         services.AddHostedService<ClaimsIngestProcessor>();
