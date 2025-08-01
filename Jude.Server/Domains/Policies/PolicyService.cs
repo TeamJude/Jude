@@ -11,6 +11,7 @@ namespace Jude.Server.Domains.Policies;
 public interface IPolicyService
 {
     Task<Result<PolicyModel>> UploadPolicyAsync(IFormFile file, string name, Guid createdById);
+    Task<Result<GetPoliciesResponse>> GetPolicies(GetPoliciesRequest request);
 }
 
 public class PolicyService : IPolicyService
@@ -61,5 +62,28 @@ public class PolicyService : IPolicyService
         _dbContext.Policies.Add(policy);
         await _dbContext.SaveChangesAsync();
         return Result.Ok(policy);
+    }
+
+    public async Task<Result<GetPoliciesResponse>> GetPolicies(GetPoliciesRequest request)
+    {
+        var query = _dbContext.Policies.AsQueryable();
+
+        var totalCount = await query.CountAsync();
+        var policies = await query
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(p => new PolicyResponse(
+                p.Id,
+                p.Name,
+                p.DocumentId,
+                p.DocumentUrl,
+                p.Status,
+                p.CreatedAt,
+                p.UpdatedAt,
+                p.CreatedById
+            ))
+            .ToArrayAsync();
+
+        return Result.Ok(new GetPoliciesResponse(policies, totalCount));
     }
 }

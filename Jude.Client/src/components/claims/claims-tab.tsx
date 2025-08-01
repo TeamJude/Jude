@@ -186,63 +186,103 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 									</Chip>
 								</div>
 
-								<div className="bg-content2 p-4 rounded-md space-y-3">
+								<div className="bg-content2 p-4 rounded-md space-y-4">
+									<div className="mb-3">
+										<p className="text-sm text-foreground-600">
+											Based on the policy document and the claim provided, the system returned a status of <strong>"HELD_FOR_REVIEW"</strong> on both service lines. Here's a 5-point reasoning log explaining why this decision was made, including citations from the policy:
+										</p>
+									</div>
+
 									<div className="flex gap-2">
-										<CheckCircle className="text-success mt-0.5" width={18} />
+										<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">1</span>
 										<div>
 											<p className="text-sm">
 												<span className="font-medium">
-													Checked Policy Document 'Medical Coverage v2.3':
-												</span>{" "}
-												Section 4.B - Service covered under standard
-												consultation benefits.
+													Initial Examination May Fall Under Age or Benefit Frequency Rules
+												</span>
+											</p>
+											<p className="text-xs text-foreground-600 mt-1">
+												<strong>Claimed Code:</strong> 98101 (Initial examination, charting and case history).
+											</p>
+											<p className="text-xs text-foreground-600 mt-1">
+												<strong>Reasoning:</strong> While this code is likely a standard entry-level procedure, some tariffs are flagged for periodic claim rules or age-based rules.
+											</p>
+											<p className="text-xs text-foreground-500 mt-1 italic">
+												<strong>Policy Reference:</strong> "There are procedures or tariffs that are claimable periodically e.g., once a year… The system should check the previous claim and use the treatment date…" — Section 3.15
 											</p>
 										</div>
 									</div>
 
 									<div className="flex gap-2">
-										<CheckCircle className="text-success mt-0.5" width={18} />
+										<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">2</span>
 										<div>
 											<p className="text-sm">
 												<span className="font-medium">
-													Applied Rule 'Provider Network Check':
-												</span>{" "}
-												Provider ID #PRV-28765 confirmed in-network for member's
-												plan.
+													Dental Procedure Requires Tooth Number
+												</span>
+											</p>
+											<p className="text-xs text-foreground-600 mt-1">
+												<strong>Claimed Code:</strong> 98411 (Composite restorations – One surface).
+											</p>
+											<p className="text-xs text-foreground-600 mt-1">
+												<strong>Reasoning:</strong> Dental procedures like restorations typically require tooth numbers to be specified. If omitted, the claim is held or rejected.
+											</p>
+											<p className="text-xs text-foreground-500 mt-1 italic">
+												<strong>Policy Reference:</strong> "Where a tooth number is not indicated the claim line is auto rejected by the system." — Section 2.12: Tooth Number Check
 											</p>
 										</div>
 									</div>
 
 									<div className="flex gap-2">
-										<AlertCircle className="text-warning mt-0.5" width={18} />
+										<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">3</span>
 										<div>
 											<p className="text-sm">
 												<span className="font-medium">
-													Applied Rule 'High Value Check':
-												</span>{" "}
-												Amount {">"} $1,000 - Flagged for review.
+													Manual Adjudication Triggered by Possible Duplicate or Rule Conflict
+												</span>
+											</p>
+											<p className="text-xs text-foreground-600 mt-1">
+												<strong>Reasoning:</strong> Since both lines are basic dental procedures, there's a possibility that system rules like Multi-Code Rule (MCR) or Duplicate Check apply, flagging it for manual review.
+											</p>
+											<p className="text-xs text-foreground-500 mt-1 italic">
+												<strong>Policy Reference:</strong> "Tariff codes that cannot be claimed together on the same day by the same provider… should be rejected and routed for manual adjudication." — Section 3.5
 											</p>
 										</div>
 									</div>
 
 									<div className="flex gap-2">
-										<Info className="text-primary mt-0.5" width={18} />
+										<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">4</span>
 										<div>
 											<p className="text-sm">
-												<span className="font-medium">Historical Data:</span>{" "}
-												Member had similar claim #CL-2023-45678 approved on
-												03/15/2023.
+												<span className="font-medium">
+													No Benefit or Scheme Amounts Reflected Suggest Manual Flag
+												</span>
+											</p>
+											<p className="text-xs text-foreground-600 mt-1">
+												<strong>Observation:</strong> Both SchemeAmount, SavingsAmount, and NettProvider are 0.00, showing no auto-award was triggered.
+											</p>
+											<p className="text-xs text-foreground-600 mt-1">
+												<strong>Reasoning:</strong> The claim may have hit a rule that prevents system payment and forces manual review, such as NCA (No Computer Adjudication).
+											</p>
+											<p className="text-xs text-foreground-500 mt-1 italic">
+												<strong>Policy Reference:</strong> "The NCA adjudication indicator shows that a claim should not be auto assessed by the system…" — Section 3.11
 											</p>
 										</div>
 									</div>
 
 									<div className="flex gap-2">
-										<BarChart className="text-secondary mt-0.5" width={18} />
+										<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">5</span>
 										<div>
 											<p className="text-sm">
-												<span className="font-medium">Model Prediction:</span>{" "}
-												Confidence Score 0.85 for 'Approve', 0.15 for 'Potential
-												Fraud'.
+												<span className="font-medium">
+													Preliminary Dental Work Often Requires Review
+												</span>
+											</p>
+											<p className="text-xs text-foreground-600 mt-1">
+												<strong>Reasoning:</strong> Services related to dental assessment or restorations are prone to misuse or need contextual validation (e.g., repeat work, excessive servicing).
+											</p>
+											<p className="text-xs text-foreground-500 mt-1 italic">
+												<strong>Policy Reference:</strong> "The rules assist in controlling misuse, abuse of benefits and overservicing tendencies." — Section 4: Overview
 											</p>
 										</div>
 									</div>

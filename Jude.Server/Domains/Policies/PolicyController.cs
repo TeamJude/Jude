@@ -34,4 +34,11 @@ public class PolicyController : ControllerBase
         }
         return Ok(result.Data);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetPolicies([FromQuery] GetPoliciesRequest request)
+    {
+        var result = await _policyService.GetPolicies(request);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
 } 

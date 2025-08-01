@@ -1,6 +1,6 @@
 import { ClaimStatus } from "@/lib/types/claim";
-import { Avatar, Button, Card, CardBody } from "@heroui/react";
-import { Building2, Calendar, DollarSign, Printer } from "lucide-react";
+import { Button, Card, CardBody } from "@heroui/react";
+import { Building2, Calendar, DollarSign, Printer, User } from "lucide-react";
 import type React from "react";
 
 interface ClaimDetailHeaderProps {
@@ -13,7 +13,6 @@ interface ClaimDetailHeaderProps {
 	dateOfService: string;
 	amount: number;
 	status: ClaimStatus;
-	memberAvatar?: string;
 }
 
 const statusColorMap: Record<ClaimStatus, string> = {
@@ -33,7 +32,6 @@ export const ClaimDetailHeader: React.FC<ClaimDetailHeaderProps> = ({
 	dateOfService,
 	amount,
 	status,
-	memberAvatar,
 }) => {
 	const statusKey = status;
 	const ringColor = statusColorMap[statusKey];
@@ -42,24 +40,16 @@ export const ClaimDetailHeader: React.FC<ClaimDetailHeaderProps> = ({
 		<Card shadow="none" className="w-full">
 			<CardBody>
 				<div className="flex flex-row items-center gap-8 flex-wrap">
-					{/* Avatar with status ring and label */}
-					<div className="flex flex-col items-center justify-center mr-2">
-						<Avatar
-							src={
-								memberAvatar ||
-								`https://img.heroui.chat/image/avatar?w=48&h=48&u=${memberId}`
-							}
-							name={memberName}
-							size="md"
-							className={`ring-2 ${ringColor}`}
-						/>
-					</div>
-
 					{/* Member Info */}
-					<div className="flex flex-col min-w-[120px]">
-						<p className="text-xs text-foreground-500">Member</p>
-						<p className="font-medium text-sm">{memberName}</p>
-						<p className="text-xs text-foreground-500">{memberId}</p>
+					<div className="flex flex-col min-w-[160px]">
+						<div className="flex items-center gap-2">
+							<User className="text-primary w-4 h-4" />
+							<div>
+								<p className="text-xs text-foreground-500">Member</p>
+								<p className="font-medium text-sm">{memberName}</p>
+								<p className="text-xs text-foreground-500">{memberId}</p>
+							</div>
+						</div>
 					</div>
 
 					{/* Provider Info */}

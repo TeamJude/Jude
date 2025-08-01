@@ -63,7 +63,7 @@ export default function AppSidebar() {
 							},
 						)}
 					>
-						Jude
+						Qlue
 					</span>
 				</div>
 

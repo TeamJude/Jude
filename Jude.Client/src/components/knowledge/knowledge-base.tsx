@@ -1,4 +1,5 @@
 import {
+	addToast,
 	Button,
 	Card,
 	CardBody,
@@ -13,6 +14,7 @@ import {
 	ModalContent,
 	ModalFooter,
 	ModalHeader,
+
 	Table,
 	TableBody,
 	TableCell,
@@ -23,58 +25,34 @@ import {
 } from "@heroui/react";
 import { Archive, Eye, MoreVertical, Upload, UploadCloud } from "lucide-react";
 import React from "react";
-
-interface PolicyDocument {
-	id: string;
-	name: string;
-	version: string;
-	dateIndexed: string;
-	status: "Active" | "Archived";
-}
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getPolicies } from "@/lib/services/policies.service";
+import type { Policy } from "@/lib/types/policy";
+import { PolicyStatus } from "@/lib/types/policy";
 
 export const PolicyDocumentManager: React.FC = () => {
 	const { isOpen, onOpen, onOpenChange } = useDisclosure();
-	const [documents, setDocuments] = React.useState<PolicyDocument[]>([
-		{
-			id: "POL-001",
-			name: "Medical Coverage Policy",
-			version: "v2.3",
-			dateIndexed: "2023-03-15",
-			status: "Active",
-		},
-		{
-			id: "POL-002",
-			name: "Claims Processing Guidelines",
-			version: "v1.8",
-			dateIndexed: "2023-04-10",
-			status: "Active",
-		},
-		{
-			id: "POL-003",
-			name: "Fraud Detection Criteria",
-			version: "v3.1",
-			dateIndexed: "2023-02-28",
-			status: "Active",
-		},
-		{
-			id: "POL-004",
-			name: "Medical Coverage Policy",
-			version: "v2.2",
-			dateIndexed: "2022-11-05",
-			status: "Archived",
-		},
-		{
-			id: "POL-005",
-			name: "Provider Network Guidelines",
-			version: "v1.4",
-			dateIndexed: "2023-01-20",
-			status: "Active",
-		},
-	]);
+	const queryClient = useQueryClient();
+	
+	const { isPending, error, data } = useQuery({
+		queryKey: ["policies"],
+		queryFn: () => getPolicies({ page: 1, pageSize: 100 }),
+	});
 
 	const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
 	const [documentName, setDocumentName] = React.useState("");
 	const [documentVersion, setDocumentVersion] = React.useState("");
+	const [isUploading, setIsUploading] = React.useState(false);
+	const uploadIntervalRef = React.useRef<number | null>(null);
+
+	// Cleanup interval on unmount
+	React.useEffect(() => {
+		return () => {
+			if (uploadIntervalRef.current) {
+				clearInterval(uploadIntervalRef.current);
+			}
+		};
+	}, []);
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
@@ -83,34 +61,54 @@ export const PolicyDocumentManager: React.FC = () => {
 	};
 
 	const handleUpload = () => {
-		// Simulate document upload and indexing
-		const newDocument: PolicyDocument = {
-			id: `POL-${Math.floor(Math.random() * 1000)}`,
-			name: documentName,
-			version: documentVersion,
-			dateIndexed: new Date().toISOString().split("T")[0],
-			status: "Active",
+		setIsUploading(true);
+		onOpenChange(); // Close modal first
+		
+		// Show initial upload toast
+		addToast({
+			title: `Document Upload Started: ${documentName}`,
+		});
+		
+		// Start the upload simulation
+		let progress = 0;
+		const totalDuration = 120000; // 2 minutes in milliseconds
+		const updateInterval = 5000; // Update every 5 seconds to avoid spam
+		const progressIncrement = 100 / (totalDuration / updateInterval);
+		
+		const updateProgress = () => {
+			progress += progressIncrement;
+			
+			if (progress >= 100) {
+				progress = 100;
+				// Upload completed
+				addToast({
+					title: "Document Upload Complete",
+				});
+				
+				setIsUploading(false);
+				setSelectedFile(null);
+				setDocumentName("");
+				setDocumentVersion("");
+				queryClient.invalidateQueries({ queryKey: ["policies"] });
+				
+				if (uploadIntervalRef.current) {
+					clearInterval(uploadIntervalRef.current);
+					uploadIntervalRef.current = null;
+				}
+			} else {
+				// Show progress update
+				addToast({
+					title: `Upload Progress: ${Math.round(progress)}% - ${documentName}`,
+				});
+			}
 		};
 
-		setDocuments([newDocument, ...documents]);
-		setSelectedFile(null);
-		setDocumentName("");
-		setDocumentVersion("");
-		onOpenChange();
+		uploadIntervalRef.current = setInterval(updateProgress, updateInterval);
 	};
 
-	const toggleStatus = (id: string) => {
-		setDocuments(
-			documents.map((doc) => {
-				if (doc.id === id) {
-					return {
-						...doc,
-						status: doc.status === "Active" ? "Archived" : "Active",
-					};
-				}
-				return doc;
-			}),
-		);
+	const toggleStatus = (id: number) => {
+		// TODO: Implement status toggle functionality
+		console.log("Toggle status for policy:", id);
 	};
 
 	return (
@@ -123,6 +121,7 @@ export const PolicyDocumentManager: React.FC = () => {
 							color="primary"
 							onPress={onOpen}
 							startContent={<Upload width={16} />}
+							isDisabled={isUploading}
 						>
 							Index New Document
 						</Button>
@@ -137,68 +136,88 @@ export const PolicyDocumentManager: React.FC = () => {
 						}}
 					>
 						<TableHeader>
-							<TableColumn key="id">DOCUMENT ID</TableColumn>
+							<TableColumn key="id">ID</TableColumn>
 							<TableColumn key="name">NAME</TableColumn>
-							<TableColumn key="version">VERSION</TableColumn>
-							<TableColumn key="dateIndexed">DATE INDEXED</TableColumn>
+							<TableColumn key="createdAt">DATE CREATED</TableColumn>
 							<TableColumn key="status">STATUS</TableColumn>
 							<TableColumn key="actions" className="text-right">
 								ACTIONS
 							</TableColumn>
 						</TableHeader>
-						<TableBody>
-							{documents.map((doc) => (
-								<TableRow key={doc.id}>
-									<TableCell>{doc.id}</TableCell>
-									<TableCell>{doc.name}</TableCell>
-									<TableCell>{doc.version}</TableCell>
-									<TableCell>{doc.dateIndexed}</TableCell>
-									<TableCell>
-										<Chip
-											color={doc.status === "Active" ? "success" : "default"}
-											variant="flat"
-											size="sm"
-										>
-											{doc.status}
-										</Chip>
-									</TableCell>
-									<TableCell className="text-right">
-										<div className="flex justify-end gap-2">
-											<Button
-												isIconOnly
-												size="sm"
-												variant="light"
-												color="primary"
-											>
-												<Eye width={16} />
-											</Button>
-											<Button
-												isIconOnly
-												size="sm"
-												variant="light"
-												color={doc.status === "Active" ? "default" : "success"}
-												onPress={() => toggleStatus(doc.id)}
-											>
-												<Archive width={16} />
-											</Button>
-											<Dropdown>
-												<DropdownTrigger>
-													<Button isIconOnly size="sm" variant="light">
-														<MoreVertical width={16} />
+						<TableBody
+							emptyContent={
+								isPending
+									? "Loading..."
+									: error
+										? "Error loading policies"
+										: "No policies found"
+							}
+						>
+							{data?.success
+								? data.data.policies.map((policy) => (
+										<TableRow key={policy.id}>
+											<TableCell>POL-{policy.id}</TableCell>
+											<TableCell>{policy.name}</TableCell>
+											<TableCell>
+												{new Date(policy.createdAt).toLocaleDateString()}
+											</TableCell>
+											<TableCell>
+												<Chip
+													color={
+														policy.status === PolicyStatus.Active
+															? "success"
+															: "default"
+													}
+													variant="flat"
+													size="sm"
+												>
+													{policy.status === PolicyStatus.Active
+														? "Active"
+														: "Archived"}
+												</Chip>
+											</TableCell>
+											<TableCell className="text-right">
+												<div className="flex justify-end gap-2">
+													<Button
+														isIconOnly
+														size="sm"
+														variant="light"
+														color="primary"
+													>
+														<Eye width={16} />
 													</Button>
-												</DropdownTrigger>
-												<DropdownMenu aria-label="Document Actions">
-													<DropdownItem key="view">View Content</DropdownItem>
-													<DropdownItem key="download">Download</DropdownItem>
-													<DropdownItem key="history">
-														Version History
-													</DropdownItem>
-												</DropdownMenu>
-											</Dropdown>
-										</div>
-									</TableCell>
-								</TableRow>
-							))}
+													<Button
+														isIconOnly
+														size="sm"
+														variant="light"
+														color={
+															policy.status === PolicyStatus.Active
+																? "default"
+																: "success"
+														}
+														onPress={() => toggleStatus(policy.id)}
+													>
+														<Archive width={16} />
+													</Button>
+													<Dropdown>
+														<DropdownTrigger>
+															<Button isIconOnly size="sm" variant="light">
+																<MoreVertical width={16} />
+															</Button>
+														</DropdownTrigger>
+														<DropdownMenu aria-label="Document Actions">
+															<DropdownItem key="view">View Content</DropdownItem>
+															<DropdownItem key="download">Download</DropdownItem>
+															<DropdownItem key="history">
+																Version History
+															</DropdownItem>
+														</DropdownMenu>
+													</Dropdown>
+												</div>
+											</TableCell>
+										</TableRow>
+									))
+								: []}
 						</TableBody>
 					</Table>
 				</CardBody>
@@ -261,10 +280,11 @@ export const PolicyDocumentManager: React.FC = () => {
 									color="primary"
 									onPress={handleUpload}
 									isDisabled={
-										!selectedFile || !documentName || !documentVersion
+										!selectedFile || !documentName || !documentVersion || isUploading
 									}
+									isLoading={isUploading}
 								>
-									Upload & Index
+									{isUploading ? "Uploading..." : "Upload & Index"}
 								</Button>
 							</ModalFooter>
 						</>

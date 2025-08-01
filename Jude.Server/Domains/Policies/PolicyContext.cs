@@ -9,6 +9,7 @@ public interface IPolicyContext
 {
     Task<Result<string>> Ingest(Stream document, TagCollection tags);
     Task<SearchResult> SearchAsync(string query, CancellationToken cancellationToken = default);
+    Task<MemoryAnswer> AskPolicyAsync(string question, CancellationToken cancellationToken = default);
 }
 
 public class PolicyContext : IPolicyContext
@@ -46,7 +47,7 @@ public class PolicyContext : IPolicyContext
                     MaxTokenTotal = 16768,
                 }
             )
-            .WithSearchClientConfig(new() { AnswerTokens = 16768, MaxAskPromptSize = 8000 })
+            .WithSearchClientConfig(new() { AnswerTokens = 8000, MaxAskPromptSize = 8000 })
             .Build<MemoryServerless>();
     }
 
@@ -73,6 +74,17 @@ public class PolicyContext : IPolicyContext
         _logger.LogInformation("Searching policies with query: {Query}", query);
         var result = await _memory.SearchAsync(query, cancellationToken: cancellationToken);
         _logger.LogInformation("Search completed for query: {Query}", query);
+        return result;
+    }
+
+    public async Task<MemoryAnswer> AskPolicyAsync(
+        string question,
+        CancellationToken cancellationToken = default
+    )
+    {
+        _logger.LogInformation("Asking policy question: {Question}", question);
+        var result = await _memory.AskAsync(question, cancellationToken: cancellationToken);
+        _logger.LogInformation("Policy question answered for: {Question}", question);
         return result;
     }
 }
