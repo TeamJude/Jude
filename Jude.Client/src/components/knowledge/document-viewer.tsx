@@ -1,168 +1,258 @@
 import { Button, Spinner } from "@heroui/react";
-import { Download, ExternalLink, FileText } from "lucide-react";
-import React from "react";
+import { Download, ExternalLink, X, ZoomIn, ZoomOut } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Document, Page, pdfjs } from 'react-pdf';
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 interface DocumentViewerProps {
-	url: string | null;
-	isLoading: boolean;
-	documentName?: string;
-	onClose: () => void;
-	error?: string | null;
+  url: string | null;
+  isLoading?: boolean;
+  documentName?: string;
+  error?: string | null;
+  onClose?: () => void;
 }
 
-const getDocumentType = (url: string): 'pdf' | 'image' | 'unknown' => {
-	if (!url) return 'unknown';
-	
-	const extension = url.split('.').pop()?.toLowerCase();
-	
-	if (extension === 'pdf') return 'pdf';
-	if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension || '')) return 'image';
-	
-	return 'unknown';
-};
-
 export const DocumentViewer: React.FC<DocumentViewerProps> = ({
-	url,
-	isLoading,
-	documentName,
-	onClose,
-	error,
+  url,
+  isLoading = false,
+  documentName = "document.pdf",
+  error,
+  onClose,
 }) => {
-	const documentType = url ? getDocumentType(url) : 'unknown';
+  const [pdfLoading, setPdfLoading] = useState(true);
+  const [pdfError, setPdfError] = useState(false);
+  const [zoom, setZoom] = useState(100);
+  const [rotation, setRotation] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
 
-	const handleDownload = () => {
-		if (!url) return;
-		
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = documentName || 'document';
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
-	};
+  // Reset states when URL changes
+  useEffect(() => {
+    if (url) {
+      setPdfLoading(true);
+      setPdfError(false);
+      setRetryCount(0);
+    }
+  }, [url]);
 
-	const handleOpenInNewTab = () => {
-		if (!url) return;
-		window.open(url, '_blank');
-	};
+  const handleDownload = () => {
+    if (!url) return;
+    
+    // Create a temporary link for download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = documentName;
+    link.setAttribute('target', '_blank');
+    link.setAttribute('rel', 'noopener noreferrer');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-	const renderContent = () => {
-		if (isLoading) {
-			return (
-				<div className="flex flex-col items-center justify-center h-96 space-y-4">
-					<Spinner size="lg" />
-					<p className="text-foreground-600">Loading document...</p>
-				</div>
-			);
-		}
+  const handleOpenInNewTab = () => {
+    if (!url) return;
+    
+    // Open in new tab with proper window features
+    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!newWindow) {
+      // Fallback if popup blocked
+      window.location.href = url;
+    }
+  };
 
-		if (error) {
-			return (
-				<div className="flex flex-col items-center justify-center h-96 space-y-4">
-					<FileText className="w-16 h-16 text-danger-400" />
-					<div className="text-center">
-						<p className="text-danger-600 font-medium">Failed to load document</p>
-						<p className="text-foreground-500 text-sm mt-1">{error}</p>
-					</div>
-				</div>
-			);
-		}
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(prev + 25, 200));
+  };
 
-		if (!url) {
-			return (
-				<div className="flex flex-col items-center justify-center h-96 space-y-4">
-					<FileText className="w-16 h-16 text-foreground-400" />
-					<p className="text-foreground-600">No document URL available</p>
-				</div>
-			);
-		}
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(prev - 25, 50));
+  };
 
-		switch (documentType) {
-			case 'pdf':
-				return (
-					<div className="w-full h-[600px] border rounded-lg overflow-hidden">
-						<iframe
-							src={url}
-							className="w-full h-full"
-							title={documentName || 'Document'}
-							sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-						>
-							<p className="p-4">
-								Your browser doesn't support iframe. 
-								<Button
-									variant="light"
-									color="primary"
-									onPress={handleOpenInNewTab}
-									className="ml-2"
-								>
-									Open in new tab
-								</Button>
-							</p>
-						</iframe>
-					</div>
-				);
+  const handleRotate = () => {
+    setRotation(prev => (prev + 90) % 360);
+  };
 
-			case 'image':
-				return (
-					<div className="w-full flex justify-center">
-						<img
-							src={url}
-							alt={documentName || 'Document'}
-							className="max-w-full max-h-[600px] object-contain rounded-lg"
-							onError={(e) => {
-								const target = e.target as HTMLImageElement;
-								const parent = target.parentElement;
-								if (parent) {
-									target.style.display = 'none';
-									parent.classList.add('flex', 'items-center', 'justify-center', 'h-96');
-									parent.innerHTML = `
-										<div class="text-center">
-											<div class="w-16 h-16 mx-auto mb-4 text-foreground-400">
-												<svg fill="currentColor" viewBox="0 0 24 24">
-													<path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-												</svg>
-											</div>
-											<p class="text-foreground-600">Failed to load image</p>
-										</div>
-									`;
-								}
-							}}
-						/>
-					</div>
-				);
+  const handleRetry = () => {
+    setPdfError(false);
+    setPdfLoading(true);
+    setRetryCount(prev => prev + 1);
+  };
 
-			default:
-				return (
-					<div className="flex flex-col items-center justify-center h-96 space-y-4">
-						<FileText className="w-16 h-16 text-foreground-400" />
-						<div className="text-center">
-							<p className="text-foreground-600 font-medium">Preview not available</p>
-							<p className="text-foreground-500 text-sm mt-1">
-								This file type cannot be previewed in the browser
-							</p>
-							<div className="flex gap-2 mt-4">
-								<Button
-									color="primary"
-									variant="flat"
-									onPress={handleDownload}
-									startContent={<Download className="w-4 h-4" />}
-								>
-									Download
-								</Button>
-								<Button
-									color="primary"
-									variant="light"
-									onPress={handleOpenInNewTab}
-									startContent={<ExternalLink className="w-4 h-4" />}
-								>
-									Open in New Tab
-								</Button>
-							</div>
-						</div>
-					</div>
-				);
-		}
-	};
 
-	return renderContent()
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[600px] space-y-4 bg-content1 rounded-lg">
+        <Spinner size="lg" color="primary" />
+        <p className="text-foreground-600">Loading document...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[600px] space-y-4 bg-content1 rounded-lg">
+        <div className="text-center space-y-2">
+          <div className="text-4xl">⚠️</div>
+          <p className="text-danger-600 font-medium">Failed to load document</p>
+          <p className="text-foreground-500 text-sm">{error}</p>
+        </div>
+        {onClose && (
+          <Button color="primary" variant="flat" onPress={onClose}>
+            Close
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  if (!url) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[600px] space-y-4 bg-content1 rounded-lg">
+        <div className="text-center">
+          <div className="text-4xl mb-2">📄</div>
+          <p className="text-foreground-600">No document URL provided</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (pdfError) {
+    return (
+      <div className="w-full h-[600px] border rounded-lg overflow-hidden bg-content1 flex items-center justify-center">
+        <div className="text-center space-y-4 p-6">
+          <div className="text-6xl">📄</div>
+          <div>
+            <p className="text-foreground-600 font-medium">Cannot preview document in browser</p>
+            <p className="text-foreground-500 text-sm mt-1">
+              {retryCount > 0 
+                ? "The document may require special permissions or be in an unsupported format"
+                : "Your browser settings may prevent document viewing"
+              }
+            </p>
+          </div>
+          <div className="flex gap-2 justify-center flex-wrap">
+            {retryCount < 2 && (
+              <Button
+                color="secondary"
+                variant="flat"
+                onPress={handleRetry}
+              >
+                Retry
+              </Button>
+            )}
+            <Button
+              color="primary"
+              variant="flat"
+              onPress={handleDownload}
+              startContent={<Download className="w-4 h-4" />}
+            >
+              Download
+            </Button>
+            <Button
+              color="primary"
+              variant="light"
+              onPress={handleOpenInNewTab}
+              startContent={<ExternalLink className="w-4 h-4" />}
+            >
+              Open in New Tab
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-[600px] border rounded-lg overflow-hidden bg-content2 relative">
+      {/* Header with document name and controls */}
+      <div className="absolute top-0 left-0 right-0 z-20 bg-content1/95 backdrop-blur-sm border-b border-divider p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="text-lg">📄</div>
+            <h3 className="font-medium text-foreground truncate">{documentName}</h3>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            
+                <Button
+                  size="sm"
+                  variant="flat"
+                  isIconOnly
+                  onPress={handleZoomOut}
+                  isDisabled={zoom <= 50}
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+                <span className="text-sm text-foreground-600 min-w-12 text-center">
+                  {zoom}%
+                </span>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  isIconOnly
+                  onPress={handleZoomIn}
+                  isDisabled={zoom >= 200}
+                  title="Zoom In"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+                <div className="w-px h-6 bg-divider mx-1" />
+            
+            <Button
+              size="sm"
+              color="primary"
+              variant="flat"
+              onPress={handleDownload}
+              startContent={<Download className="w-3 h-3" />}
+            >
+              Download
+            </Button>
+            <Button
+              size="sm"
+              color="primary"
+              variant="light"
+              onPress={handleOpenInNewTab}
+              startContent={<ExternalLink className="w-3 h-3" />}
+            >
+              Open
+            </Button>
+            
+            {onClose && (
+              <Button
+                size="sm"
+                variant="light"
+                isIconOnly
+                onPress={onClose}
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {pdfLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-content1/80 backdrop-blur-sm z-10">
+          <div className="text-center space-y-4">
+            <Spinner size="lg" color="primary" />
+            <p className="text-foreground-600">Loading document...</p>
+          </div>
+        </div>
+      )}
+      
+      <div className="pt-16 h-full">
+		<Document file={url} onLoadSuccess={()=>{
+					setPdfError(false);
+					setPdfLoading(false);
+		}}>
+        <Page pageNumber={1} />
+      </Document>
+      </div>
+    </div>
+  );
 };

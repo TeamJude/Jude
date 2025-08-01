@@ -174,9 +174,10 @@ public class PolicyService : IPolicyService
             if (string.IsNullOrEmpty(policy.DocumentUrl))
                 return Result.Fail("Policy document URL not found.");
 
-
             var uri = new Uri(policy.DocumentUrl);
-            var blobName = string.Join("", uri.Segments.Skip(1));
+
+            var pathSegments = uri.AbsolutePath.Trim('/').Split('/');
+            var blobName = pathSegments.Length > 1 ? pathSegments.Last() : pathSegments[0];
 
             var blobClient = _blobContainerClient.GetBlobClient(blobName);
 
