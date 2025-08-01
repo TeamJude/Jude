@@ -1,6 +1,8 @@
 export enum PolicyStatus {
-	Active = 0,
-	Archived = 1,
+    Pending = 0,
+    Active = 1,
+    Failed = 2,
+    Archived = 3,
 }
 
 export interface Policy {

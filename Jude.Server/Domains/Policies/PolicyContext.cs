@@ -24,7 +24,14 @@ public class PolicyContext : IPolicyContext
             .WithSimpleQueuesPipeline()
             .With(new KernelMemoryConfig { DefaultIndexName = "jude" })
             .WithPostgresMemoryDb(AppConfig.VectorDbUrl)
-            .WithSimpleFileStorage("C:\\Users\\devma\\Desktop\\policies")
+            .WithAzureBlobsDocumentStorage(
+                new AzureBlobsConfig
+                {
+                    ConnectionString = AppConfig.Azure.Blob.ConnectionString,
+                    Container = AppConfig.Azure.Blob.Container,
+                    Auth = AzureBlobsConfig.AuthTypes.ConnectionString,
+                }
+            )
             .WithAzureOpenAITextEmbeddingGeneration(
                 new()
                 {

@@ -1,10 +1,10 @@
-import { PolicyDocumentManager } from "@/components/knowledge/knowledge-base";
-import { RulesManager } from "@/components/knowledge/rules-manager";
 import { FraudManager } from "@/components/knowledge/fraud-manager";
+import { PolicyDocumentsManager } from "@/components/knowledge/policy-documents-manager";
+import { RulesManager } from "@/components/knowledge/rules-manager";
 import { Tab, Tabs } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
+import { AlertTriangle, BookOpen, GitBranch } from "lucide-react";
 import { useState } from "react";
-import { BookOpen, GitBranch, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/__app/knowledge/")({
 	component: RouteComponent,
@@ -18,14 +18,14 @@ function RouteComponent() {
 			<div className="max-w-7xl mx-auto px-4 space-y-6">
 				<div>
 					<h1 className="text-2xl font-semibold text-gray-800">
-						Knowledge Base Management
+						Policy Documents Management
 					</h1>
 					<p className="text-sm text-gray-500">
 						Manage policy documents and processing rules used by the AI Agent
 					</p>
 				</div>
 				<Tabs
-					aria-label="Knowledge Base Management Tabs"
+					aria-label="Policy Documents Management Tabs"
 					selectedKey={selected}
 					onSelectionChange={(key) => setSelected(String(key))}
 					color="primary"
@@ -45,7 +45,7 @@ function RouteComponent() {
 							</div>
 						}
 					>
-						<PolicyDocumentManager />
+						<PolicyDocumentsManager />
 					</Tab>
 					<Tab
 						key="rules"

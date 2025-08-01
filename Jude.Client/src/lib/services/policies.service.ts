@@ -13,4 +13,12 @@ const getPolicies = async (data: {
 	);
 };
 
-export { getPolicies };
+const addPolicyDocument = async (formData: FormData): Promise<ApiResponse<Policy>> => {
+	return apiRequest<Policy>("/api/policy/upload", {
+		method: "POST",
+		body: formData,
+		headers:{}
+	});
+};
+
+export { addPolicyDocument, getPolicies };

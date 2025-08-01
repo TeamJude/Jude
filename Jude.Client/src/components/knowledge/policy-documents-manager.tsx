@@ -1,3 +1,5 @@
+import { addPolicyDocument, getPolicies } from "@/lib/services/policies.service";
+import { PolicyStatus } from "@/lib/types/policy";
 import {
 	addToast,
 	Button,
@@ -23,14 +25,11 @@ import {
 	TableRow,
 	useDisclosure,
 } from "@heroui/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, Eye, MoreVertical, Upload, UploadCloud } from "lucide-react";
 import React from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getPolicies } from "@/lib/services/policies.service";
-import type { Policy } from "@/lib/types/policy";
-import { PolicyStatus } from "@/lib/types/policy";
 
-export const PolicyDocumentManager: React.FC = () => {
+export const PolicyDocumentsManager: React.FC = () => {
 	const { isOpen, onOpen, onOpenChange } = useDisclosure();
 	const queryClient = useQueryClient();
 	
@@ -41,18 +40,7 @@ export const PolicyDocumentManager: React.FC = () => {
 
 	const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
 	const [documentName, setDocumentName] = React.useState("");
-	const [documentVersion, setDocumentVersion] = React.useState("");
 	const [isUploading, setIsUploading] = React.useState(false);
-	const uploadIntervalRef = React.useRef<number | null>(null);
-
-	// Cleanup interval on unmount
-	React.useEffect(() => {
-		return () => {
-			if (uploadIntervalRef.current) {
-				clearInterval(uploadIntervalRef.current);
-			}
-		};
-	}, []);
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
@@ -60,50 +48,37 @@ export const PolicyDocumentManager: React.FC = () => {
 		}
 	};
 
-	const handleUpload = () => {
+	const handleUpload = async () => {
+		if (!selectedFile || !documentName) return;
 		setIsUploading(true);
-		onOpenChange(); // Close modal first
 		
-		// Show initial upload toast
-		addToast({
-			title: `Document Upload Started: ${documentName}`,
-		});
-		
-		// Start the upload simulation
-		let progress = 0;
-		const totalDuration = 120000; // 2 minutes in milliseconds
-		const updateInterval = 5000; // Update every 5 seconds to avoid spam
-		const progressIncrement = 100 / (totalDuration / updateInterval);
-		
-		const updateProgress = () => {
-			progress += progressIncrement;
-			
-			if (progress >= 100) {
-				progress = 100;
-				// Upload completed
-				addToast({
-					title: "Document Upload Complete",
-				});
-				
-				setIsUploading(false);
-				setSelectedFile(null);
-				setDocumentName("");
-				setDocumentVersion("");
-				queryClient.invalidateQueries({ queryKey: ["policies"] });
-				
-				if (uploadIntervalRef.current) {
-					clearInterval(uploadIntervalRef.current);
-					uploadIntervalRef.current = null;
-				}
-			} else {
-				// Show progress update
-				addToast({
-					title: `Upload Progress: ${Math.round(progress)}% - ${documentName}`,
-				});
-			}
-		};
+		const formData = new FormData();
+		formData.append("file", selectedFile);
+		formData.append("name", documentName);
 
-		uploadIntervalRef.current = setInterval(updateProgress, updateInterval);
+		const result = await addPolicyDocument(formData);
+		
+		if (result.success) {
+			addToast({
+				title: "Policy Document Upload Complete",
+				description: "Your document has been uploaded and is now being indexed.",
+				color: "success",
+			});
+			
+			setSelectedFile(null);
+			setDocumentName("");
+			
+			queryClient.invalidateQueries({ queryKey: ["policies"] });
+		} else {
+			addToast({
+				title: "Upload Failed",
+				description: result.errors?.[0] || "Failed to upload policy document.",
+				color: "danger",
+			});
+		}
+		
+		setIsUploading(false);
+		onOpenChange();
 	};
 
 	const toggleStatus = (id: number) => {
@@ -149,31 +124,31 @@ export const PolicyDocumentManager: React.FC = () => {
 								isPending
 									? "Loading..."
 									: error
-										? "Error loading policies"
-										: "No policies found"
+										? "Error loading policy documents"
+										: "No policy documents found"
 							}
 						>
 							{data?.success
 								? data.data.policies.map((policy) => (
 										<TableRow key={policy.id}>
-											<TableCell>POL-{policy.id}</TableCell>
+											<TableCell>{policy.id}</TableCell>
 											<TableCell>{policy.name}</TableCell>
 											<TableCell>
 												{new Date(policy.createdAt).toLocaleDateString()}
 											</TableCell>
 											<TableCell>
 												<Chip
-													color={
-														policy.status === PolicyStatus.Active
-															? "success"
-															: "default"
-													}
+													color={({
+														[PolicyStatus.Pending]: "warning",
+														[PolicyStatus.Active]: "success",
+														[PolicyStatus.Failed]: "danger",
+														[PolicyStatus.Archived]: "default",
+													} as const)[policy.status] || "default"}
+													
 													variant="flat"
 													size="sm"
 												>
-													{policy.status === PolicyStatus.Active
-														? "Active"
-														: "Archived"}
+													{PolicyStatus[policy.status]}
 												</Chip>
 											</TableCell>
 											<TableCell className="text-right">
@@ -237,26 +212,32 @@ export const PolicyDocumentManager: React.FC = () => {
 									value={documentName}
 									onValueChange={setDocumentName}
 								/>
-								<Input
-									label="Version"
-									placeholder="e.g., v1.0"
-									value={documentVersion}
-									onValueChange={setDocumentVersion}
-								/>
 								<div className="flex flex-col gap-2">
 									<label className="text-sm">Document File</label>
 									<div className="flex items-center justify-center w-full">
 										<label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-content2 hover:bg-content3 transition-colors">
-											<div className="flex flex-col items-center justify-center pt-5 pb-6">
-												<UploadCloud className="w-8 h-8 mb-3 text-foreground-500" />
-												<p className="mb-2 text-sm text-foreground-600">
-													<span className="font-medium">Click to upload</span>{" "}
-													or drag and drop
-												</p>
-												<p className="text-xs text-foreground-500">
-													PDF, DOCX (Max 10MB)
-												</p>
-											</div>
+											{selectedFile ? (
+												<div className="flex flex-col items-center justify-center pt-5 pb-6">
+													<UploadCloud className="w-8 h-8 mb-3 text-foreground-500" />
+													<p className="mb-2 text-sm text-foreground-600 font-medium">
+														{selectedFile.name}
+													</p>
+													<p className="text-xs text-foreground-500">
+														Click to change file
+													</p>
+												</div>
+											) : (
+												<div className="flex flex-col items-center justify-center pt-5 pb-6">
+													<UploadCloud className="w-8 h-8 mb-3 text-foreground-500" />
+													<p className="mb-2 text-sm text-foreground-600">
+														<span className="font-medium">Click to upload</span>{" "}
+														or drag and drop
+													</p>
+													<p className="text-xs text-foreground-500">
+														PDF, DOCX (Max 10MB)
+													</p>
+												</div>
+											)}
 											<input
 												type="file"
 												className="hidden"
@@ -265,11 +246,6 @@ export const PolicyDocumentManager: React.FC = () => {
 											/>
 										</label>
 									</div>
-									{selectedFile && (
-										<p className="text-sm text-foreground-600">
-											Selected: {selectedFile.name}
-										</p>
-									)}
 								</div>
 							</ModalBody>
 							<ModalFooter>
@@ -280,7 +256,7 @@ export const PolicyDocumentManager: React.FC = () => {
 									color="primary"
 									onPress={handleUpload}
 									isDisabled={
-										!selectedFile || !documentName || !documentVersion || isUploading
+										!selectedFile || !documentName || isUploading
 									}
 									isLoading={isUploading}
 								>
@@ -294,3 +270,4 @@ export const PolicyDocumentManager: React.FC = () => {
 		</>
 	);
 };
+
