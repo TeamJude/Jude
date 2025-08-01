@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.KernelMemory;
 using Azure.Storage.Blobs;
+using Azure.Storage.Sas;
 using Jude.Server.Config;
 using Jude.Server.Domains.Policies.Events;
 
@@ -15,6 +16,7 @@ public interface IPolicyService
 {
     Task<Result<PolicyModel>> UploadPolicyAsync(IFormFile file, string name, Guid createdById);
     Task<Result<GetPoliciesResponse>> GetPolicies(GetPoliciesRequest request);
+    Task<Result<GetPolicyDocumentPublicUrlResponse>> GetPolicyDocumentPublicUrlAsync(int policyId);
 }
 
 public class PolicyService : IPolicyService
@@ -159,6 +161,49 @@ public class PolicyService : IPolicyService
         return Result.Ok(new GetPoliciesResponse(policies, totalCount));
     }
 
+    public async Task<Result<GetPolicyDocumentPublicUrlResponse>> GetPolicyDocumentPublicUrlAsync(int policyId)
+    {
+        try
+        {
+            var policy = await _dbContext.Policies
+                .FirstOrDefaultAsync(p => p.Id == policyId);
+
+            if (policy == null)
+                return Result.Fail("Policy not found.");
+
+            if (string.IsNullOrEmpty(policy.DocumentUrl))
+                return Result.Fail("Policy document URL not found.");
+
+
+            var uri = new Uri(policy.DocumentUrl);
+            var blobName = string.Join("", uri.Segments.Skip(1));
+
+            var blobClient = _blobContainerClient.GetBlobClient(blobName);
+
+            if (!blobClient.CanGenerateSasUri)
+            {
+                _logger.LogWarning("Cannot generate SAS URI for policy {PolicyId}", policyId);
+                return Result.Fail("Cannot generate access URL for this document.");
+            }
+
+            var sasUri = blobClient.GenerateSasUri(
+                BlobSasPermissions.Read,
+                DateTimeOffset.UtcNow.AddHours(1)
+            );
+
+            return Result.Ok(new GetPolicyDocumentPublicUrlResponse(sasUri.ToString()));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Error generating public URL for policy {PolicyId}: {Message}",
+                policyId,
+                ex.Message
+            );
+            return Result.Fail($"Failed to generate public URL: {ex.Message}");
+        }
+    }
+
     async Task<Result<string>> UploadToBlobStorageAsync(
         Stream stream,
         string fileName
@@ -167,7 +212,8 @@ public class PolicyService : IPolicyService
         if (stream == null || stream.Length == 0)
             return Result.Fail("Stream is required.");
 
-        fileName = $"{Guid.NewGuid()}_{fileName}";
+        var ext = Path.GetExtension(fileName);
+        fileName = Guid.NewGuid().ToString() + ext;
         var blobClient = _blobContainerClient.GetBlobClient(fileName);
         try
         {

@@ -21,4 +21,10 @@ const addPolicyDocument = async (formData: FormData): Promise<ApiResponse<Policy
 	});
 };
 
-export { addPolicyDocument, getPolicies };
+const getPolicyDocumentUrl = async (policyId: number): Promise<ApiResponse<{ url: string }>> => {
+	return apiRequest<{ url: string }>(`/api/policy/${policyId}/document-url`, {
+		method: "GET",
+	});
+};
+
+export { addPolicyDocument, getPolicies, getPolicyDocumentUrl };

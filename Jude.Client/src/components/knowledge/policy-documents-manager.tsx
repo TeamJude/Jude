@@ -1,4 +1,4 @@
-import { addPolicyDocument, getPolicies } from "@/lib/services/policies.service";
+import { addPolicyDocument, getPolicies, getPolicyDocumentUrl } from "@/lib/services/policies.service";
 import { PolicyStatus } from "@/lib/types/policy";
 import {
 	addToast,
@@ -28,9 +28,15 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, Eye, MoreVertical, Upload, UploadCloud } from "lucide-react";
 import React from "react";
+import { DocumentViewer } from "./document-viewer";
 
 export const PolicyDocumentsManager: React.FC = () => {
 	const { isOpen, onOpen, onOpenChange } = useDisclosure();
+	const { 
+		isOpen: isViewerOpen, 
+		onOpen: onViewerOpen, 
+		onOpenChange: onViewerOpenChange 
+	} = useDisclosure();
 	const queryClient = useQueryClient();
 	
 	const { isPending, error, data } = useQuery({
@@ -41,6 +47,12 @@ export const PolicyDocumentsManager: React.FC = () => {
 	const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
 	const [documentName, setDocumentName] = React.useState("");
 	const [isUploading, setIsUploading] = React.useState(false);
+
+	// Document viewer state
+	const [documentUrl, setDocumentUrl] = React.useState<string | null>(null);
+	const [isLoadingDocument, setIsLoadingDocument] = React.useState(false);
+	const [documentError, setDocumentError] = React.useState<string | null>(null);
+	const [selectedPolicy, setSelectedPolicy] = React.useState<{id: number, name: string} | null>(null);
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
@@ -84,6 +96,35 @@ export const PolicyDocumentsManager: React.FC = () => {
 	const toggleStatus = (id: number) => {
 		// TODO: Implement status toggle functionality
 		console.log("Toggle status for policy:", id);
+	};
+
+	const handleViewDocument = async (policyId: number, policyName: string) => {
+		setSelectedPolicy({ id: policyId, name: policyName });
+		setDocumentUrl(null);
+		setDocumentError(null);
+		setIsLoadingDocument(true);
+		onViewerOpen();
+
+		try {
+			const result = await getPolicyDocumentUrl(policyId);
+			
+			if (result.success) {
+				setDocumentUrl(result.data.url);
+			} else {
+				setDocumentError(result.errors?.[0] || "Failed to load document URL");
+			}
+		} catch (error) {
+			setDocumentError("Failed to load document URL");
+		} finally {
+			setIsLoadingDocument(false);
+		}
+	};
+
+	const handleCloseViewer = () => {
+		setDocumentUrl(null);
+		setDocumentError(null);
+		setSelectedPolicy(null);
+		onViewerOpenChange();
 	};
 
 	return (
@@ -158,6 +199,7 @@ export const PolicyDocumentsManager: React.FC = () => {
 														size="sm"
 														variant="light"
 														color="primary"
+														onPress={() => handleViewDocument(policy.id, policy.name)}
 													>
 														<Eye width={16} />
 													</Button>
@@ -264,6 +306,30 @@ export const PolicyDocumentsManager: React.FC = () => {
 								</Button>
 							</ModalFooter>
 						</>
+					)}
+				</ModalContent>
+			</Modal>
+
+			<Modal 
+				isOpen={isViewerOpen} 
+				onOpenChange={onViewerOpenChange}
+				size="5xl"
+				classNames={{
+					base: "max-w-6xl",
+					body: "p-0",
+				}}
+			>
+				<ModalContent>
+					{() => (
+						<ModalBody>
+							<DocumentViewer
+								url={documentUrl}
+								isLoading={isLoadingDocument}
+								documentName={selectedPolicy?.name}
+								onClose={handleCloseViewer}
+								error={documentError}
+							/>
+						</ModalBody>
 					)}
 				</ModalContent>
 			</Modal>

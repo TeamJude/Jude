@@ -41,4 +41,11 @@ public class PolicyController : ControllerBase
         var result = await _policyService.GetPolicies(request);
         return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
-} 
+
+    [HttpGet("{policyId}/document-url")]
+    public async Task<IActionResult> GetPolicyDocumentUrl(int policyId)
+    {
+        var result = await _policyService.GetPolicyDocumentPublicUrlAsync(policyId);
+        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
+}

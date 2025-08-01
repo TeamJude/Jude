@@ -9,6 +9,8 @@ public record GetPoliciesRequest(int Page = 1, int PageSize = 10);
 
 public record GetPoliciesResponse(PolicyResponse[] Policies, int TotalCount);
 
+public record GetPolicyDocumentPublicUrlResponse(string Url);
+
 public record PolicyResponse(
     int Id,
     string Name,
@@ -18,4 +20,4 @@ public record PolicyResponse(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     Guid CreatedById
-); 
+);
