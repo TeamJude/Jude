@@ -25,6 +25,15 @@ services:
       - VITE_SERVER_URL
       - AZURE_AI_APIKEY
       - AZURE_AI_ENDPOINT
+      - VECTOR_DB_URL
+      - CUSTOM_AZURE_AI_APIKEY
+      - CUSTOM_AZURE_AI_ENDPOINT
+      - AZURE_AI_SEARCH_APIKEY
+      - AZURE_AI_SEARCH_ENDPOINT
+      - AZURE_BLOB_ACCOUNT
+      - AZURE_BLOB_ACESS_KEY
+      - AZURE_BLOB_CONTAINER
+      - AZURE_BLOB_CONNECTION_STRING
     networks:
       - jude-network
     restart: unless-stopped
