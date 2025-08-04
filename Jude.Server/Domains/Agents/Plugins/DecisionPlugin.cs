@@ -32,7 +32,8 @@ public class DecisionPlugin
             "The recommendation for the claim (APPROVE, DENY, PENDING, REVIEW, INVESTIGATE)"
         )]
             string recommendation,
-        [Description("Detailed reasoning for the decision")] string reasoning,
+        [Description("List of reasoning steps the you went through during processing")]
+            List<string>? reasoningLog = null,
         [Description("Confidence score between 0.0 and 1.0")] decimal confidenceScore = 0.0m,
         [Description("Fraud risk level (Low, Medium, High, Critical)")]
             string fraudRiskLevel = "Low",
@@ -72,7 +73,7 @@ public class DecisionPlugin
 
             // Update claim with agent decision
             _claim.AgentRecommendation = recommendation.ToUpper();
-            _claim.AgentReasoning = reasoning;
+            _claim.AgentReasoningLog = reasoningLog ?? [];
             _claim.AgentConfidenceScore = Math.Max(0.0m, Math.Min(1.0m, confidenceScore)); // Clamp between 0 and 1
             _claim.RequiresHumanReview = requiresHumanReview;
             _claim.AgentProcessedAt = DateTime.UtcNow;

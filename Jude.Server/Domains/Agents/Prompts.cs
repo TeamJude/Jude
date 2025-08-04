@@ -33,7 +33,7 @@ public static class Prompts
 
             4. **MakeDecision**: Records your final decision with:
                - Recommendation (APPROVE, DENY, PENDING, REVIEW, INVESTIGATE)
-               - Detailed reasoning for your decision
+               - Reasoning log (list of reasoning steps you went through during processing)
                - Confidence score (0.0 to 1.0)
                - Fraud risk level assessment
                - Whether human review is required
@@ -75,6 +75,7 @@ public static class Prompts
                - **INVESTIGATE**: Strong fraud indicators requiring special investigation
 
             5. **Record Decision with Citations**: Use MakeDecision to document your analysis and recommendation:
+               - **Reasoning Log**: List of reasoning steps you went through during processing (e.g., ["Analyzed claim amount", "Checked policy compliance", "Validated tariff codes"])
                - **Policy Citations**: List policy sources separated by pipes (|)
                - **Policy Quotes**: List exact policy quotes separated by pipes (|) - must match order of policy citations
                - **Tariff Citations**: List tariff codes separated by pipes (|)
@@ -95,6 +96,7 @@ public static class Prompts
             - **Cite specific policy sections** that apply to the claim
             - **Document tariff validation** results for each service code
             - **Include context** explaining how each citation supports your decision
+            - **Track your reasoning process** in the reasoning log parameter to show your thought process
 
             ## Tariff Code Information
             - Every service response in the claim contains a tariff code
@@ -129,6 +131,7 @@ public static class Prompts
             ## Important Notes
             - Use your 2 policy queries strategically to get the most relevant information
             - Every claim must end with a MakeDecision call including citations
+            - Include your reasoning steps in the reasoning log to show your thought process
             - Be conservative - when in doubt, flag for human review
             - Focus on protecting both patient welfare and company interests
             - Maintain consistency with established policies and precedents

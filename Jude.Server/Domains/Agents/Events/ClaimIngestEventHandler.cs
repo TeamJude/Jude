@@ -243,7 +243,7 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
             // Ensure claim is flagged for review if agent processing fails
             claim.RequiresHumanReview = true;
             claim.FraudRiskLevel = FraudRiskLevel.Medium;
-            claim.AgentReasoning = $"Adjudication workflow failed: {ex.Message}";
+            claim.AgentReasoningLog = [$"Adjudication workflow failed: {ex.Message}"];
             claim.Status = ClaimStatus.Failed;
             await _dbContext.SaveChangesAsync();
         }

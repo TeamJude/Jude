@@ -78,7 +78,9 @@ public class AgentManager : IAgentManager
             claim.RequiresHumanReview = true;
             claim.FraudRiskLevel = FraudRiskLevel.Medium;
             claim.Status = ClaimStatus.Failed;
-            claim.AgentReasoning = $"Agent processing failed: {ex.Message}";
+            claim.AgentReasoningLog = [
+                $"Agent processing failed: {ex.Message}"
+            ];
 
             return false;
         }

@@ -95,10 +95,10 @@ public class Orchestrator
         var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC");
         var formattedNote = $"[{timestamp} - Orchestrator]: {note}";
 
-        var existingReasoning = claim.AgentReasoning ?? "";
-        claim.AgentReasoning = string.IsNullOrEmpty(existingReasoning)
-            ? formattedNote
-            : $"{existingReasoning}\n\n{formattedNote}";
+        var existingReasoning = claim.AgentReasoningLog ?? [];
+        claim.AgentReasoningLog = existingReasoning.Count == 0
+            ? [formattedNote]
+            : [..existingReasoning, formattedNote];
 
         await _claimsService.UpdateClaimAsync(claim);
     }

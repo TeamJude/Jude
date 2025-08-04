@@ -107,7 +107,9 @@ public class Jude
         {
             _logger.LogError(ex, "Error processing claim {ClaimId} with agent", claim.Id);
 
-            claim.AgentReasoning = $"Agent processing failed: {ex.Message}";
+            claim.AgentReasoningLog = [
+                $"Agent processing failed: {ex.Message}"
+            ];
             claim.RequiresHumanReview = true;
             claim.FraudRiskLevel = FraudRiskLevel.Medium;
             claim.Status = ClaimStatus.Failed;

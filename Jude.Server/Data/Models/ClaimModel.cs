@@ -24,7 +24,7 @@ public class ClaimModel
     public string? CIMASPayload { get; set; }
 
     public string? AgentRecommendation { get; set; }
-    public string? AgentReasoning { get; set; }
+    public List<string>? AgentReasoningLog { get; set; }
     public decimal? AgentConfidenceScore { get; set; }
     public DateTime? AgentProcessedAt { get; set; }
 

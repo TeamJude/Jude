@@ -29,6 +29,15 @@ export enum ClaimsDashboardPeriod {
     LastQuarter
 }
 
+export interface Citation {
+	id: string;
+	type: string;
+	source: string;
+	quote: string;
+	context: string;
+	citedAt: string;
+}
+
 export interface Claim {
 	id: string;
 	transactionNumber: string;
@@ -45,6 +54,7 @@ export interface Claim {
 	processedAt?: string;
 	agentRecommendation?: string;
 	agentReasoning?: string;
+	agentReasoningLog?: string[];
 	agentConfidenceScore?: number;
 	agentProcessedAt?: string;
 	fraudIndicators?: string[];
@@ -63,6 +73,7 @@ export interface Claim {
 	ingestedAt: string;
 	updatedAt: string;
 	cimasPayload?: string;
+	citations?: Citation[];
 }
 
 export type ClaimSummary = Pick<

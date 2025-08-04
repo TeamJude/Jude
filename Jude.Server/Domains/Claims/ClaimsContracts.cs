@@ -34,6 +34,15 @@ public record ClaimSummaryResponse(
     DateTime UpdatedAt
 );
 
+public record CitationResponse(
+    Guid Id,
+    string Type,
+    string Source,
+    string Quote,
+    string Context,
+    DateTime CitedAt
+);
+
 public record ClaimDetailResponse(
     Guid Id,
     string TransactionNumber,
@@ -49,7 +58,7 @@ public record ClaimDetailResponse(
     DateTime? SubmittedAt,
     DateTime? ProcessedAt,
     string? AgentRecommendation,
-    string? AgentReasoning,
+    List<string>? AgentReasoningLog,
     decimal? AgentConfidenceScore,
     DateTime? AgentProcessedAt,
     List<string>? FraudIndicators,
@@ -63,7 +72,8 @@ public record ClaimDetailResponse(
     ReviewerInfo? ReviewedBy,
     DateTime IngestedAt,
     DateTime UpdatedAt,
-    string? CIMASPayload
+    string? CIMASPayload,
+    List<CitationResponse>? Citations
 );
 
 public record ReviewerInfo(

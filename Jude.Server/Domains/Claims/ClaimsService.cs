@@ -2,8 +2,8 @@ using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Claims.Providers.CIMAS;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Jude.Server.Domains.Claims;
 
@@ -161,7 +161,7 @@ public class ClaimsService : IClaimsService
         {
             claim.UpdatedAt = DateTime.UtcNow;
             _repository.Claims.Update(claim);
-            
+
             // Handle citations if they exist
             if (claim.Citations?.Any() == true)
             {
@@ -179,7 +179,7 @@ public class ClaimsService : IClaimsService
                     }
                 }
             }
-            
+
             await _repository.SaveChangesAsync();
 
             _logger.LogDebug("Successfully updated claim {ClaimId}", claim.Id);
@@ -196,7 +196,7 @@ public class ClaimsService : IClaimsService
     {
         try
         {
-            var query = _repository.Claims.AsQueryable();            // Apply filters
+            var query = _repository.Claims.AsQueryable(); // Apply filters
             if (request.Status != null && request.Status.Length > 0)
             {
                 query = query.Where(c => request.Status.Contains(c.Status));
@@ -208,17 +208,20 @@ public class ClaimsService : IClaimsService
 
             if (request.RequiresHumanReview.HasValue)
             {
-                query = query.Where(c => c.RequiresHumanReview == request.RequiresHumanReview.Value);
+                query = query.Where(c =>
+                    c.RequiresHumanReview == request.RequiresHumanReview.Value
+                );
             }
 
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
                 var searchTerm = request.Search.ToLower();
                 query = query.Where(c =>
-                    c.PatientName.ToLower().Contains(searchTerm) ||
-                    c.TransactionNumber.ToLower().Contains(searchTerm) ||
-                    c.MembershipNumber.ToLower().Contains(searchTerm) ||
-                    c.ProviderPractice.ToLower().Contains(searchTerm));
+                    c.PatientName.ToLower().Contains(searchTerm)
+                    || c.TransactionNumber.ToLower().Contains(searchTerm)
+                    || c.MembershipNumber.ToLower().Contains(searchTerm)
+                    || c.ProviderPractice.ToLower().Contains(searchTerm)
+                );
             }
 
             var totalCount = await query.CountAsync();
@@ -261,8 +264,8 @@ public class ClaimsService : IClaimsService
     {
         try
         {
-            var claim = await _repository.Claims
-                .Include(c => c.ReviewedBy)
+            var claim = await _repository
+                .Claims.Include(c => c.ReviewedBy)
                 .Include(c => c.Citations)
                 .FirstOrDefaultAsync(c => c.Id == claimId);
 
@@ -271,9 +274,23 @@ public class ClaimsService : IClaimsService
                 return Result.Fail("Claim not found");
             }
 
-            var reviewerInfo = claim.ReviewedBy != null
-                ? new ReviewerInfo(claim.ReviewedBy.Id, claim.ReviewedBy.Username, claim.ReviewedBy.Email)
-                : null;
+            var reviewerInfo =
+                claim.ReviewedBy != null
+                    ? new ReviewerInfo(
+                        claim.ReviewedBy.Id,
+                        claim.ReviewedBy.Username,
+                        claim.ReviewedBy.Email
+                    )
+                    : null;
+
+            var citations = claim.Citations?.Select(c => new CitationResponse(
+                c.Id,
+                c.Type,
+                c.Source,
+                c.Quote,
+                c.Context,
+                c.CitedAt
+            )).ToList();
 
             var response = new ClaimDetailResponse(
                 claim.Id,
@@ -290,7 +307,7 @@ public class ClaimsService : IClaimsService
                 claim.SubmittedAt,
                 claim.ProcessedAt,
                 claim.AgentRecommendation,
-                claim.AgentReasoning,
+                claim.AgentReasoningLog,
                 claim.AgentConfidenceScore,
                 claim.AgentProcessedAt,
                 claim.FraudIndicators,
@@ -304,7 +321,8 @@ public class ClaimsService : IClaimsService
                 reviewerInfo,
                 claim.IngestedAt,
                 claim.UpdatedAt,
-                claim.CIMASPayload
+                claim.CIMASPayload,
+                citations
             );
 
             return Result.Ok(response);
@@ -337,6 +355,7 @@ public class ClaimsService : IClaimsService
             _logger.LogDebug("Cached access token only (no refresh token provided)");
         }
     }
+
     private double CalculateChangePercent(double current, double previous)
     {
         if (previous == 0)
@@ -346,12 +365,16 @@ public class ClaimsService : IClaimsService
         return ((current - previous) / previous) * 100;
     }
 
-    public async Task<Result<ClaimsDashboardResponse>> GetDashboardStatsAsync(ClaimsDashboardRequest request)
+    public async Task<Result<ClaimsDashboardResponse>> GetDashboardStatsAsync(
+        ClaimsDashboardRequest request
+    )
     {
         try
         {
             var now = DateTime.UtcNow;
-            DateTime currentPeriodStart, previousPeriodStart, previousPeriodEnd;
+            DateTime currentPeriodStart,
+                previousPeriodStart,
+                previousPeriodEnd;
 
             switch (request.Period)
             {
@@ -382,12 +405,19 @@ public class ClaimsService : IClaimsService
                     break;
             }
 
-            var currentPeriodQuery = _repository.Claims.Where(c => c.IngestedAt >= currentPeriodStart && c.IngestedAt <= now);
-            var previousPeriodQuery = _repository.Claims.Where(c => c.IngestedAt >= previousPeriodStart && c.IngestedAt < previousPeriodEnd);
+            var currentPeriodQuery = _repository.Claims.Where(c =>
+                c.IngestedAt >= currentPeriodStart && c.IngestedAt <= now
+            );
+            var previousPeriodQuery = _repository.Claims.Where(c =>
+                c.IngestedAt >= previousPeriodStart && c.IngestedAt < previousPeriodEnd
+            );
 
             // --- Current Period Stats ---
             int totalClaims = await currentPeriodQuery.CountAsync();
-            int autoApproved = await currentPeriodQuery.CountAsync(c => c.FinalDecision == ClaimDecision.Approved && c.AgentRecommendation == "Auto-Approved");
+            int autoApproved = await currentPeriodQuery.CountAsync(c =>
+                c.FinalDecision == ClaimDecision.Approved
+                && c.AgentRecommendation == "Auto-Approved"
+            );
             var processingTimes = await currentPeriodQuery
                 .Where(c => c.AgentProcessedAt.HasValue)
                 .Select(c => new { c.IngestedAt, c.AgentProcessedAt })
@@ -396,7 +426,10 @@ public class ClaimsService : IClaimsService
 
             // --- Previous Period Stats ---
             int prevTotalClaims = await previousPeriodQuery.CountAsync();
-            int prevAutoApproved = await previousPeriodQuery.CountAsync(c => c.FinalDecision == ClaimDecision.Approved && c.AgentRecommendation == "Auto-Approved");
+            int prevAutoApproved = await previousPeriodQuery.CountAsync(c =>
+                c.FinalDecision == ClaimDecision.Approved
+                && c.AgentRecommendation == "Auto-Approved"
+            );
             var prevProcessingTimes = await previousPeriodQuery
                 .Where(c => c.AgentProcessedAt.HasValue)
                 .Select(c => new { c.IngestedAt, c.AgentProcessedAt })
@@ -405,23 +438,42 @@ public class ClaimsService : IClaimsService
 
             // --- Calculate Final Stats ---
             double avgProcessingTime = processingTimes.Any()
-                ? processingTimes.Average(c => (c.AgentProcessedAt.Value - c.IngestedAt).TotalMinutes)
+                ? processingTimes.Average(c =>
+                    (c.AgentProcessedAt.Value - c.IngestedAt).TotalMinutes
+                )
                 : 0;
             double prevAvgProcessingTime = prevProcessingTimes.Any()
-                ? prevProcessingTimes.Average(c => (c.AgentProcessedAt.Value - c.IngestedAt).TotalMinutes)
+                ? prevProcessingTimes.Average(c =>
+                    (c.AgentProcessedAt.Value - c.IngestedAt).TotalMinutes
+                )
                 : 0;
 
-            double autoApprovedRate = totalClaims > 0 ? (double)autoApproved / totalClaims * 100 : 0;
-            double prevAutoApprovedRate = prevTotalClaims > 0 ? (double)prevAutoApproved / prevTotalClaims * 100 : 0;
+            double autoApprovedRate =
+                totalClaims > 0 ? (double)autoApproved / totalClaims * 100 : 0;
+            double prevAutoApprovedRate =
+                prevTotalClaims > 0 ? (double)prevAutoApproved / prevTotalClaims * 100 : 0;
 
             // --- Calculate Change Percentages ---
             double totalClaimsChangePercent = CalculateChangePercent(totalClaims, prevTotalClaims);
-            double autoApprovedRateChangePercent = CalculateChangePercent(autoApprovedRate, prevAutoApprovedRate);
-            double avgProcessingTimeChangePercent = CalculateChangePercent(avgProcessingTime, prevAvgProcessingTime);
-            double claimsFlaggedChangePercent = CalculateChangePercent(claimsFlagged, prevClaimsFlagged);
+            double autoApprovedRateChangePercent = CalculateChangePercent(
+                autoApprovedRate,
+                prevAutoApprovedRate
+            );
+            double avgProcessingTimeChangePercent = CalculateChangePercent(
+                avgProcessingTime,
+                prevAvgProcessingTime
+            );
+            double claimsFlaggedChangePercent = CalculateChangePercent(
+                claimsFlagged,
+                prevClaimsFlagged
+            );
 
             // --- Activity Chart Data ---
-            var activity = await GetClaimsActivityAsync(currentPeriodQuery, request.Period, currentPeriodStart);
+            var activity = await GetClaimsActivityAsync(
+                currentPeriodQuery,
+                request.Period,
+                currentPeriodStart
+            );
 
             var response = new ClaimsDashboardResponse(
                 totalClaims,
@@ -443,7 +495,11 @@ public class ClaimsService : IClaimsService
         }
     }
 
-    private async Task<List<ClaimsActivityResponse>> GetClaimsActivityAsync(IQueryable<ClaimModel> query, ClaimsDashboardPeriod period, DateTime startDate)
+    private async Task<List<ClaimsActivityResponse>> GetClaimsActivityAsync(
+        IQueryable<ClaimModel> query,
+        ClaimsDashboardPeriod period,
+        DateTime startDate
+    )
     {
         var activity = new List<ClaimsActivityResponse>();
 
@@ -452,7 +508,14 @@ public class ClaimsService : IClaimsService
             case ClaimsDashboardPeriod.Last7Days:
                 var dailyData = await query
                     .GroupBy(c => c.IngestedAt.Date)
-                    .Select(g => new { Date = g.Key, Total = g.Count(), Processed = g.Count(c => c.Status != ClaimStatus.Pending), Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved), Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected) })
+                    .Select(g => new
+                    {
+                        Date = g.Key,
+                        Total = g.Count(),
+                        Processed = g.Count(c => c.Status != ClaimStatus.Pending),
+                        Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved),
+                        Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected),
+                    })
                     .ToDictionaryAsync(x => x.Date, x => x);
 
                 for (int i = 0; i < 7; i++)
@@ -460,7 +523,15 @@ public class ClaimsService : IClaimsService
                     var date = startDate.AddDays(i).Date;
                     if (dailyData.TryGetValue(date, out var data))
                     {
-                        activity.Add(new ClaimsActivityResponse(date.ToString("ddd"), data.Total, data.Processed, data.Approved, data.Rejected));
+                        activity.Add(
+                            new ClaimsActivityResponse(
+                                date.ToString("ddd"),
+                                data.Total,
+                                data.Processed,
+                                data.Approved,
+                                data.Rejected
+                            )
+                        );
                     }
                     else
                     {
@@ -472,7 +543,14 @@ public class ClaimsService : IClaimsService
             case ClaimsDashboardPeriod.Last30Days:
                 var monthlyData = await query
                     .GroupBy(c => c.IngestedAt.Date)
-                    .Select(g => new { Date = g.Key, Total = g.Count(), Processed = g.Count(c => c.Status != ClaimStatus.Pending), Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved), Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected) })
+                    .Select(g => new
+                    {
+                        Date = g.Key,
+                        Total = g.Count(),
+                        Processed = g.Count(c => c.Status != ClaimStatus.Pending),
+                        Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved),
+                        Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected),
+                    })
                     .ToDictionaryAsync(x => x.Date, x => x);
 
                 for (int i = 0; i < 30; i++)
@@ -480,11 +558,21 @@ public class ClaimsService : IClaimsService
                     var date = startDate.AddDays(i).Date;
                     if (monthlyData.TryGetValue(date, out var data))
                     {
-                        activity.Add(new ClaimsActivityResponse(date.ToString("MM-dd"), data.Total, data.Processed, data.Approved, data.Rejected));
+                        activity.Add(
+                            new ClaimsActivityResponse(
+                                date.ToString("MM-dd"),
+                                data.Total,
+                                data.Processed,
+                                data.Approved,
+                                data.Rejected
+                            )
+                        );
                     }
                     else
                     {
-                        activity.Add(new ClaimsActivityResponse(date.ToString("MM-dd"), 0, 0, 0, 0));
+                        activity.Add(
+                            new ClaimsActivityResponse(date.ToString("MM-dd"), 0, 0, 0, 0)
+                        );
                     }
                 }
                 break;
@@ -492,7 +580,15 @@ public class ClaimsService : IClaimsService
             case ClaimsDashboardPeriod.LastQuarter:
                 var quarterlyData = await query
                     .GroupBy(c => new { c.IngestedAt.Year, c.IngestedAt.Month })
-                    .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Count(), Processed = g.Count(c => c.Status != ClaimStatus.Pending), Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved), Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected) })
+                    .Select(g => new
+                    {
+                        g.Key.Year,
+                        g.Key.Month,
+                        Total = g.Count(),
+                        Processed = g.Count(c => c.Status != ClaimStatus.Pending),
+                        Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved),
+                        Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected),
+                    })
                     .ToDictionaryAsync(x => new { x.Year, x.Month }, x => x);
 
                 for (int i = 0; i < 4; i++)
@@ -500,11 +596,21 @@ public class ClaimsService : IClaimsService
                     var date = startDate.AddMonths(i);
                     if (quarterlyData.TryGetValue(new { date.Year, date.Month }, out var data))
                     {
-                        activity.Add(new ClaimsActivityResponse(date.ToString("MMM yyyy"), data.Total, data.Processed, data.Approved, data.Rejected));
+                        activity.Add(
+                            new ClaimsActivityResponse(
+                                date.ToString("MMM yyyy"),
+                                data.Total,
+                                data.Processed,
+                                data.Approved,
+                                data.Rejected
+                            )
+                        );
                     }
                     else
                     {
-                        activity.Add(new ClaimsActivityResponse(date.ToString("MMM yyyy"), 0, 0, 0, 0));
+                        activity.Add(
+                            new ClaimsActivityResponse(date.ToString("MMM yyyy"), 0, 0, 0, 0)
+                        );
                     }
                 }
                 break;
@@ -513,18 +619,35 @@ public class ClaimsService : IClaimsService
                 var hourlyData = await query
                     .Where(c => c.IngestedAt.Date == DateTime.UtcNow.Date)
                     .GroupBy(c => c.IngestedAt.Hour)
-                    .Select(g => new { Hour = g.Key, Total = g.Count(), Processed = g.Count(c => c.Status != ClaimStatus.Pending), Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved), Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected) })
+                    .Select(g => new
+                    {
+                        Hour = g.Key,
+                        Total = g.Count(),
+                        Processed = g.Count(c => c.Status != ClaimStatus.Pending),
+                        Approved = g.Count(c => c.FinalDecision == ClaimDecision.Approved),
+                        Rejected = g.Count(c => c.FinalDecision == ClaimDecision.Rejected),
+                    })
                     .ToDictionaryAsync(x => x.Hour, x => x);
 
                 for (int i = 0; i < 24; i++)
                 {
                     if (hourlyData.TryGetValue(i, out var data))
                     {
-                        activity.Add(new ClaimsActivityResponse(i.ToString("D2") + ":00", data.Total, data.Processed, data.Approved, data.Rejected));
+                        activity.Add(
+                            new ClaimsActivityResponse(
+                                i.ToString("D2") + ":00",
+                                data.Total,
+                                data.Processed,
+                                data.Approved,
+                                data.Rejected
+                            )
+                        );
                     }
                     else
                     {
-                        activity.Add(new ClaimsActivityResponse(i.ToString("D2") + ":00", 0, 0, 0, 0));
+                        activity.Add(
+                            new ClaimsActivityResponse(i.ToString("D2") + ":00", 0, 0, 0, 0)
+                        );
                     }
                 }
                 break;
@@ -597,15 +720,18 @@ public class ClaimsService : IClaimsService
 
             var input = new TariffLookupInput(tariffCode, pricingToken);
             var result = await _cimasProvider.GetTariffByCodeAsync(input);
-            
+
             if (result.Success && result.Data != null)
             {
                 results.Add(result.Data);
             }
             else
             {
-                _logger.LogWarning("Failed to get tariff for code {TariffCode}: {Error}", 
-                    tariffCode, string.Join(", ", result.Errors));
+                _logger.LogWarning(
+                    "Failed to get tariff for code {TariffCode}: {Error}",
+                    tariffCode,
+                    string.Join(", ", result.Errors)
+                );
             }
         }
 
