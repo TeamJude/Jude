@@ -1,5 +1,9 @@
-import { addPolicyDocument, getPolicies, getPolicyDocumentUrl } from "@/lib/services/policies.service";
-import { PolicyStatus } from "@/lib/types/policy";
+import {
+	addPolicyDocument,
+	getPolicies,
+	getPolicyDocumentUrl,
+} from "@/lib/services/policies.service";
+import { PolicyStatus, type Policy } from "@/lib/types/policy";
 import {
 	addToast,
 	Button,
@@ -16,7 +20,6 @@ import {
 	ModalContent,
 	ModalFooter,
 	ModalHeader,
-
 	Table,
 	TableBody,
 	TableCell,
@@ -32,13 +35,13 @@ import { DocumentViewer } from "./document-viewer";
 
 export const PolicyDocumentsManager: React.FC = () => {
 	const { isOpen, onOpen, onOpenChange } = useDisclosure();
-	const { 
-		isOpen: isViewerOpen, 
-		onOpen: onViewerOpen, 
-		onOpenChange: onViewerOpenChange 
+	const {
+		isOpen: isViewerOpen,
+		onOpen: onViewerOpen,
+		onOpenChange: onViewerOpenChange,
 	} = useDisclosure();
 	const queryClient = useQueryClient();
-	
+
 	const { isPending, error, data } = useQuery({
 		queryKey: ["policies"],
 		queryFn: () => getPolicies({ page: 1, pageSize: 100 }),
@@ -47,12 +50,11 @@ export const PolicyDocumentsManager: React.FC = () => {
 	const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
 	const [documentName, setDocumentName] = React.useState("");
 	const [isUploading, setIsUploading] = React.useState(false);
-
-	// Document viewer state
-	const [documentUrl, setDocumentUrl] = React.useState<string | null>(null);
 	const [isLoadingDocument, setIsLoadingDocument] = React.useState(false);
 	const [documentError, setDocumentError] = React.useState<string | null>(null);
-	const [selectedPolicy, setSelectedPolicy] = React.useState<{id: number, name: string} | null>(null);
+	const [selectedPolicy, setSelectedPolicy] = React.useState<Policy | null>(
+		null,
+	);
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
@@ -63,23 +65,24 @@ export const PolicyDocumentsManager: React.FC = () => {
 	const handleUpload = async () => {
 		if (!selectedFile || !documentName) return;
 		setIsUploading(true);
-		
+
 		const formData = new FormData();
 		formData.append("file", selectedFile);
 		formData.append("name", documentName);
 
 		const result = await addPolicyDocument(formData);
-		
+
 		if (result.success) {
 			addToast({
 				title: "Policy Document Upload Complete",
-				description: "Your document has been uploaded and is now being indexed.",
+				description:
+					"Your document has been uploaded and is now being indexed.",
 				color: "success",
 			});
-			
+
 			setSelectedFile(null);
 			setDocumentName("");
-			
+
 			queryClient.invalidateQueries({ queryKey: ["policies"] });
 		} else {
 			addToast({
@@ -88,7 +91,7 @@ export const PolicyDocumentsManager: React.FC = () => {
 				color: "danger",
 			});
 		}
-		
+
 		setIsUploading(false);
 		onOpenChange();
 	};
@@ -98,30 +101,15 @@ export const PolicyDocumentsManager: React.FC = () => {
 		console.log("Toggle status for policy:", id);
 	};
 
-	const handleViewDocument = async (policyId: number, policyName: string) => {
-		setSelectedPolicy({ id: policyId, name: policyName });
-		setDocumentUrl(null);
+	const handleViewDocument = async (policy: Policy) => {
+		console.log(policy);
+		setSelectedPolicy(policy);
 		setDocumentError(null);
 		setIsLoadingDocument(true);
 		onViewerOpen();
-
-		try {
-			const result = await getPolicyDocumentUrl(policyId);
-			
-			if (result.success) {
-				setDocumentUrl(result.data.url);
-			} else {
-				setDocumentError(result.errors?.[0] || "Failed to load document URL");
-			}
-		} catch (error) {
-			setDocumentError("Failed to load document URL");
-		} finally {
-			setIsLoadingDocument(false);
-		}
 	};
 
 	const handleCloseViewer = () => {
-		setDocumentUrl(null);
 		setDocumentError(null);
 		setSelectedPolicy(null);
 		onViewerOpenChange();
@@ -179,13 +167,16 @@ export const PolicyDocumentsManager: React.FC = () => {
 											</TableCell>
 											<TableCell>
 												<Chip
-													color={({
-														[PolicyStatus.Pending]: "warning",
-														[PolicyStatus.Active]: "success",
-														[PolicyStatus.Failed]: "danger",
-														[PolicyStatus.Archived]: "default",
-													} as const)[policy.status] || "default"}
-													
+													color={
+														(
+															{
+																[PolicyStatus.Pending]: "warning",
+																[PolicyStatus.Active]: "success",
+																[PolicyStatus.Failed]: "danger",
+																[PolicyStatus.Archived]: "default",
+															} as const
+														)[policy.status] || "default"
+													}
 													variant="flat"
 													size="sm"
 												>
@@ -196,10 +187,14 @@ export const PolicyDocumentsManager: React.FC = () => {
 												<div className="flex justify-end gap-2">
 													<Button
 														isIconOnly
+														disabled={
+															policy.status === PolicyStatus.Pending ||
+															policy.status == PolicyStatus.Failed
+														}
 														size="sm"
 														variant="light"
 														color="primary"
-														onPress={() => handleViewDocument(policy.id, policy.name)}
+														onPress={() => handleViewDocument(policy)}
 													>
 														<Eye width={16} />
 													</Button>
@@ -223,8 +218,12 @@ export const PolicyDocumentsManager: React.FC = () => {
 															</Button>
 														</DropdownTrigger>
 														<DropdownMenu aria-label="Document Actions">
-															<DropdownItem key="view">View Content</DropdownItem>
-															<DropdownItem key="download">Download</DropdownItem>
+															<DropdownItem key="view">
+																View Content
+															</DropdownItem>
+															<DropdownItem key="download">
+																Download
+															</DropdownItem>
 															<DropdownItem key="history">
 																Version History
 															</DropdownItem>
@@ -297,9 +296,7 @@ export const PolicyDocumentsManager: React.FC = () => {
 								<Button
 									color="primary"
 									onPress={handleUpload}
-									isDisabled={
-										!selectedFile || !documentName || isUploading
-									}
+									isDisabled={!selectedFile || !documentName || isUploading}
 									isLoading={isUploading}
 								>
 									{isUploading ? "Uploading..." : "Upload & Index"}
@@ -310,8 +307,8 @@ export const PolicyDocumentsManager: React.FC = () => {
 				</ModalContent>
 			</Modal>
 
-			<Modal 
-				isOpen={isViewerOpen} 
+			<Modal
+				isOpen={isViewerOpen}
 				onOpenChange={onViewerOpenChange}
 				size="5xl"
 				classNames={{
@@ -323,7 +320,7 @@ export const PolicyDocumentsManager: React.FC = () => {
 					{() => (
 						<ModalBody>
 							<DocumentViewer
-								url={documentUrl}
+								url={selectedPolicy?.documentUrl!}
 								isLoading={isLoadingDocument}
 								documentName={selectedPolicy?.name}
 								onClose={handleCloseViewer}
@@ -336,4 +333,3 @@ export const PolicyDocumentsManager: React.FC = () => {
 		</>
 	);
 };
-

@@ -7,9 +7,12 @@ namespace Jude.Server.Domains.Policies;
 
 public interface IPolicyContext
 {
-    Task<Result<string>> Ingest(Stream document, TagCollection tags);
+    Task<Result<string>> Ingest(Stream document, string fileName, TagCollection tags);
     Task<SearchResult> SearchAsync(string query, CancellationToken cancellationToken = default);
-    Task<MemoryAnswer> AskPolicyAsync(string question, CancellationToken cancellationToken = default);
+    Task<MemoryAnswer> AskPolicyAsync(
+        string question,
+        CancellationToken cancellationToken = default
+    );
 }
 
 public class PolicyContext : IPolicyContext
@@ -22,7 +25,7 @@ public class PolicyContext : IPolicyContext
         _logger = logger;
         _memory = new KernelMemoryBuilder()
             .WithSimpleQueuesPipeline()
-            .With(new KernelMemoryConfig { DefaultIndexName = "jude" })
+            .With(new KernelMemoryConfig { DefaultIndexName = AppConfig.PolicyIndexName })
             .WithPostgresMemoryDb(AppConfig.VectorDbUrl)
             .WithAzureBlobsDocumentStorage(
                 new AzureBlobsConfig
@@ -58,10 +61,10 @@ public class PolicyContext : IPolicyContext
             .Build<MemoryServerless>();
     }
 
-    public async Task<Result<string>> Ingest(Stream document, TagCollection tags)
+    public async Task<Result<string>> Ingest(Stream document, string fileName, TagCollection tags)
     {
         _logger.LogInformation("Starting document ingestion with tags: {Tags}", tags);
-        var docId = await _memory.ImportDocumentAsync(document, tags: tags);
+        var docId = await _memory.ImportDocumentAsync(document, fileName: fileName, tags: tags);
 
         if (docId == null)
         {

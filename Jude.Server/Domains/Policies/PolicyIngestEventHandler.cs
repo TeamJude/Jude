@@ -1,4 +1,6 @@
+using Jude.Server.Config;
 using Jude.Server.Core.Helpers;
+using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Policies.Events;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +20,8 @@ public class PolicyIngestEventHandler : IPolicyIngestEventHandler
 
     public PolicyIngestEventHandler(
         IServiceScopeFactory serviceScopeFactory,
-        ILogger<PolicyIngestEventHandler> logger)
+        ILogger<PolicyIngestEventHandler> logger
+    )
     {
         _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
@@ -36,87 +39,72 @@ public class PolicyIngestEventHandler : IPolicyIngestEventHandler
         var dbContext = scope.ServiceProvider.GetRequiredService<JudeDbContext>();
         var policyContext = scope.ServiceProvider.GetRequiredService<IPolicyContext>();
 
-        try
+        var policy = await dbContext.Policies.FirstOrDefaultAsync(p =>
+            p.Id == ingestEvent.PolicyId
+        );
+
+        if (policy == null)
         {
-            // Get the policy from database
-            var policy = await dbContext.Policies
-                .FirstOrDefaultAsync(p => p.Id == ingestEvent.PolicyId);
+            _logger.LogError("Policy with ID {PolicyId} not found", ingestEvent.PolicyId);
+            return;
+        }
 
-            if (policy == null)
-            {
-                _logger.LogError("Policy with ID {PolicyId} not found", ingestEvent.PolicyId);
-                return;
-            }
+        var fileName =
+            ingestEvent.PolicyName
+            + "_"
+            + Guid.NewGuid().ToString()
+            + Path.GetExtension(ingestEvent.FileName);
 
-            // Perform the ingest operation
-            using var stream = new MemoryStream(ingestEvent.FileContent);
-            var ingestResult = await policyContext.Ingest(
-                stream,
-                new TagCollection { { "name", ingestEvent.PolicyName } }
+        using var stream = new MemoryStream(ingestEvent.FileContent);
+        var ingestResult = await policyContext.Ingest(
+            stream,
+            fileName,
+            new TagCollection { { "name", ingestEvent.PolicyName } }
+        );
+
+        if (ingestResult.Success)
+        {
+            policy.DocumentUrl = CreateDocumentUrl(
+                fileName,
+                AppConfig.PolicyIndexName,
+                ingestResult.Data!
             );
 
-            if (ingestResult.Success)
-            {
-                // Update policy with successful ingest
-                policy.DocumentId = ingestResult.Data;
-                policy.Status = Data.Models.PolicyStatus.Active;
-                policy.UpdatedAt = DateTime.UtcNow;
-
-                _logger.LogInformation(
-                    "Successfully ingested policy {PolicyId} - {PolicyName} with DocumentId {DocumentId}",
-                    ingestEvent.PolicyId,
-                    ingestEvent.PolicyName,
-                    ingestResult.Data
-                );
-            }
-            else
-            {
-                // Mark policy as failed
-                policy.Status = Data.Models.PolicyStatus.Failed;
-                policy.UpdatedAt = DateTime.UtcNow;
-
-                _logger.LogError(
-                    "Failed to ingest policy {PolicyId} - {PolicyName}: {Errors}",
-                    ingestEvent.PolicyId,
-                    ingestEvent.PolicyName,
-                    string.Join(", ", ingestResult.Errors)
-                );
-            }
-
-            await dbContext.SaveChangesAsync();
+            policy.DocumentId = ingestResult.Data;
+            policy.Status = PolicyStatus.Active;
+            policy.UpdatedAt = DateTime.UtcNow;
 
             _logger.LogInformation(
-                "Completed policy ingest processing for policy {PolicyId} with status {Status}",
-                ingestEvent.PolicyId,
-                policy.Status
-            );
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,
-                "Error processing policy ingest for policy {PolicyId} - {PolicyName}: {Message}",
+                "Successfully ingested policy {PolicyId} - {PolicyName} with DocumentId {DocumentId}",
                 ingestEvent.PolicyId,
                 ingestEvent.PolicyName,
-                ex.Message
+                ingestResult.Data
             );
-
-            // Update policy status to failed
-            try
-            {
-                var policy = await dbContext.Policies
-                    .FirstOrDefaultAsync(p => p.Id == ingestEvent.PolicyId);
-
-                if (policy != null)
-                {
-                    policy.Status = Data.Models.PolicyStatus.Failed;
-                    policy.UpdatedAt = DateTime.UtcNow;
-                    await dbContext.SaveChangesAsync();
-                }
-            }
-            catch (Exception saveEx)
-            {
-                _logger.LogError(saveEx, "Failed to update policy status to failed for policy {PolicyId}", ingestEvent.PolicyId);
-            }
         }
+        else
+        {
+            policy.Status = PolicyStatus.Failed;
+            policy.UpdatedAt = DateTime.UtcNow;
+
+            _logger.LogError(
+                "Failed to ingest policy {PolicyId} - {PolicyName}: {Errors}",
+                ingestEvent.PolicyId,
+                ingestEvent.PolicyName,
+                string.Join(", ", ingestResult.Errors)
+            );
+        }
+
+        await dbContext.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Completed policy ingest processing for policy {PolicyId} with status {Status}",
+            ingestEvent.PolicyId,
+            policy.Status
+        );
+    }
+
+    private static string CreateDocumentUrl(string Filename, string index, string documentId)
+    {
+        return $"{AppConfig.Azure.Blob.BaseUrl}/{AppConfig.Azure.Blob.Container}/{index}/{documentId}/{Filename}";
     }
 }

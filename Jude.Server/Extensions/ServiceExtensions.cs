@@ -139,7 +139,6 @@ public static class ServiceExtensions
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<ITokenProvider, TokenProvider>();
         services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
-        services.AddScoped<IAuditService, AuditService>();
 
         services.AddSingleton(AppConfig.CIMAS);
 

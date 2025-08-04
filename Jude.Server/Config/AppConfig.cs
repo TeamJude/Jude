@@ -79,7 +79,9 @@ public static class AppConfig
                 Environment.GetEnvironmentVariable("AZURE_BLOB_CONTAINER")
                     ?? throw new Exception("AZURE Blob Container is not set"),
                 Environment.GetEnvironmentVariable("AZURE_BLOB_CONNECTION_STRING")
-                    ?? throw new Exception("AZURE Blob Connection String is not set")
+                    ?? throw new Exception("AZURE Blob Connection String is not set"),
+                Environment.GetEnvironmentVariable("AZURE_BLOB_URL")
+                    ?? throw new Exception("AZURE Blob URL is not set")
             )
         );
 
@@ -95,6 +97,9 @@ public static class AppConfig
     public static string VectorDbUrl { get; } =
         Environment.GetEnvironmentVariable("VECTOR_DB_URL")
         ?? throw new Exception("Vector DB URL is not set");
+
+    public static string PolicyIndexName { get; } =
+        Environment.GetEnvironmentVariable("POLICY_INDEX_NAME") ?? "policy_index";
 }
 
 public record Database(string ConnectionString);
@@ -123,7 +128,8 @@ public record AzureBlob(
     string Account,
     string AccessKey,
     string Container,
-    string ConnectionString
+    string ConnectionString,
+    string BaseUrl
 );
 
 public record CustomAzureAI(string ModelId, string Endpoint, string ApiKey);
