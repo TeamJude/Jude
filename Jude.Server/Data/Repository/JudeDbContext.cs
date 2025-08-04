@@ -26,6 +26,10 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
             .WithMany(claim => claim.Citations)
             .HasForeignKey(c => c.ClaimId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AuditLogModel>()
+            .Property(a => a.Metadata)
+            .HasColumnType("jsonb");
     }
 
     public DbSet<UserModel> Users { get; set; }
@@ -35,4 +39,5 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
     public DbSet<ClaimModel> Claims { get; set; }
     public DbSet<PolicyModel> Policies { get; set; }
     public DbSet<CitationModel> Citations { get; set; }
+    public DbSet<AuditLogModel> AuditLogs { get; set; }
 }
