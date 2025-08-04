@@ -34,14 +34,16 @@ public class PolicyPlugin
 
             if (result == null || string.IsNullOrWhiteSpace(result.Result))
             {
-                _logger.LogWarning("No policy information found for question: {Question}", question);
+                _logger.LogWarning(
+                    "No policy information found for question: {Question}",
+                    question
+                );
                 return "No relevant policy information found for this question. Please try rephrasing or ask about a different aspect.";
             }
 
-            // Format the response with sources if available
             var response = $"**Policy Information:**\n{result.Result}";
-            
-            if (result.RelevantSources?.Any() == true)
+
+            if (result.RelevantSources.Count > 0)
             {
                 response += "\n\n**Sources:**";
                 foreach (var source in result.RelevantSources.Take(3)) // Limit to top 3 sources
@@ -55,9 +57,10 @@ public class PolicyPlugin
                             if (!string.IsNullOrWhiteSpace(partition.Text))
                             {
                                 // Add a brief snippet
-                                var snippet = partition.Text.Length > 500 
-                                    ? partition.Text[..500] + "..." 
-                                    : partition.Text;
+                                var snippet =
+                                    partition.Text.Length > 1000
+                                        ? partition.Text[..1000] + "..."
+                                        : partition.Text;
                                 response += $" - {snippet}";
                             }
                         }
@@ -65,12 +68,19 @@ public class PolicyPlugin
                 }
             }
 
-            _logger.LogInformation("Successfully retrieved policy information for question: {Question}", question);
+            _logger.LogInformation(
+                "Successfully retrieved policy information for question: {Question}",
+                question
+            );
             return response;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving policy information for question: {Question}", question);
+            _logger.LogError(
+                ex,
+                "Error retrieving policy information for question: {Question}",
+                question
+            );
             return $"Error retrieving policy information: {ex.Message}. Please try asking a different question or contact support.";
         }
     }

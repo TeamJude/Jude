@@ -50,7 +50,7 @@ export const PolicyDocumentsManager: React.FC = () => {
 	const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
 	const [documentName, setDocumentName] = React.useState("");
 	const [isUploading, setIsUploading] = React.useState(false);
-	const [isLoadingDocument, setIsLoadingDocument] = React.useState(false);
+
 	const [documentError, setDocumentError] = React.useState<string | null>(null);
 	const [selectedPolicy, setSelectedPolicy] = React.useState<Policy | null>(
 		null,
@@ -105,7 +105,6 @@ export const PolicyDocumentsManager: React.FC = () => {
 		console.log(policy);
 		setSelectedPolicy(policy);
 		setDocumentError(null);
-		setIsLoadingDocument(true);
 		onViewerOpen();
 	};
 
@@ -321,7 +320,6 @@ export const PolicyDocumentsManager: React.FC = () => {
 						<ModalBody>
 							<DocumentViewer
 								url={selectedPolicy?.documentUrl!}
-								isLoading={isLoadingDocument}
 								documentName={selectedPolicy?.name}
 								onClose={handleCloseViewer}
 								error={documentError}

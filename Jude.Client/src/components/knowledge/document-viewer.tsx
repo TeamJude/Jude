@@ -28,6 +28,8 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   const [zoom, setZoom] = useState(100);
   const [rotation, setRotation] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
+  const [numPages, setNumPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Reset states when URL changes
   useEffect(() => {
@@ -35,6 +37,8 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
       setPdfLoading(true);
       setPdfError(false);
       setRetryCount(0);
+      setCurrentPage(1);
+      setNumPages(0);
     }
   }, [url]);
 
@@ -81,6 +85,27 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     setRetryCount(prev => prev + 1);
   };
 
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setPdfError(false);
+    setPdfLoading(false);
+  };
+
+  const onDocumentLoadError = (error: Error) => {
+    console.error('PDF load error:', error);
+    setPdfError(true);
+    setPdfLoading(false);
+  };
+
+  const onPageLoadSuccess = () => {
+    setPdfLoading(false);
+  };
+
+  const onPageLoadError = (error: Error) => {
+    console.error('Page load error:', error);
+    setPdfError(true);
+    setPdfLoading(false);
+  };
 
   if (isLoading) {
     return (
@@ -166,41 +191,45 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   }
 
   return (
-    <div className="w-full h-[600px] border rounded-lg overflow-hidden bg-content2 relative">
+    <div className="w-full h-[600px] border rounded-lg overflow-hidden bg-content2 relative flex flex-col">
       {/* Header with document name and controls */}
-      <div className="absolute top-0 left-0 right-0 z-20 bg-content1/95 backdrop-blur-sm border-b border-divider p-3">
+      <div className="flex-shrink-0 bg-content1/95 backdrop-blur-sm border-b border-divider p-3 z-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="text-lg">📄</div>
             <h3 className="font-medium text-foreground truncate">{documentName}</h3>
+            {numPages > 0 && (
+              <span className="text-sm text-foreground-500">
+                Page {currentPage} of {numPages}
+              </span>
+            )}
           </div>
           
           <div className="flex items-center gap-2">
-            
-                <Button
-                  size="sm"
-                  variant="flat"
-                  isIconOnly
-                  onPress={handleZoomOut}
-                  isDisabled={zoom <= 50}
-                  title="Zoom Out"
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </Button>
-                <span className="text-sm text-foreground-600 min-w-12 text-center">
-                  {zoom}%
-                </span>
-                <Button
-                  size="sm"
-                  variant="flat"
-                  isIconOnly
-                  onPress={handleZoomIn}
-                  isDisabled={zoom >= 200}
-                  title="Zoom In"
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </Button>
-                <div className="w-px h-6 bg-divider mx-1" />
+            <Button
+              size="sm"
+              variant="flat"
+              isIconOnly
+              onPress={handleZoomOut}
+              isDisabled={zoom <= 50}
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </Button>
+            <span className="text-sm text-foreground-600 min-w-12 text-center">
+              {zoom}%
+            </span>
+            <Button
+              size="sm"
+              variant="flat"
+              isIconOnly
+              onPress={handleZoomIn}
+              isDisabled={zoom >= 200}
+              title="Zoom In"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </Button>
+            <div className="w-px h-6 bg-divider mx-1" />
             
             <Button
               size="sm"
@@ -236,22 +265,56 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         </div>
       </div>
 
-      {pdfLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-content1/80 backdrop-blur-sm z-10">
-          <div className="text-center space-y-4">
-            <Spinner size="lg" color="primary" />
-            <p className="text-foreground-600">Loading document...</p>
+      {/* PDF Container with scrolling */}
+      <div className="flex-1 overflow-auto relative bg-content1">
+        {pdfLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-content1/80 backdrop-blur-sm z-10">
+            <div className="text-center space-y-4">
+              <Spinner size="lg" color="primary" />
+              <p className="text-foreground-600">Loading document...</p>
+            </div>
           </div>
+        )}
+        
+        <div className="flex justify-center p-4 min-h-full">
+          <Document 
+            file={url} 
+            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={onDocumentLoadError}
+            loading={
+              <div className="flex items-center justify-center p-8">
+                <Spinner size="lg" color="primary" />
+              </div>
+            }
+            error={
+              <div className="text-center p-8">
+                <p className="text-danger-600">Failed to load PDF</p>
+              </div>
+            }
+          >
+            {Array.from(new Array(numPages), (el, index) => (
+              <div key={`page_${index + 1}`} className="mb-4">
+                <Page
+                  pageNumber={index + 1}
+                  scale={zoom / 100}
+                  rotate={rotation}
+                  onLoadSuccess={onPageLoadSuccess}
+                  onLoadError={onPageLoadError}
+                  loading={
+                    <div className="flex items-center justify-center p-8">
+                      <Spinner size="md" color="primary" />
+                    </div>
+                  }
+                  error={
+                    <div className="text-center p-8">
+                      <p className="text-danger-600">Failed to load page {index + 1}</p>
+                    </div>
+                  }
+                />
+              </div>
+            ))}
+          </Document>
         </div>
-      )}
-      
-      <div className="pt-16 h-full">
-		<Document file={url} onLoadSuccess={()=>{
-					setPdfError(false);
-					setPdfLoading(false);
-		}}>
-        <Page pageNumber={1} />
-      </Document>
       </div>
     </div>
   );

@@ -18,6 +18,7 @@ public interface IClaimsService
     Task<Result<ClaimDetailResponse>> GetClaimAsync(Guid claimId);
     Task<Result<ClaimsDashboardResponse>> GetDashboardStatsAsync(ClaimsDashboardRequest request);
     Task<Result<TariffResponse>> GetTariffByCodeAsync(string tariffCode);
+    Task<Result<List<TariffResponse>>> GetTariffsByCodesAsync(string[] tariffCodes);
 }
 
 public class ClaimsService : IClaimsService
@@ -160,6 +161,25 @@ public class ClaimsService : IClaimsService
         {
             claim.UpdatedAt = DateTime.UtcNow;
             _repository.Claims.Update(claim);
+            
+            // Handle citations if they exist
+            if (claim.Citations?.Any() == true)
+            {
+                foreach (var citation in claim.Citations)
+                {
+                    citation.ClaimId = claim.Id;
+                    if (citation.Id == Guid.Empty)
+                    {
+                        citation.Id = Guid.NewGuid();
+                        _repository.Citations.Add(citation);
+                    }
+                    else
+                    {
+                        _repository.Citations.Update(citation);
+                    }
+                }
+            }
+            
             await _repository.SaveChangesAsync();
 
             _logger.LogDebug("Successfully updated claim {ClaimId}", claim.Id);
@@ -243,6 +263,7 @@ public class ClaimsService : IClaimsService
         {
             var claim = await _repository.Claims
                 .Include(c => c.ReviewedBy)
+                .Include(c => c.Citations)
                 .FirstOrDefaultAsync(c => c.Id == claimId);
 
             if (claim == null)
@@ -556,5 +577,38 @@ public class ClaimsService : IClaimsService
         var input = new TariffLookupInput(tariffCode, pricingToken);
 
         return await _cimasProvider.GetTariffByCodeAsync(input);
+    }
+
+    public async Task<Result<List<TariffResponse>>> GetTariffsByCodesAsync(string[] tariffCodes)
+    {
+        var authResult = await EnsurePricingAuthenticationAsync();
+        if (!authResult.Success)
+        {
+            return Result.Fail(authResult.Errors);
+        }
+
+        var pricingToken = _cache.Get<string>(PRICING_TOKEN_KEY)!;
+        var results = new List<TariffResponse>();
+
+        foreach (var tariffCode in tariffCodes)
+        {
+            if (string.IsNullOrWhiteSpace(tariffCode))
+                continue;
+
+            var input = new TariffLookupInput(tariffCode, pricingToken);
+            var result = await _cimasProvider.GetTariffByCodeAsync(input);
+            
+            if (result.Success && result.Data != null)
+            {
+                results.Add(result.Data);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to get tariff for code {TariffCode}: {Error}", 
+                    tariffCode, string.Join(", ", result.Errors));
+            }
+        }
+
+        return Result.Ok(results);
     }
 }

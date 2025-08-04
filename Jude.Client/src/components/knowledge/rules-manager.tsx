@@ -113,7 +113,6 @@ export const RulesManager: React.FC = () => {
 						<TableHeader>
 							<TableColumn key="name">RULE NAME</TableColumn>
 							<TableColumn key="description">DESCRIPTION</TableColumn>
-							<TableColumn key="priority">PRIORITY</TableColumn>
 							<TableColumn key="status">STATUS</TableColumn>
 							<TableColumn key="createdAt">CREATED</TableColumn>
 							<TableColumn key="actions" className="text-right">
@@ -133,11 +132,13 @@ export const RulesManager: React.FC = () => {
 								? data.data.rules.map((rule) => (
 										<TableRow key={rule.id}>
 											<TableCell className="font-medium">{rule.name}</TableCell>
+
 											<TableCell className="max-w-md">
 												<div className="truncate" title={rule.description}>
 													{rule.description}
 												</div>
 											</TableCell>
+
 											<TableCell>
 												<Switch
 													isSelected={rule.status === RuleStatus.Active}
@@ -146,9 +147,11 @@ export const RulesManager: React.FC = () => {
 													color="success"
 												/>
 											</TableCell>
+
 											<TableCell>
 												{new Date(rule.createdAt).toLocaleDateString()}
 											</TableCell>
+
 											<TableCell className="text-right">
 												<div className="flex justify-end gap-2">
 													<Button

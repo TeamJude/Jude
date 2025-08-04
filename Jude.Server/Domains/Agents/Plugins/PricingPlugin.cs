@@ -1,4 +1,4 @@
- using System.ComponentModel;
+using System.ComponentModel;
 using System.Text.Json;
 using Jude.Server.Domains.Claims;
 using Microsoft.SemanticKernel;
@@ -41,27 +41,102 @@ public class PricingPlugin
 
             if (!result.Success)
             {
-                _logger.LogWarning("Failed to retrieve tariff pricing for code {TariffCode}: {Errors}", 
-                    tariffCode, string.Join(", ", result.Errors));
-                
+                _logger.LogWarning(
+                    "Failed to retrieve tariff pricing for code {TariffCode}: {Errors}",
+                    tariffCode,
+                    string.Join(", ", result.Errors)
+                );
+
                 if (result.Errors.Any(e => e.Contains("not found")))
                 {
                     return $"Tariff code '{tariffCode}' not found in pricing database. This may indicate an invalid or outdated procedure code that requires manual review.";
                 }
-                
+
                 return $"Unable to retrieve pricing information for tariff code '{tariffCode}'. Error: {string.Join(", ", result.Errors)}";
             }
 
-
-
-            _logger.LogInformation("Successfully retrieved pricing for tariff code: {TariffCode}", tariffCode);
+            _logger.LogInformation(
+                "Successfully retrieved pricing for tariff code: {TariffCode}",
+                tariffCode
+            );
             var responseJson = JsonSerializer.Serialize(result.Data);
             return responseJson;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving tariff pricing for code: {TariffCode}", tariffCode);
+            _logger.LogError(
+                ex,
+                "Error retrieving tariff pricing for code: {TariffCode}",
+                tariffCode
+            );
             return $"Error retrieving pricing information for tariff code '{tariffCode}': {ex.Message}. Please try again or contact support.";
+        }
+    }
+
+    [KernelFunction]
+    [Description(
+        "Look up tariff pricing information for multiple medical procedure or service codes at once. Use this to validate all services in a claim against standard tariff rates and detect potential overcharging or billing irregularities."
+    )]
+    public async Task<string> GetMultipleTariffPricing(
+        [Description(
+            "Array of tariff codes for the medical procedures or services in the claim. Each service response in the claim contains a tariff code that must be validated."
+        )]
+            string[] tariffCodes
+    )
+    {
+        try
+        {
+            if (tariffCodes == null || tariffCodes.Length == 0)
+            {
+                _logger.LogWarning("Empty or null tariff codes array provided");
+                return "Error: At least one tariff code is required. Please provide valid medical procedure or service codes.";
+            }
+
+            var validCodes = tariffCodes.Where(code => !string.IsNullOrWhiteSpace(code)).ToArray();
+            if (validCodes.Length == 0)
+            {
+                return "Error: No valid tariff codes provided. Please check the tariff codes in the claim data.";
+            }
+
+            _logger.LogInformation("Looking up pricing for {Count} tariff codes: {TariffCodes}", 
+                validCodes.Length, string.Join(", ", validCodes));
+
+            var result = await _claimsService.GetTariffsByCodesAsync(validCodes);
+
+            if (!result.Success)
+            {
+                _logger.LogWarning(
+                    "Failed to retrieve tariff pricing for codes {TariffCodes}: {Errors}",
+                    string.Join(", ", validCodes),
+                    string.Join(", ", result.Errors)
+                );
+
+                return $"Unable to retrieve pricing information for tariff codes. Error: {string.Join(", ", result.Errors)}";
+            }
+
+            _logger.LogInformation(
+                "Successfully retrieved pricing for {Count} tariff codes",
+                result.Data.Count
+            );
+
+            var response = new
+            {
+                TotalCodes = validCodes.Length,
+                RetrievedCodes = result.Data.Count,
+                Tariffs = result.Data
+            };
+
+            var responseJson = JsonSerializer.Serialize(response);
+            return responseJson;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Error retrieving tariff pricing for codes: {TariffCodes}",
+                string.Join(", ", tariffCodes ?? Array.Empty<string>())
+            );
+            return $"Error retrieving pricing information for tariff codes: {ex.Message}. Please try again or contact support.";
         }
     }
 }

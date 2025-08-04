@@ -19,6 +19,13 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
         modelBuilder.Entity<UserModel>().HasIndex(u => u.Email).IsUnique();
 
         modelBuilder.Entity<UserModel>().HasIndex(u => u.Username).IsUnique();
+
+        // Configure the relationship between Claims and Citations
+        modelBuilder.Entity<CitationModel>()
+            .HasOne(c => c.Claim)
+            .WithMany(claim => claim.Citations)
+            .HasForeignKey(c => c.ClaimId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     public DbSet<UserModel> Users { get; set; }
@@ -27,4 +34,5 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
     public DbSet<FraudIndicatorModel> FraudIndicators { get; set; }
     public DbSet<ClaimModel> Claims { get; set; }
     public DbSet<PolicyModel> Policies { get; set; }
+    public DbSet<CitationModel> Citations { get; set; }
 }
