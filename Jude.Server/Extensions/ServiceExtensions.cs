@@ -7,6 +7,7 @@ using Jude.Server.Domains.Agents;
 using Jude.Server.Domains.Agents.Events;
 using Jude.Server.Domains.Agents.Plugins;
 using Jude.Server.Domains.Agents.Workflows;
+using Jude.Server.Domains.Audit;
 using Jude.Server.Domains.Auth;
 using Jude.Server.Domains.Auth.Authorization;
 using Jude.Server.Domains.Claims;
@@ -139,6 +140,7 @@ public static class ServiceExtensions
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<ITokenProvider, TokenProvider>();
         services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
+        services.AddScoped<IAuditService, AuditService>();
 
         services.AddSingleton(AppConfig.CIMAS);
 
