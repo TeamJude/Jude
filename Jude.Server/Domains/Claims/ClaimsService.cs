@@ -17,6 +17,8 @@ public interface IClaimsService
     Task<Result<GetClaimsResponse>> GetClaimsAsync(GetClaimsRequest request);
     Task<Result<ClaimDetailResponse>> GetClaimAsync(Guid claimId);
     Task<Result<ClaimsDashboardResponse>> GetDashboardStatsAsync(ClaimsDashboardRequest request);
+    Task<Result<TariffResponse>> GetTariffByCodeAsync(string tariffCode);
+    Task<Result<List<TariffResponse>>> GetTariffsByCodesAsync(string[] tariffCodes);
 }
 
 public class ClaimsService : IClaimsService
@@ -28,7 +30,9 @@ public class ClaimsService : IClaimsService
 
     private const string ACCESS_TOKEN_KEY = "cimas_access_token";
     private const string REFRESH_TOKEN_KEY = "cimas_refresh_token";
+    private const string PRICING_TOKEN_KEY = "cimas_pricing_token";
     private static readonly TimeSpan TokenCacheExpiry = TimeSpan.FromMinutes(50); // Tokens usually expire in 60 minutes
+    private static readonly TimeSpan PricingTokenCacheExpiry = TimeSpan.FromMinutes(50); // Pricing tokens usually expire in 60 minutes
 
     public ClaimsService(
         JudeDbContext repository,
@@ -157,6 +161,25 @@ public class ClaimsService : IClaimsService
         {
             claim.UpdatedAt = DateTime.UtcNow;
             _repository.Claims.Update(claim);
+            
+            // Handle citations if they exist
+            if (claim.Citations?.Any() == true)
+            {
+                foreach (var citation in claim.Citations)
+                {
+                    citation.ClaimId = claim.Id;
+                    if (citation.Id == Guid.Empty)
+                    {
+                        citation.Id = Guid.NewGuid();
+                        _repository.Citations.Add(citation);
+                    }
+                    else
+                    {
+                        _repository.Citations.Update(citation);
+                    }
+                }
+            }
+            
             await _repository.SaveChangesAsync();
 
             _logger.LogDebug("Successfully updated claim {ClaimId}", claim.Id);
@@ -240,6 +263,7 @@ public class ClaimsService : IClaimsService
         {
             var claim = await _repository.Claims
                 .Include(c => c.ReviewedBy)
+                .Include(c => c.Citations)
                 .FirstOrDefaultAsync(c => c.Id == claimId);
 
             if (claim == null)
@@ -506,5 +530,85 @@ public class ClaimsService : IClaimsService
                 break;
         }
         return activity;
+    }
+
+    private async Task<Result<bool>> EnsurePricingAuthenticationAsync()
+    {
+        var pricingToken = _cache.Get<string>(PRICING_TOKEN_KEY);
+
+        if (!string.IsNullOrEmpty(pricingToken))
+        {
+            _logger.LogDebug("Using cached pricing access token");
+            return Result.Ok(true);
+        }
+
+        _logger.LogInformation("Getting new pricing access token from CIMAS");
+        var tokenResult = await _cimasProvider.GetPricingAccessTokenAsync();
+
+        if (!tokenResult.Success)
+        {
+            _logger.LogError(
+                "Failed to get pricing access token: {Errors}",
+                string.Join(", ", tokenResult.Errors)
+            );
+            return Result.Fail("Failed to authenticate with CIMAS pricing API");
+        }
+
+        if (string.IsNullOrEmpty(tokenResult.Data))
+        {
+            _logger.LogError("Received empty pricing access token from CIMAS");
+            return Result.Fail("Received invalid pricing token from CIMAS");
+        }
+
+        _cache.Set(PRICING_TOKEN_KEY, tokenResult.Data, PricingTokenCacheExpiry);
+        _logger.LogInformation("Successfully obtained new pricing access token");
+        return Result.Ok(true);
+    }
+
+    public async Task<Result<TariffResponse>> GetTariffByCodeAsync(string tariffCode)
+    {
+        var authResult = await EnsurePricingAuthenticationAsync();
+        if (!authResult.Success)
+        {
+            return Result.Fail(authResult.Errors);
+        }
+
+        var pricingToken = _cache.Get<string>(PRICING_TOKEN_KEY)!;
+        var input = new TariffLookupInput(tariffCode, pricingToken);
+
+        return await _cimasProvider.GetTariffByCodeAsync(input);
+    }
+
+    public async Task<Result<List<TariffResponse>>> GetTariffsByCodesAsync(string[] tariffCodes)
+    {
+        var authResult = await EnsurePricingAuthenticationAsync();
+        if (!authResult.Success)
+        {
+            return Result.Fail(authResult.Errors);
+        }
+
+        var pricingToken = _cache.Get<string>(PRICING_TOKEN_KEY)!;
+        var results = new List<TariffResponse>();
+
+        foreach (var tariffCode in tariffCodes)
+        {
+            if (string.IsNullOrWhiteSpace(tariffCode))
+                continue;
+
+            var input = new TariffLookupInput(tariffCode, pricingToken);
+            var result = await _cimasProvider.GetTariffByCodeAsync(input);
+            
+            if (result.Success && result.Data != null)
+            {
+                results.Add(result.Data);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to get tariff for code {TariffCode}: {Error}", 
+                    tariffCode, string.Join(", ", result.Errors));
+            }
+        }
+
+        return Result.Ok(results);
     }
 }

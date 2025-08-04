@@ -1,0 +1,95 @@
+
+Login Request
+
+
+curl --location 'https://ussd.cimas.co.zw:9900/api/v1/auth/login' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "username": "username",
+  "password": "password"
+}'
+
+
+Login Response
+
+{
+    "access_token": "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6W3siYXV0aG9yaXR5IjoiU1RBTkRBUkRfQURNSU4ifV0sInN1YiI6IjQ3MjkxNjYxIiwiaXNzIjoiVGFyaWZmL0RydWcgU3lzdGVtIiwiaWF0IjoxNzUyNDk3ODcyLCJleHAiOjE3NTI1ODQyNzJ9.h9dBp6S5Lvk5j41Vn0eF3w7YpSsRqn83VjWUwYLLJ30"
+}
+
+Tarrif Price Lookup 
+
+curl --location 'https://ussd.cimas.co.zw:9900/api/v1/tariff/by/code/1111111' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6W3siYXV0aG9yaXR5IjoiU1RBTkRBUkRfQURNSU4ifV0sInN1YiI6IjQ3MjkxNjYxIiwiaXNzIjoiVGFyaWZmL0RydWcgU3lzdGVtIiwiaWF0IjoxNzUyNDk3ODcyLCJleHAiOjE3NTI1ODQyNzJ9.h9dBp6S5Lvk5j41Vn0eF3w7YpSsRqn83VjWUwYLLJ30'
+
+
+Error 
+
+{
+    "errorMsg": "400",
+    "developerMsg": "Tariff with code 1111111 not found",
+    "responseStatus": "BAD_GATEWAY",
+    "responseCode": 400
+}
+
+Success 
+
+{
+    "createdAt": "2023-08-23 11:08:20",
+    "packages": [
+        {
+            "createdAt": "2023-08-23 11:08:20",
+            "id": 152,
+            "name": {
+                "createdAt": null,
+                "id": 1,
+                "package": "standard scheme",
+                "description": "standard scheme"
+            },
+            "currency": "USD",
+            "amount": 52.00
+        },
+        {
+            "createdAt": "2023-08-23 11:08:20",
+            "id": 153,
+            "name": {
+                "createdAt": null,
+                "id": 2,
+                "package": "comprehensive scheme",
+                "description": "comprehensive scheme"
+            },
+            "currency": "USD",
+            "amount": 52.00
+        },
+        {
+            "createdAt": "2023-08-23 11:08:20",
+            "id": 151,
+            "name": {
+                "createdAt": null,
+                "id": 3,
+                "package": "secure healthguard scheme",
+                "description": "secure healthguard scheme"
+            },
+            "currency": "USD",
+            "amount": 52.00
+        }
+    ],
+    "category": [
+        {
+            "createdAt": "2023-08-23 09:42:45",
+            "id": 3,
+            "description": "Parirenyatwa",
+            "code": "03"
+        }
+    ],
+    "subCategory": [
+        {
+            "createdAt": "2023-08-23 09:43:04",
+            "id": 5,
+            "description": "Parirenyatwa",
+            "code": "04"
+        }
+    ],
+    "id": 21,
+    "code": "01011",
+    "description": "Semi private side ward"
+}

@@ -340,7 +340,7 @@ public class CIMASProvider : ICIMASProvider
             var requestBody = new PricingApiTokenRequest
             {
                 Username = AppConfig.CIMAS.PricingApiUsername,
-                Password = AppConfig.CIMAS.PricingApiPassword
+                Password = AppConfig.CIMAS.PricingApiPassword,
             };
 
             var response = await _httpClient.PostAsJsonAsync(
@@ -363,7 +363,9 @@ public class CIMASProvider : ICIMASProvider
             var tokenResponse = await response.Content.ReadFromJsonAsync<PricingApiTokenResponse>();
             if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.AccessToken))
             {
-                _logger.LogError("Failed to deserialize pricing API token response or token is empty");
+                _logger.LogError(
+                    "Failed to deserialize pricing API token response or token is empty"
+                );
                 return Result.Fail("Failed to deserialize pricing API token response");
             }
 
@@ -401,9 +403,10 @@ public class CIMASProvider : ICIMASProvider
 
                     try
                     {
-                        var errorResponse = await JsonSerializer.DeserializeAsync<PricingApiErrorResponse>(
-                            new MemoryStream(System.Text.Encoding.UTF8.GetBytes(errorContent))
-                        );
+                        var errorResponse =
+                            await JsonSerializer.DeserializeAsync<PricingApiErrorResponse>(
+                                new MemoryStream(System.Text.Encoding.UTF8.GetBytes(errorContent))
+                            );
 
                         if (errorResponse != null)
                         {
@@ -445,7 +448,11 @@ public class CIMASProvider : ICIMASProvider
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting tariff info for code {TariffCode}", input.TariffCode);
+            _logger.LogError(
+                ex,
+                "Error getting tariff info for code {TariffCode}",
+                input.TariffCode
+            );
             return Result.Exception("Error getting tariff info");
         }
     }

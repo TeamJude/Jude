@@ -1,3 +1,4 @@
+
 using Jude.Server.Data.Models;
 
 namespace Jude.Server.Domains.Claims;

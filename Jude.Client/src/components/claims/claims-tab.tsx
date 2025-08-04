@@ -101,268 +101,272 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 						</div>
 					}
 				>
-					<Card shadow="none">
-						<CardBody className="gap-6">
-							<div>
-								<h3 className="text-lg font-medium mb-3">Extracted Data</h3>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-									<div>
-										<h4 className="text-sm font-medium">Claim Details</h4>
-										<div className="mt-2 space-y-2">
-											<div className="flex justify-between">
-												<span className="text-sm text-foreground-500">
-													Service Type
-												</span>
-												<span className="text-sm">Consultation</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-sm text-foreground-500">
-													Service Code
-												</span>
-												<span className="text-sm">CON-2023</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-sm text-foreground-500">
-													Diagnosis Code
-												</span>
-												<span className="text-sm">J45.909</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-sm text-foreground-500">
-													Place of Service
-												</span>
-												<span className="text-sm">Office</span>
-											</div>
-										</div>
-									</div>
-
-									<div>
-										<h4 className="text-sm font-medium">Financial Details</h4>
-										<div className="mt-2 space-y-2">
-											{" "}
-											<div className="flex justify-between">
-												<span className="text-sm text-foreground-500">
-													Billed Amount
-												</span>
-												<span className="text-sm">
-													{claim.currency}
-													{claim.claimAmount.toLocaleString()}
-												</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-sm text-foreground-500">
-													Allowed Amount
-												</span>
-												<span className="text-sm">
-													{claim.approvedAmount
-														? `${claim.currency}${claim.approvedAmount.toLocaleString()}`
-														: "Pending"}
-												</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-sm text-foreground-500">
-													Member Responsibility
-												</span>
-												<span className="text-sm">$150.00</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-sm text-foreground-500">
-													Plan Payment
-												</span>
-												<span className="text-sm">$800.00</span>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<Divider />
-
-							<div>
-								<div className="flex items-center gap-2 mb-3">
-									<h3 className="text-lg font-medium">Agent's Reasoning Log</h3>
-									<Chip color="secondary" variant="flat" size="sm">
-										AI Generated
-									</Chip>
-								</div>
-
-								<div className="bg-content2 p-4 rounded-md space-y-3">
-									<div className="flex gap-2">
-										<CheckCircle className="text-success mt-0.5" width={18} />
-										<div>
-											<p className="text-sm">
-												<span className="font-medium">
-													Checked Policy Document 'Medical Coverage v2.3':
-												</span>{" "}
-												Section 4.B - Service covered under standard
-												consultation benefits.
-											</p>
-										</div>
-									</div>
-
-									<div className="flex gap-2">
-										<CheckCircle className="text-success mt-0.5" width={18} />
-										<div>
-											<p className="text-sm">
-												<span className="font-medium">
-													Applied Rule 'Provider Network Check':
-												</span>{" "}
-												Provider ID #PRV-28765 confirmed in-network for member's
-												plan.
-											</p>
-										</div>
-									</div>
-
-									<div className="flex gap-2">
-										<AlertCircle className="text-warning mt-0.5" width={18} />
-										<div>
-											<p className="text-sm">
-												<span className="font-medium">
-													Applied Rule 'High Value Check':
-												</span>{" "}
-												Amount {">"} $1,000 - Flagged for review.
-											</p>
-										</div>
-									</div>
-
-									<div className="flex gap-2">
-										<Info className="text-primary mt-0.5" width={18} />
-										<div>
-											<p className="text-sm">
-												<span className="font-medium">Historical Data:</span>{" "}
-												Member had similar claim #CL-2023-45678 approved on
-												03/15/2023.
-											</p>
-										</div>
-									</div>
-
-									<div className="flex gap-2">
-										<BarChart className="text-secondary mt-0.5" width={18} />
-										<div>
-											<p className="text-sm">
-												<span className="font-medium">Model Prediction:</span>{" "}
-												Confidence Score 0.85 for 'Approve', 0.15 for 'Potential
-												Fraud'.
-											</p>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<Divider />
-
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<Card shadow="none">
+							<CardBody className="gap-6">
 								<div>
-									<h3 className="text-lg font-medium mb-3">
-										Agent's Recommendation
-									</h3>
-									<Card className="bg-warning-50 border-warning">
-										<CardBody>
-											{" "}
-											<div className="flex items-center gap-2 mb-2">
-												<UserCheck className="text-warning" width={20} />
-												<h4 className="font-medium">
-													{claim.agentRecommendation ||
-														"Requires Human Review - High Value Claim"}
-												</h4>
+									<h3 className="text-lg font-medium mb-3">Extracted Data</h3>
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+										<div>
+											<h4 className="text-sm font-medium">Claim Details</h4>
+											<div className="mt-2 space-y-2">
+												<div className="flex justify-between">
+													<span className="text-sm text-foreground-500">
+														Service Type
+													</span>
+													<span className="text-sm">Consultation</span>
+												</div>
+												<div className="flex justify-between">
+													<span className="text-sm text-foreground-500">
+														Service Code
+													</span>
+													<span className="text-sm">CON-2023</span>
+												</div>
+												<div className="flex justify-between">
+													<span className="text-sm text-foreground-500">
+														Diagnosis Code
+													</span>
+													<span className="text-sm">J45.909</span>
+												</div>
+												<div className="flex justify-between">
+													<span className="text-sm text-foreground-500">
+														Place of Service
+													</span>
+													<span className="text-sm">Office</span>
+												</div>
 											</div>
-											<p className="text-sm">
-												{claim.agentReasoning ||
-													"This claim exceeds the automatic approval threshold of $1,000 and requires human verification. All other policy checks have passed. Historical data shows similar claims were approved."}
-											</p>
-										</CardBody>
-									</Card>
+										</div>
+
+										<div>
+											<h4 className="text-sm font-medium">Financial Details</h4>
+											<div className="mt-2 space-y-2">
+												{" "}
+												<div className="flex justify-between">
+													<span className="text-sm text-foreground-500">
+														Billed Amount
+													</span>
+													<span className="text-sm">
+														{claim.currency}
+														{claim.claimAmount.toLocaleString()}
+													</span>
+												</div>
+												<div className="flex justify-between">
+													<span className="text-sm text-foreground-500">
+														Allowed Amount
+													</span>
+													<span className="text-sm">
+														{claim.approvedAmount
+															? `${claim.currency}${claim.approvedAmount.toLocaleString()}`
+															: "Pending"}
+													</span>
+												</div>
+												<div className="flex justify-between">
+													<span className="text-sm text-foreground-500">
+														Member Responsibility
+													</span>
+													<span className="text-sm">$150.00</span>
+												</div>
+												<div className="flex justify-between">
+													<span className="text-sm text-foreground-500">
+														Plan Payment
+													</span>
+													<span className="text-sm">$800.00</span>
+												</div>
+											</div>
+										</div>
+									</div>
 								</div>
+
+								<Divider />
 
 								<div>
-									<h3 className="text-lg font-medium mb-3">Risk Assessment</h3>
-									<div className="space-y-4">
-										{" "}
-										<div>
-											<div className="flex justify-between mb-1">
-												<span className="text-sm">Fraud Risk</span>
-												<span className="text-sm font-medium">
-													{claim.fraudRiskLevel}
-												</span>
-											</div>
-											<Progress
-												value={
-													{
-														[FraudRiskLevel.Low]: 15,
-														[FraudRiskLevel.Medium]: 40,
-														[FraudRiskLevel.High]: 70,
-														[FraudRiskLevel.Critical]: 90,
-													}[claim.fraudRiskLevel]}
-												color={
-													{
-														[FraudRiskLevel.Low]: "success" as const,
-														[FraudRiskLevel.Medium]: "warning" as const,
-														[FraudRiskLevel.High]: "danger" as const,
-														[FraudRiskLevel.Critical]: "danger" as const,
-													}[claim.fraudRiskLevel]}
-												className="h-2"
-											/>
+									<div className="flex items-center gap-2 mb-3">
+										<h3 className="text-lg font-medium">Agent's Reasoning Log</h3>
+										<Chip color="secondary" variant="flat" size="sm">
+											AI Generated
+										</Chip>
+									</div>
+
+									<div className="bg-content2 p-4 rounded-md space-y-4">
+										<div className="mb-3">
+											<p className="text-sm text-foreground-600">
+												Based on the policy document and the claim provided, the system returned a status of <strong>"HELD_FOR_REVIEW"</strong> on both service lines. Here's a 5-point reasoning log explaining why this decision was made, including citations from the policy:
+											</p>
 										</div>
-										<div>
-											<div className="flex justify-between mb-1">
-												<span className="text-sm">Agent Confidence</span>
-												<span className="text-sm font-medium">
-													{claim.agentConfidenceScore
-														? Math.round(claim.agentConfidenceScore * 100) + "%"
-														: "85%"}
-												</span>
+
+										<div className="flex gap-2">
+											<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">1</span>
+											<div>
+												<p className="text-sm">
+													<span className="font-medium">
+														Initial Examination May Fall Under Age or Benefit Frequency Rules
+													</span>
+												</p>
+												<p className="text-xs text-foreground-600 mt-1">
+													<strong>Claimed Code:</strong> 98101 (Initial examination, charting and case history).
+												</p>
+												<p className="text-xs text-foreground-600 mt-1">
+													<strong>Reasoning:</strong> While this code is likely a standard entry-level procedure, some tariffs are flagged for periodic claim rules or age-based rules.
+												</p>
+												<p className="text-xs text-foreground-500 mt-1 italic">
+													<strong>Policy Reference:</strong> "There are procedures or tariffs that are claimable periodically e.g., once a year… The system should check the previous claim and use the treatment date…" — Section 3.15
+												</p>
 											</div>
-											<Progress
-												value={
-													claim.agentConfidenceScore
-														? claim.agentConfidenceScore * 100
-														: 85
-												}
-												color="primary"
-												className="h-2"
-											/>
+										</div>
+
+										<div className="flex gap-2">
+											<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">2</span>
+											<div>
+												<p className="text-sm">
+													<span className="font-medium">
+														Dental Procedure Requires Tooth Number
+													</span>
+												</p>
+												<p className="text-xs text-foreground-600 mt-1">
+													<strong>Claimed Code:</strong> 98411 (Composite restorations – One surface).
+												</p>
+												<p className="text-xs text-foreground-600 mt-1">
+													<strong>Reasoning:</strong> Dental procedures like restorations typically require tooth numbers to be specified. If omitted, the claim is held or rejected.
+												</p>
+												<p className="text-xs text-foreground-500 mt-1 italic">
+													<strong>Policy Reference:</strong> "Where a tooth number is not indicated the claim line is auto rejected by the system." — Section 2.12: Tooth Number Check
+												</p>
+											</div>
+										</div>
+
+										<div className="flex gap-2">
+											<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">3</span>
+											<div>
+												<p className="text-sm">
+													<span className="font-medium">
+														Manual Adjudication Triggered by Possible Duplicate or Rule Conflict
+													</span>
+												</p>
+												<p className="text-xs text-foreground-600 mt-1">
+													<strong>Reasoning:</strong> Since both lines are basic dental procedures, there's a possibility that system rules like Multi-Code Rule (MCR) or Duplicate Check apply, flagging it for manual review.
+												</p>
+												<p className="text-xs text-foreground-500 mt-1 italic">
+													<strong>Policy Reference:</strong> "Tariff codes that cannot be claimed together on the same day by the same provider… should be rejected and routed for manual adjudication." — Section 3.5
+												</p>
+											</div>
+										</div>
+
+										<div className="flex gap-2">
+											<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">4</span>
+											<div>
+												<p className="text-sm">
+													<span className="font-medium">
+														No Benefit or Scheme Amounts Reflected Suggest Manual Flag
+													</span>
+												</p>
+												<p className="text-xs text-foreground-600 mt-1">
+													<strong>Observation:</strong> Both SchemeAmount, SavingsAmount, and NettProvider are 0.00, showing no auto-award was triggered.
+												</p>
+												<p className="text-xs text-foreground-600 mt-1">
+													<strong>Reasoning:</strong> The claim may have hit a rule that prevents system payment and forces manual review, such as NCA (No Computer Adjudication).
+												</p>
+												<p className="text-xs text-foreground-500 mt-1 italic">
+													<strong>Policy Reference:</strong> "The NCA adjudication indicator shows that a claim should not be auto assessed by the system…" — Section 3.11
+												</p>
+											</div>
+										</div>
+
+										<div className="flex gap-2">
+											<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">5</span>
+											<div>
+												<p className="text-sm">
+													<span className="font-medium">
+														Preliminary Dental Work Often Requires Review
+													</span>
+												</p>
+												<p className="text-xs text-foreground-600 mt-1">
+													<strong>Reasoning:</strong> Services related to dental assessment or restorations are prone to misuse or need contextual validation (e.g., repeat work, excessive servicing).
+												</p>
+												<p className="text-xs text-foreground-500 mt-1 italic">
+													<strong>Policy Reference:</strong> "The rules assist in controlling misuse, abuse of benefits and overservicing tendencies." — Section 4: Overview
+												</p>
+											</div>
 										</div>
 									</div>
 								</div>
-							</div>
-						</CardBody>
-					</Card>
-				</Tab>
 
-				<Tab
-					key="documents"
-					title={
-						<div className="flex items-center gap-2">
-							<FileText width={18} />
-							<span>Original Claim Documents</span>
-						</div>
-					}
-				>
-					<Card shadow="none">
-						<CardBody>
-							<div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg">
-								<div className="mb-4">
-									<FileText width={48} className="text-foreground-400" />
+								<Divider />
+
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+									<div>
+										<h3 className="text-lg font-medium mb-3">
+											Agent's Recommendation
+										</h3>
+										<Card className="bg-warning-50 border-warning">
+											<CardBody>
+												{" "}
+												<div className="flex items-center gap-2 mb-2">
+													<UserCheck className="text-warning" width={20} />
+													<h4 className="font-medium">
+														{claim.agentRecommendation ||
+															"Requires Human Review - High Value Claim"}
+													</h4>
+												</div>
+												<p className="text-sm">
+													{claim.agentReasoning ||
+														"This claim exceeds the automatic approval threshold of $1,000 and requires human verification. All other policy checks have passed. Historical data shows similar claims were approved."}
+												</p>
+											</CardBody>
+										</Card>
+									</div>
+
+									<div>
+										<h3 className="text-lg font-medium mb-3">Risk Assessment</h3>
+										<div className="space-y-4">
+											{" "}
+											<div>
+												<div className="flex justify-between mb-1">
+													<span className="text-sm">Fraud Risk</span>
+													<span className="text-sm font-medium">
+														{claim.fraudRiskLevel}
+													</span>
+												</div>
+												<Progress
+													value={
+														{
+															[FraudRiskLevel.Low]: 15,
+															[FraudRiskLevel.Medium]: 40,
+															[FraudRiskLevel.High]: 70,
+															[FraudRiskLevel.Critical]: 90,
+														}[claim.fraudRiskLevel]}
+													color={
+														{
+															[FraudRiskLevel.Low]: "success" as const,
+															[FraudRiskLevel.Medium]: "warning" as const,
+															[FraudRiskLevel.High]: "danger" as const,
+															[FraudRiskLevel.Critical]: "danger" as const,
+														}[claim.fraudRiskLevel]}
+													className="h-2"
+												/>
+											</div>
+											<div>
+												<div className="flex justify-between mb-1">
+													<span className="text-sm">Agent Confidence</span>
+													<span className="text-sm font-medium">
+														{claim.agentConfidenceScore
+															? Math.round(claim.agentConfidenceScore * 100) + "%"
+															: "85%"}
+													</span>
+												</div>
+												<Progress
+													value={
+														claim.agentConfidenceScore
+															? claim.agentConfidenceScore * 100
+															: 85
+													}
+													color="primary"
+													className="h-2"
+												/>
+											</div>
+										</div>
+									</div>
 								</div>
-								<h3 className="text-lg font-medium">Claim Document Preview</h3>
-								<p className="text-sm text-foreground-500 mt-1 mb-4">
-									View and download the original claim documents
-								</p>
-								<div className="flex gap-3">
-									<Button color="primary" startContent={<Eye width={16} />}>
-										View Document
-									</Button>
-									<Button
-										variant="flat"
-										color="primary"
-										startContent={<Download width={16} />}
-									>
-										Download
-									</Button>
-								</div>
-							</div>
-						</CardBody>
-					</Card>
+							</CardBody>
+						</Card>
 				</Tab>
 
 				<Tab

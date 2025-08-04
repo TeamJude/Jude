@@ -22,9 +22,8 @@ export const apiRequest = async <T>(
 		const response = await fetch(url, {
 			...options,
 			credentials: "include",
-			headers: {
+			headers: options.headers || {
 				"Content-Type": "application/json",
-				...options.headers,
 			},
 		});
 

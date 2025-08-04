@@ -3,6 +3,7 @@ using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Agents.Plugins;
 using Jude.Server.Domains.Claims;
+using Jude.Server.Domains.Policies;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -14,19 +15,21 @@ public class Jude
 {
     private readonly Kernel _kernel;
     private readonly IClaimsService _claimsService;
+    private readonly IPolicyContext _policyContext;
     private readonly ILogger<Jude> _logger;
 
-    public Jude(IClaimsService claimsService, ILogger<Jude> logger)
+    public Jude(IClaimsService claimsService, IPolicyContext policyContext, ILogger<Jude> logger)
     {
         _claimsService = claimsService;
+        _policyContext = policyContext;
         _logger = logger;
 
         _kernel = Kernel
             .CreateBuilder()
             .AddAzureOpenAIChatCompletion(
-                AppConfig.AzureAI.ModelId,
-                AppConfig.AzureAI.Endpoint,
-                AppConfig.AzureAI.ApiKey
+                AppConfig.Azure.AI.ModelId,
+                AppConfig.Azure.AI.Endpoint,
+                AppConfig.Azure.AI.ApiKey
             )
             .Build();
     }
@@ -43,7 +46,19 @@ public class Jude
                 _kernel.LoggerFactory.CreateLogger<DecisionPlugin>()
             );
 
+            var policyPlugin = new PolicyPlugin(
+                _policyContext,
+                _kernel.LoggerFactory.CreateLogger<PolicyPlugin>()
+            );
+
+            var pricingPlugin = new PricingPlugin(
+                _claimsService,
+                _kernel.LoggerFactory.CreateLogger<PricingPlugin>()
+            );
+
             _kernel.ImportPluginFromObject(decisionPlugin, "Decision");
+            _kernel.ImportPluginFromObject(policyPlugin, "Policy");
+            _kernel.ImportPluginFromObject(pricingPlugin, "Pricing");
 
             // Create the agent
             var agent = new ChatCompletionAgent()

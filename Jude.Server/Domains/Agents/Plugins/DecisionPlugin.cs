@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json;
 using Jude.Server.Data.Models;
 using Jude.Server.Domains.Claims;
 using Microsoft.SemanticKernel;
@@ -11,7 +12,11 @@ public class DecisionPlugin
     private readonly IClaimsService _claimsService;
     private readonly ILogger<DecisionPlugin> _logger;
 
-    public DecisionPlugin(ClaimModel claim, IClaimsService claimsService, ILogger<DecisionPlugin> logger)
+    public DecisionPlugin(
+        ClaimModel claim,
+        IClaimsService claimsService,
+        ILogger<DecisionPlugin> logger
+    )
     {
         _claim = claim;
         _claimsService = claimsService;
@@ -34,7 +39,27 @@ public class DecisionPlugin
         [Description("Whether the claim requires human review (true/false)")]
             bool requiresHumanReview = false,
         [Description("Approved amount if different from claimed amount")]
-            decimal? approvedAmount = null
+            decimal? approvedAmount = null,
+        [Description(
+            "Policy citations - pipe-separated list of policy sources that support this decision (e.g., 'Section 3.15|Section 2.12|Coverage Policy 4.1')"
+        )]
+            string? policyCitations = null,
+        [Description(
+            "Policy quotes - pipe-separated list of exact quotes from policies (must match order of policyCitations)"
+        )]
+            string? policyQuotes = null,
+        [Description(
+            "Tariff citations - pipe-separated list of tariff codes used in decision (e.g., '98101|98411|CON-2023')"
+        )]
+            string? tariffCitations = null,
+        [Description(
+            "Tariff details - pipe-separated list of tariff descriptions and pricing info (must match order of tariffCitations)"
+        )]
+            string? tariffDetails = null,
+        [Description(
+            "Citation contexts - pipe-separated list explaining how each citation supports the decision (must match total citation count)"
+        )]
+            string? citationContexts = null
     )
     {
         try
@@ -68,6 +93,72 @@ public class DecisionPlugin
                 _claim.FraudRiskLevel = riskLevel;
             }
 
+            var citationList = new List<CitationModel>();
+
+            if (!string.IsNullOrWhiteSpace(policyCitations))
+            {
+                var sources = policyCitations.Split('|', StringSplitOptions.RemoveEmptyEntries);
+                var quotes = policyQuotes?.Split('|', StringSplitOptions.RemoveEmptyEntries) ?? [];
+                var contexts =
+                    citationContexts?.Split('|', StringSplitOptions.RemoveEmptyEntries) ?? [];
+
+                for (int i = 0; i < sources.Length; i++)
+                {
+                    citationList.Add(
+                        new CitationModel
+                        {
+                            Id = Guid.NewGuid(),
+                            Type = "Policy",
+                            Source = sources[i].Trim(),
+                            Quote = i < quotes.Length ? quotes[i].Trim() : "",
+                            Context = i < contexts.Length ? contexts[i].Trim() : "",
+                            ClaimId = _claim.Id,
+                            CitedAt = DateTime.UtcNow,
+                        }
+                    );
+                }
+            }
+
+            // Process tariff citations
+            if (!string.IsNullOrWhiteSpace(tariffCitations))
+            {
+                var sources = tariffCitations.Split('|', StringSplitOptions.RemoveEmptyEntries);
+                var details =
+                    tariffDetails?.Split('|', StringSplitOptions.RemoveEmptyEntries) ?? [];
+                var contexts =
+                    citationContexts?.Split('|', StringSplitOptions.RemoveEmptyEntries) ?? [];
+                var contextOffset = citationList.Count; // Offset for tariff contexts
+
+                for (int i = 0; i < sources.Length; i++)
+                {
+                    citationList.Add(
+                        new CitationModel
+                        {
+                            Id = Guid.NewGuid(),
+                            Type = "Tariff",
+                            Source = sources[i].Trim(),
+                            Quote = i < details.Length ? details[i].Trim() : "",
+                            Context =
+                                (contextOffset + i) < contexts.Length
+                                    ? contexts[contextOffset + i].Trim()
+                                    : "",
+                            ClaimId = _claim.Id,
+                            CitedAt = DateTime.UtcNow,
+                        }
+                    );
+                }
+            }
+
+            if (citationList.Any())
+            {
+                _claim.Citations = citationList;
+                _logger.LogInformation(
+                    "Successfully parsed {CitationCount} citations for claim {ClaimId}",
+                    citationList.Count,
+                    _claim.Id
+                );
+            }
+
             // Update claim status based on recommendation
             _claim.Status = recommendation.ToUpper() switch
             {
@@ -79,8 +170,10 @@ public class DecisionPlugin
                 _ => ClaimStatus.Review,
             };
 
-
-            if (_claim.Status == ClaimStatus.Completed && recommendation.Equals("APPROVE", StringComparison.CurrentCultureIgnoreCase))
+            if (
+                _claim.Status == ClaimStatus.Completed
+                && recommendation.Equals("APPROVE", StringComparison.CurrentCultureIgnoreCase)
+            )
             {
                 _claim.FinalDecision = ClaimDecision.Approved;
             }
@@ -90,7 +183,11 @@ public class DecisionPlugin
             var updateResult = await _claimsService.UpdateClaimAsync(_claim);
             if (!updateResult.Success)
             {
-                _logger.LogError("Failed to update claim {ClaimId}: {Error}", _claim.Id, updateResult.Errors.FirstOrDefault());
+                _logger.LogError(
+                    "Failed to update claim {ClaimId}: {Error}",
+                    _claim.Id,
+                    updateResult.Errors.FirstOrDefault()
+                );
                 return $"Error updating claim: {updateResult.Errors.FirstOrDefault()}";
             }
 
@@ -104,6 +201,11 @@ public class DecisionPlugin
             if (approvedAmount.HasValue)
             {
                 result += $"\n- Approved Amount: {approvedAmount:C}";
+            }
+
+            if (_claim.Citations?.Any() == true)
+            {
+                result += $"\n- Citations Used: {_claim.Citations.Count}";
             }
 
             _logger.LogInformation("Successfully recorded decision for claim {ClaimId}", _claim.Id);

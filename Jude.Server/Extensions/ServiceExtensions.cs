@@ -12,6 +12,9 @@ using Jude.Server.Domains.Auth.Authorization;
 using Jude.Server.Domains.Claims;
 using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Jude.Server.Domains.Fraud;
+using Jude.Server.Domains.Policies;
+using Jude.Server.Domains.Policies.Events;
+using Jude.Server.Domains.Policies.Workflows;
 using Jude.Server.Domains.Rules;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -147,19 +150,25 @@ public static class ServiceExtensions
 
     public static IServiceCollection AddAgentServices(this IServiceCollection services)
     {
-        // Event Queue - Singleton for in-memory queue
+        // Event Queues - Singletons for in-memory queues
         services.AddSingleton<IClaimIngestEventsQueue, ClaimIngestEventsQueue>();
+        services.AddSingleton<IPolicyIngestEventsQueue, PolicyIngestEventsQueue>();
 
-        // Event Handler - Scoped for database access
+        // Event Handlers - Scoped for database access
         services.AddScoped<IClaimIngestEventHandler, ClaimIngestEventHandler>();
+        services.AddScoped<IPolicyIngestEventHandler, PolicyIngestEventHandler>();
 
         // AI Agents - Scoped for database and service access
         services.AddScoped<Domains.Agents.Jude>();
         services.AddScoped<IAgentManager, AgentManager>();
         services.AddScoped<Orchestrator>();
 
+        services.AddScoped<IPolicyContext, PolicyContext>();
+        services.AddScoped<IPolicyService, PolicyService>();
+
         // Background Services
         services.AddHostedService<ClaimsIngestProcessor>();
+        services.AddHostedService<PolicyIngestProcessor>();
 
         return services;
     }

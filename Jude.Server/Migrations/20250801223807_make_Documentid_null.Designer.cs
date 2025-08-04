@@ -5,6 +5,7 @@ using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Jude.Server.Migrations
 {
     [DbContext(typeof(JudeDbContext))]
-    partial class JudeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250801223807_make_Documentid_null")]
+    partial class make_Documentid_null
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -23,41 +26,6 @@ namespace Jude.Server.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Jude.Server.Data.Models.CitationModel", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CitedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ClaimId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Context")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Quote")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ClaimId");
-
-                    b.ToTable("Citations");
-                });
 
             modelBuilder.Entity("Jude.Server.Data.Models.ClaimModel", b =>
                 {
@@ -328,17 +296,6 @@ namespace Jude.Server.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Jude.Server.Data.Models.CitationModel", b =>
-                {
-                    b.HasOne("Jude.Server.Data.Models.ClaimModel", "Claim")
-                        .WithMany("Citations")
-                        .HasForeignKey("ClaimId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Claim");
-                });
-
             modelBuilder.Entity("Jude.Server.Data.Models.ClaimModel", b =>
                 {
                     b.HasOne("Jude.Server.Data.Models.UserModel", "ReviewedBy")
@@ -390,11 +347,6 @@ namespace Jude.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Role");
-                });
-
-            modelBuilder.Entity("Jude.Server.Data.Models.ClaimModel", b =>
-                {
-                    b.Navigation("Citations");
                 });
 #pragma warning restore 612, 618
         }

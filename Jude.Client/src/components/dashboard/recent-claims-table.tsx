@@ -14,7 +14,7 @@ import {
 	TableColumn,
 	TableHeader,
 	TableRow,
-	User,
+
 	type ChipProps,
 	type Selection,
 	type SortDescriptor,
@@ -180,12 +180,9 @@ export function RecentClaimsTable() {
 		switch (columnKey) {
 			case "provider":
 				return (
-					<User
-						avatarProps={{ radius: "full", size: "sm", src: claim.avatar }}
-						name={cellValue}
-					>
-						{claim.provider}
-					</User>
+					<div className="flex flex-col">
+						<p className="text-bold text-small capitalize">{claim.provider}</p>
+					</div>
 				);
 			case "status":
 				return (

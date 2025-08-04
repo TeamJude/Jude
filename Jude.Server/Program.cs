@@ -20,7 +20,7 @@ builder.Services.AddSwaggerGen(c =>
 
     // Add JWT Authentication
     c.AddSecurityDefinition(
-        "Bearer",
+        "Bearer",   
         new OpenApiSecurityScheme
         {
             Description =

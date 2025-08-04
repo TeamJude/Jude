@@ -41,6 +41,9 @@ public class ClaimModel
     [ForeignKey(nameof(UserModel))]
     public Guid? ReviewedById { get; set; }
     public UserModel? ReviewedBy { get; set; }
+
+    // Navigation property for citations
+    public List<CitationModel>? Citations { get; set; } = [];
 }
 
 public enum ClaimStatus
