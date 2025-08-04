@@ -44,6 +44,9 @@ public class ClaimModel
 
     // Navigation property for citations
     public List<CitationModel>? Citations { get; set; } = [];
+
+    // Navigation property for human reviews
+    public ICollection<ClaimReviewModel> Reviews { get; set; } = [];
 }
 
 public enum ClaimStatus

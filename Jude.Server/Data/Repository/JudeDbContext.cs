@@ -27,6 +27,24 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
             .HasForeignKey(c => c.ClaimId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Configure the relationship between Claims and Reviews
+        modelBuilder.Entity<ClaimReviewModel>()
+            .HasOne(r => r.Claim)
+            .WithMany(claim => claim.Reviews)
+            .HasForeignKey(r => r.ClaimId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClaimReviewModel>()
+            .HasOne(r => r.Reviewer)
+            .WithMany()
+            .HasForeignKey(r => r.ReviewerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Ensure one review per user per claim
+        modelBuilder.Entity<ClaimReviewModel>()
+            .HasIndex(r => new { r.ClaimId, r.ReviewerId })
+            .IsUnique();
+
         modelBuilder.Entity<AuditLogModel>()
             .Property(a => a.Metadata)
             .HasColumnType("jsonb");
@@ -39,5 +57,6 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
     public DbSet<ClaimModel> Claims { get; set; }
     public DbSet<PolicyModel> Policies { get; set; }
     public DbSet<CitationModel> Citations { get; set; }
+    public DbSet<ClaimReviewModel> ClaimReviews { get; set; }
     public DbSet<AuditLogModel> AuditLogs { get; set; }
 }

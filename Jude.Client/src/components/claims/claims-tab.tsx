@@ -1,6 +1,8 @@
-import { getClaim } from "@/lib/services/claims.service";
-import { FraudRiskLevel } from "@/lib/types/claim";
+import { createReview, getClaim, getUserReviewForClaim, submitReview, updateReview } from "@/lib/services/claims.service";
+import { authState } from "@/lib/state/auth.state";
+import { ClaimReviewDecision, FraudRiskLevel } from "@/lib/types/claim";
 import {
+	addToast,
 	Button,
 	Card,
 	CardBody,
@@ -15,24 +17,18 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import {
 	AlertCircle,
-	BarChart,
 	BookOpen,
 	Check,
-	CheckCircle,
 	CheckSquare,
 	ClipboardList,
 	Clock,
 	Cpu,
-	Download,
 	Edit,
-	Eye,
-	FileText,
 	History,
 	Inbox,
-	Info,
 	User,
 	UserCheck,
-	X,
+	X
 } from "lucide-react";
 import React from "react";
 
@@ -41,11 +37,14 @@ interface ClaimTabsProps {
 }
 
 export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
+	const { user } = authState.state;
 	const [selected, setSelected] = React.useState("summary");
-	const [decision, setDecision] = React.useState("");
+	const [decision, setDecision] = React.useState<ClaimReviewDecision | "">("");
 	const [notes, setNotes] = React.useState("");
+	const [showPreviousReviews, setShowPreviousReviews] = React.useState(false);
+	const [currentReviewId, setCurrentReviewId] = React.useState<string | null>(null);
+	const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-	// Fetch claim details
 	const {
 		data: claimResponse,
 		isLoading,
@@ -55,8 +54,89 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 		queryFn: () => getClaim(claimId),
 	});
 
+	const {
+		data: userReviewResponse,
+		isLoading: isLoadingUserReview,
+	} = useQuery({
+		queryKey: ["userReview", claimId, user?.id],
+		queryFn: () => getUserReviewForClaim(claimId),
+		enabled: !!user?.id,
+	});
+
+	// Pre-populate form when user review is loaded
+	React.useEffect(() => {
+		if (userReviewResponse?.success && userReviewResponse.data) {
+			const userReview = userReviewResponse.data;
+			setDecision(userReview.decision);
+			setNotes(userReview.notes);
+			setCurrentReviewId(userReview.id);
+		}
+	}, [userReviewResponse]);
+
 	const handleSelectionChange = (key: React.Key) => {
 		setSelected(key.toString());
+	};
+
+	const handleSubmitReview = async () => {
+		if (!decision || !notes.trim()) return;
+
+		setIsSubmitting(true);
+		try {
+			if (currentReviewId) {
+				// Update existing review
+				const updateResult = await updateReview(currentReviewId, {
+					decision,
+					notes: notes.trim(),
+				});
+				
+				if (updateResult.success) {
+					// Submit the review
+					await submitReview(currentReviewId);
+					addToast({
+						title: "Review updated and submitted successfully!",
+						color: "success",
+					});
+				} else {
+					addToast({
+						title: "Failed to update review",
+						color: "danger",
+					});
+				}
+			} else {
+				// Create new review
+				const createResult = await createReview({
+					claimId,
+					decision,
+					notes: notes.trim(),
+				});
+				
+				if (createResult.success) {
+					// Submit the new review
+					await submitReview(createResult.data.id);
+					setCurrentReviewId(createResult.data.id);
+					addToast({
+						title: "Review submitted successfully!",
+						color: "success",
+					});
+				} else {
+					addToast({
+						title: "Failed to create review",
+						color: "danger",
+					});
+				}
+			}
+			
+			// Reset form
+			setDecision("");
+			setNotes("");
+		} catch (error) {
+			addToast({
+				title: "An error occurred while submitting the review",
+				color: "danger",
+			});
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
 	if (isLoading) {
@@ -77,6 +157,7 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 	}
 
 	const claim = claimResponse.data;
+	const previousReviews = claim.reviews || [];
 
 	return (
 		<div className="flex w-full flex-col">
@@ -357,145 +438,161 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 					}
 				>
 					<Card shadow="none">
-						<CardBody className="gap-6">
-							<div>
-								<h3 className="text-lg font-medium mb-4">
-									Adjudication Decision
-								</h3>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-									<div>
-										<h4 className="text-sm font-medium mb-2">Decision</h4>
-										<div className="flex flex-wrap gap-2">
-											<Button
-												color="success"
-												variant={decision === "approve" ? "solid" : "flat"}
-												startContent={<Check width={16} />}
-												onPress={() => setDecision("approve")}
-												title="Approve the claim"
-											>
-												Approve
-											</Button>
-											<Button
-												color="primary"
-												variant={decision === "partial" ? "solid" : "flat"}
-												startContent={<Edit width={16} />}
-												onPress={() => setDecision("partial")}
-												title="Partially approve the claim"
-											>
-												Partial Approve
-											</Button>
-											<Button
-												color="warning"
-												variant={decision === "pend" ? "solid" : "flat"}
-												startContent={<Clock width={16} />}
-												onPress={() => setDecision("pend")}
-												title="Pend and request more information"
-											>
-												Pend
-											</Button>
-											<Button
-												color="danger"
-												variant={decision === "reject" ? "solid" : "flat"}
-												startContent={<X width={16} />}
-												onPress={() => setDecision("reject")}
-												title="Reject the claim"
-											>
-												Reject
-											</Button>
-										</div>
+						<CardBody className="space-y-6">
+							{/* Previous Reviews Section */}
+							{previousReviews.length > 0 && (
+								<div>
+									<div className="flex items-center justify-between mb-4">
+										<h3 className="text-lg font-medium">Previous Reviews</h3>
+										<Button
+											variant="light"
+											size="sm"
+											onPress={() => setShowPreviousReviews(!showPreviousReviews)}
+											className="transition-all duration-200 ease-in-out"
+										>
+											{showPreviousReviews ? "Hide" : "Show"} ({previousReviews.length})
+										</Button>
 									</div>
-									<div>
-										<h4 className="text-sm font-medium mb-2">Reason Codes</h4>
-										<div className="flex flex-wrap gap-2">
-											{[
-												{
-													label: "Policy Compliant",
-													color: "success" as const,
-												},
-												{ label: "Member Eligible", color: "primary" as const },
-												{
-													label: "Service Not Covered",
-													color: "danger" as const,
-												},
-												{
-													label: "Missing Information",
-													color: "danger" as const,
-												},
-												{
-													label: "Requires Additional Review",
-													color: "warning" as const,
-												},
-												{
-													label: "Possible Duplicate",
-													color: "warning" as const,
-												},
-											].map((reason) => (
-												<Chip
-													key={reason.label}
-													variant={
-														notes.includes(reason.label) ? "solid" : "flat"
-													}
-													color={reason.color}
-													className="cursor-pointer"
-													onClick={() =>
-														setNotes(
-															notes.includes(reason.label)
-																? notes.replace(reason.label, "")
-																: notes + (notes ? ", " : "") + reason.label,
-														)
-													}
-												>
-													{reason.label}
-												</Chip>
+									
+									<div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+										showPreviousReviews ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+									}`}>
+										<div className="space-y-4 mb-6">
+											{previousReviews.map((review) => (
+												<Card key={review.id} className="border border-divider">
+													<CardBody className="p-4">
+														<div className="flex items-center justify-between mb-2">
+															<div className="flex items-center gap-2">
+																<div className="flex items-center gap-2">
+																	<User width={16} className="text-foreground-500" />
+																	<span className="font-medium">{review.reviewer.username || review.reviewer.email}</span>
+																</div>
+																<Chip size="sm" variant="flat" color="default">
+																	Reviewer
+																</Chip>
+															</div>
+															<div className="flex items-center gap-2">
+																<Chip 
+																	size="sm" 
+																	color={
+																		review.decision === ClaimReviewDecision.Approve ? "success" :
+																		review.decision === ClaimReviewDecision.Reject ? "danger" :
+																		review.decision === ClaimReviewDecision.Pend ? "warning" : "primary"
+																	}
+																	variant="flat"
+																>
+																	{ClaimReviewDecision[review.decision]}
+																</Chip>
+																<span className="text-xs text-foreground-500">
+																	{new Date(review.submittedAt || review.updatedAt).toLocaleString()}
+																</span>
+															</div>
+														</div>
+														<p className="text-sm text-foreground-600">{review.notes}</p>
+													</CardBody>
+												</Card>
 											))}
 										</div>
 									</div>
+									
+									<Divider />
 								</div>
+							)}
+
+							{/* Current Review Form */}
+							<div>
+								<h3 className="text-lg font-medium mb-4">
+									{previousReviews.length > 0 ? "Add Your Review" : "Make Decision"}
+								</h3>
+								<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+									<Button
+										color="success"
+										variant={decision === ClaimReviewDecision.Approve ? "solid" : "flat"}
+										startContent={<Check width={16} />}
+										onPress={() => setDecision(ClaimReviewDecision.Approve)}
+										className="h-12"
+									>
+										Approve
+									</Button>
+									<Button
+										color="warning"
+										variant={decision === ClaimReviewDecision.Pend ? "solid" : "flat"}
+										startContent={<Clock width={16} />}
+										onPress={() => setDecision(ClaimReviewDecision.Pend)}
+										className="h-12"
+									>
+										Pend
+									</Button>
+									<Button
+										color="primary"
+										variant={decision === ClaimReviewDecision.Partial ? "solid" : "flat"}
+										startContent={<Edit width={16} />}
+										onPress={() => setDecision(ClaimReviewDecision.Partial)}
+										className="h-12"
+									>
+										Partial
+									</Button>
+									<Button
+										color="danger"
+										variant={decision === ClaimReviewDecision.Reject ? "solid" : "flat"}
+										startContent={<X width={16} />}
+										onPress={() => setDecision(ClaimReviewDecision.Reject)}
+										className="h-12"
+									>
+										Reject
+									</Button>
+								</div>
+								{decision && (
+									<div className="mt-3 p-3 bg-content2 rounded-md">
+										<p className="text-sm">
+											<span className="font-medium">Selected:</span> {ClaimReviewDecision[decision]}
+										</p>
+									</div>
+								)}
 							</div>
 
-							<div className="mt-6 p-4 bg-content2 rounded-md border border-zinc-100">
-								<h4 className="text-sm font-medium mb-2">Current Selection</h4>
-								<div className="flex flex-wrap gap-4 items-center">
-									<span className="text-sm">
-										Decision:{" "}
-										<span className="font-semibold">
-											{decision
-												? decision.charAt(0).toUpperCase() + decision.slice(1)
-												: "None"}
-										</span>
-									</span>
-									<span className="text-sm">
-										Reasons:{" "}
-										<span className="font-semibold">{notes || "None"}</span>
-									</span>
-								</div>
-							</div>
+							<Divider />
 
-							<div className="mt-6">
-								<h4 className="text-sm font-medium mb-2">Notes/Comments</h4>
+							{/* Step 2: Notes */}
+							<div>
+								<h3 className="text-lg font-medium mb-4">Add Notes</h3>
 								<Textarea
-									placeholder="Enter your detailed reasoning for this decision..."
+									placeholder={
+										previousReviews.length > 0 
+											? "Add your review comments and reasoning..." 
+											: "Enter your reasoning for this decision..."
+									}
 									value={notes}
 									onValueChange={setNotes}
 									minRows={4}
+									className="w-full"
 								/>
-								<p className="text-xs text-foreground-500 mt-1">
-									Please provide detailed reasoning, especially if overriding
-									the agent's recommendation.
+								<p className="text-xs text-foreground-500 mt-2">
+									Required: Provide detailed reasoning{previousReviews.length > 0 ? " and reference previous reviews if needed" : ", especially if overriding the agent's recommendation"}.
 								</p>
 							</div>
 
-							<div className="flex justify-end gap-3 mt-4">
-								<Button variant="flat" color="primary">
-									Save Draft
-								</Button>
-								<Button
-									color="primary"
-									isDisabled={!decision || !notes}
-									onPress={() => alert("Decision submitted!")}
-								>
-									Submit Decision
-								</Button>
+							<Divider />
+
+							{/* Step 3: Submit */}
+							<div className="flex justify-between items-center">
+								<div className="text-sm text-foreground-500">
+									{decision && notes ? (
+										<span className="text-success">✓ Ready to submit</span>
+									) : (
+										<span>Please select a decision and add notes</span>
+									)}
+								</div>
+								<div className="flex gap-3">
+									<Button
+										color="primary"
+										isDisabled={!decision || !notes.trim()}
+										isLoading={isSubmitting}
+										onPress={handleSubmitReview}
+									>
+										{currentReviewId ? "Update Review" : "Submit Review"}
+									</Button>
+								</div>
 							</div>
 						</CardBody>
 					</Card>

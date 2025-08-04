@@ -3,7 +3,10 @@ import {
 	ClaimStatus,
 	FraudRiskLevel,
 	type Claim,
+	type ClaimReview,
 	type ClaimSummary,
+	type CreateClaimReviewRequest,
+	type UpdateClaimReviewRequest
 } from "../types/claim";
 import { apiRequest, type ApiResponse } from "../utils/api";
 
@@ -78,5 +81,31 @@ const getClaimsDashboard = async (period: ClaimsDashboardPeriod) => {
 	});
 };
 
-export { getClaim, getClaims, getClaimsDashboard };
+const createReview = async (data: CreateClaimReviewRequest): Promise<ApiResponse<ClaimReview>> => {
+	return apiRequest<ClaimReview>("/api/claims/reviews", {
+		method: "POST",
+		body: JSON.stringify(data),
+	});
+};
+
+const updateReview = async (reviewId: string, data: UpdateClaimReviewRequest): Promise<ApiResponse<ClaimReview>> => {
+	return apiRequest<ClaimReview>(`/api/claims/reviews/${reviewId}`, {
+		method: "PUT",
+		body: JSON.stringify(data),
+	});
+};
+
+const submitReview = async (reviewId: string): Promise<ApiResponse<boolean>> => {
+	return apiRequest<boolean>(`/api/claims/reviews/${reviewId}/submit`, {
+		method: "POST",
+	});
+};
+
+const getUserReviewForClaim = async (claimId: string): Promise<ApiResponse<ClaimReview | null>> => {
+	return apiRequest<ClaimReview | null>(`/api/claims/${claimId}/my-review`, {
+		method: "GET",
+	});
+};
+
+export { createReview, getClaim, getClaims, getClaimsDashboard, getUserReviewForClaim, submitReview, updateReview };
 

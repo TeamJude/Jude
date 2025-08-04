@@ -19,6 +19,11 @@ public interface IClaimsService
     Task<Result<ClaimsDashboardResponse>> GetDashboardStatsAsync(ClaimsDashboardRequest request);
     Task<Result<TariffResponse>> GetTariffByCodeAsync(string tariffCode);
     Task<Result<List<TariffResponse>>> GetTariffsByCodesAsync(string[] tariffCodes);
+
+    // Review methods
+    Task<Result<ClaimReviewModel>> CreateOrUpdateReviewAsync(CreateOrUpdateClaimReviewRequest request, Guid reviewerId);
+    Task<Result<GetClaimReviewsResponse>> GetClaimReviewsAsync(Guid claimId);
+    Task<Result<ClaimReviewModel?>> GetUserReviewForClaimAsync(Guid claimId, Guid reviewerId);
 }
 
 public class ClaimsService : IClaimsService
@@ -267,6 +272,8 @@ public class ClaimsService : IClaimsService
             var claim = await _repository
                 .Claims.Include(c => c.ReviewedBy)
                 .Include(c => c.Citations)
+                .Include(c => c.Reviews)
+                    .ThenInclude(r => r.Reviewer)
                 .FirstOrDefaultAsync(c => c.Id == claimId);
 
             if (claim == null)
@@ -291,6 +298,22 @@ public class ClaimsService : IClaimsService
                 c.Context,
                 c.CitedAt
             )).ToList();
+
+            var reviews = claim.Reviews?.Select(r => new ClaimReviewResponse(
+                r.Id,
+                r.ClaimId,
+                new ReviewerInfo(
+                    r.Reviewer.Id,
+                    r.Reviewer.Username,
+                    r.Reviewer.Email
+                ),
+                r.Decision,
+                r.Notes,
+                r.CreatedAt,
+                r.UpdatedAt,
+                r.SubmittedAt,
+                r.IsEdited
+            )).ToList() ?? [];
 
             var response = new ClaimDetailResponse(
                 claim.Id,
@@ -322,7 +345,8 @@ public class ClaimsService : IClaimsService
                 claim.IngestedAt,
                 claim.UpdatedAt,
                 claim.CIMASPayload,
-                citations
+                citations,
+                reviews
             );
 
             return Result.Ok(response);
@@ -439,12 +463,12 @@ public class ClaimsService : IClaimsService
             // --- Calculate Final Stats ---
             double avgProcessingTime = processingTimes.Any()
                 ? processingTimes.Average(c =>
-                    (c.AgentProcessedAt.Value - c.IngestedAt).TotalMinutes
+                    c.AgentProcessedAt.HasValue ? (c.AgentProcessedAt.Value - c.IngestedAt).TotalMinutes : 0
                 )
                 : 0;
             double prevAvgProcessingTime = prevProcessingTimes.Any()
                 ? prevProcessingTimes.Average(c =>
-                    (c.AgentProcessedAt.Value - c.IngestedAt).TotalMinutes
+                    c.AgentProcessedAt.HasValue ? (c.AgentProcessedAt.Value - c.IngestedAt).TotalMinutes : 0
                 )
                 : 0;
 
@@ -737,4 +761,107 @@ public class ClaimsService : IClaimsService
 
         return Result.Ok(results);
     }
+
+    #region Review Methods
+
+    public async Task<Result<ClaimReviewModel>> CreateOrUpdateReviewAsync(CreateOrUpdateClaimReviewRequest request, Guid reviewerId)
+    {
+        try
+        {
+            // Check if claim exists
+            var claimExists = await _repository.Claims.AnyAsync(c => c.Id == request.ClaimId);
+            if (!claimExists)
+            {
+                return Result.Fail("Claim not found");
+            }
+
+            // Check if user already has a review for this claim
+            var existingReview = await _repository.ClaimReviews
+                .FirstOrDefaultAsync(r => r.ClaimId == request.ClaimId && r.ReviewerId == reviewerId);
+
+            if (existingReview != null)
+            {
+                // Update existing review
+                existingReview.Decision = request.Decision;
+                existingReview.Notes = request.Notes;
+                existingReview.UpdatedAt = DateTime.UtcNow;
+                existingReview.IsEdited = true;
+
+                await _repository.SaveChangesAsync();
+                return Result.Ok(existingReview);
+            }
+            else
+            {
+                // Create new review
+                var review = new ClaimReviewModel
+                {
+                    Id = Guid.NewGuid(),
+                    ClaimId = request.ClaimId,
+                    ReviewerId = reviewerId,
+                    Decision = request.Decision,
+                    Notes = request.Notes,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _repository.ClaimReviews.Add(review);
+                await _repository.SaveChangesAsync();
+                return Result.Ok(review);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating/updating review for claim {ClaimId}", request.ClaimId);
+            return Result.Fail($"Failed to create/update review: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<GetClaimReviewsResponse>> GetClaimReviewsAsync(Guid claimId)
+    {
+        try
+        {
+            var reviews = await _repository.ClaimReviews
+                .Include(r => r.Reviewer)
+                .Where(r => r.ClaimId == claimId)
+                .OrderBy(r => r.CreatedAt)
+                .ToListAsync();
+
+            var reviewResponses = reviews.Select(r => new ClaimReviewResponse(
+                r.Id,
+                r.ClaimId,
+                new ReviewerInfo(r.Reviewer.Id, r.Reviewer.Username, r.Reviewer.Email),
+                r.Decision,
+                r.Notes,
+                r.CreatedAt,
+                r.UpdatedAt,
+                r.SubmittedAt,
+                r.IsEdited
+            )).ToArray();
+
+            return Result.Ok(new GetClaimReviewsResponse(reviewResponses));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting reviews for claim {ClaimId}", claimId);
+            return Result.Fail($"Failed to get reviews: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<ClaimReviewModel?>> GetUserReviewForClaimAsync(Guid claimId, Guid reviewerId)
+    {
+        try
+        {
+            var review = await _repository.ClaimReviews
+                .FirstOrDefaultAsync(r => r.ClaimId == claimId && r.ReviewerId == reviewerId);
+
+            return Result.Ok(review);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user review for claim {ClaimId}", claimId);
+            return Result.Fail($"Failed to get user review: {ex.Message}");
+        }
+    }
+
+    #endregion
 }

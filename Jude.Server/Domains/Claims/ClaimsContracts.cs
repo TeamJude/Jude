@@ -73,7 +73,8 @@ public record ClaimDetailResponse(
     DateTime IngestedAt,
     DateTime UpdatedAt,
     string? CIMASPayload,
-    List<CitationResponse>? Citations
+    List<CitationResponse>? Citations,
+    List<ClaimReviewResponse> Reviews
 );
 
 public record ReviewerInfo(
@@ -113,5 +114,27 @@ public record ClaimsActivityResponse(
     int Processed,
     int Approved,
     int Rejected
+);
+
+public record CreateOrUpdateClaimReviewRequest(
+    Guid ClaimId,
+    ClaimReviewDecision Decision,
+    string Notes
+);
+
+public record ClaimReviewResponse(
+    Guid Id,
+    Guid ClaimId,
+    ReviewerInfo Reviewer,
+    ClaimReviewDecision Decision,
+    string Notes,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    DateTime? SubmittedAt,
+    bool IsEdited
+);
+
+public record GetClaimReviewsResponse(
+    ClaimReviewResponse[] Reviews
 );
 
