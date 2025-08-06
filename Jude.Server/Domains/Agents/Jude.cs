@@ -60,7 +60,7 @@ public class Jude
             _kernel.ImportPluginFromObject(policyPlugin, "Policy");
             _kernel.ImportPluginFromObject(pricingPlugin, "Pricing");
 
-            // Create the agent
+            // Create the agent with explicit function calling requirements
             var agent = new ChatCompletionAgent()
             {
                 Name = "Jude",
@@ -70,6 +70,7 @@ public class Jude
                     new AzureOpenAIPromptExecutionSettings()
                     {
                         FunctionChoiceBehavior = FunctionChoiceBehavior.Required(),
+                        MaxTokens = 4000,
                     }
                 ),
             };
@@ -77,16 +78,24 @@ public class Jude
             var claimSummary = FormatClaimSummary(claim);
             var initialMessage = new ChatMessageContent(
                 role: AuthorRole.User,
-                content: $"Please process this medical claim for adjudication:\n\n{claimSummary}\n\n{context}\n\nAnalyze the claim according to your instructions and make a decision using the MakeDecision function."
+                content: $"Please process this medical claim for adjudication:\n\n{claimSummary}\n\n{context}\n\nAnalyze the claim according to your instructions and make a decision using the MakeDecision function. You MUST call MakeDecision to complete the processing."
             );
 
             AgentThread? thread = null;
             var responseContent = "";
+            var decisionMade = false;
 
             await foreach (var response in agent.InvokeAsync(initialMessage, thread))
             {
                 responseContent += response.Message.Content;
                 thread = response.Thread;
+                
+                // Check if MakeDecision was called
+                if (response.Message.Content?.Contains("MakeDecision") == true || 
+                    response.Message.Content?.Contains("Decision recorded successfully") == true)
+                {
+                    decisionMade = true;
+                }
             }
 
             _logger.LogDebug(
@@ -94,6 +103,34 @@ public class Jude
                 claim.Id,
                 responseContent
             );
+
+            // Verify that a decision was made
+            if (!decisionMade)
+            {
+                _logger.LogWarning(
+                    "Agent did not call MakeDecision for claim {ClaimId}. Forcing decision with default values.",
+                    claim.Id
+                );
+                
+                // Force a default decision if the agent didn't make one
+                claim.AgentRecommendation = "REVIEW";
+                claim.AgentReasoningLog = ["Agent failed to make explicit decision - defaulting to review"];
+                claim.AgentConfidenceScore = 0.5m;
+                claim.RequiresHumanReview = true;
+                claim.AgentProcessedAt = DateTime.UtcNow;
+                claim.Status = ClaimStatus.Review;
+                claim.UpdatedAt = DateTime.UtcNow;
+                
+                var updateResult = await _claimsService.UpdateClaimAsync(claim);
+                if (!updateResult.Success)
+                {
+                    _logger.LogError(
+                        "Failed to update claim {ClaimId} with default decision: {Error}",
+                        claim.Id,
+                        updateResult.Errors.FirstOrDefault()
+                    );
+                }
+            }
 
             _logger.LogInformation(
                 "Successfully processed claim {ClaimId} with recommendation: {Recommendation}",
@@ -107,9 +144,7 @@ public class Jude
         {
             _logger.LogError(ex, "Error processing claim {ClaimId} with agent", claim.Id);
 
-            claim.AgentReasoningLog = [
-                $"Agent processing failed: {ex.Message}"
-            ];
+            claim.AgentReasoningLog = [$"Agent processing failed: {ex.Message}"];
             claim.RequiresHumanReview = true;
             claim.FraudRiskLevel = FraudRiskLevel.Medium;
             claim.Status = ClaimStatus.Failed;

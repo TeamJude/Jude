@@ -25,7 +25,7 @@ public class DecisionPlugin
 
     [KernelFunction]
     [Description(
-        "Make a decision for the claim by updating the recommendation, reasoning, confidence score, and other relevant fields"
+        "Make a decision for the claim by updating the recommendation, reasoning, confidence score, and other relevant fields. This function MUST be called to complete claim processing."
     )]
     public async Task<string> MakeDecision(
         [Description(
@@ -71,9 +71,33 @@ public class DecisionPlugin
                 recommendation
             );
 
+            // Validate recommendation
+            var validRecommendations = new[]
+            {
+                "APPROVE",
+                "DENY",
+                "PENDING",
+                "REVIEW",
+                "INVESTIGATE",
+            };
+            var normalizedRecommendation = recommendation?.ToUpper()?.Trim();
+
+            if (
+                string.IsNullOrEmpty(normalizedRecommendation)
+                || !validRecommendations.Contains(normalizedRecommendation)
+            )
+            {
+                _logger.LogWarning(
+                    "Invalid recommendation '{Recommendation}' for claim {ClaimId}, defaulting to REVIEW",
+                    recommendation,
+                    _claim.Id
+                );
+                normalizedRecommendation = "REVIEW";
+            }
+
             // Update claim with agent decision
-            _claim.AgentRecommendation = recommendation.ToUpper();
-            _claim.AgentReasoningLog = reasoningLog ?? [];
+            _claim.AgentRecommendation = normalizedRecommendation;
+            _claim.AgentReasoningLog = reasoningLog ?? ["No detailed reasoning provided"];
             _claim.AgentConfidenceScore = Math.Max(0.0m, Math.Min(1.0m, confidenceScore)); // Clamp between 0 and 1
             _claim.RequiresHumanReview = requiresHumanReview;
             _claim.AgentProcessedAt = DateTime.UtcNow;
@@ -83,7 +107,7 @@ public class DecisionPlugin
             {
                 _claim.ApprovedAmount = approvedAmount.Value;
             }
-            else if (recommendation.ToUpper() == "APPROVE")
+            else if (normalizedRecommendation == "APPROVE")
             {
                 _claim.ApprovedAmount = _claim.ClaimAmount;
             }
@@ -161,7 +185,7 @@ public class DecisionPlugin
             }
 
             // Update claim status based on recommendation
-            _claim.Status = recommendation.ToUpper() switch
+            _claim.Status = normalizedRecommendation switch
             {
                 "APPROVE" => requiresHumanReview ? ClaimStatus.Review : ClaimStatus.Completed,
                 "DENY" => ClaimStatus.Review, // Denials always require human review
@@ -173,7 +197,10 @@ public class DecisionPlugin
 
             if (
                 _claim.Status == ClaimStatus.Completed
-                && recommendation.Equals("APPROVE", StringComparison.CurrentCultureIgnoreCase)
+                && normalizedRecommendation.Equals(
+                    "APPROVE",
+                    StringComparison.CurrentCultureIgnoreCase
+                )
             )
             {
                 _claim.FinalDecision = ClaimDecision.Approved;
@@ -194,7 +221,7 @@ public class DecisionPlugin
 
             var result =
                 $"Decision recorded successfully for claim {_claim.Id}:\n"
-                + $"- Recommendation: {recommendation}\n"
+                + $"- Recommendation: {normalizedRecommendation}\n"
                 + $"- Confidence: {confidenceScore:P}\n"
                 + $"- Status: {_claim.Status}\n"
                 + $"- Requires Review: {requiresHumanReview}";

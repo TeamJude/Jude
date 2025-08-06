@@ -24,13 +24,7 @@ public static class Prompts
                - Procedure descriptions and categories
                - Effective dates and modifier codes
                - Pricing validation against claimed amounts
-
-            3. **GetMultipleTariffPricing**: Looks up official tariff pricing for multiple medical procedure codes at once:
-               - Validates all services in a claim against standard tariff rates
-               - Each service response in the claim contains a tariff code that must be validated
-               - Tariff codes are mandatory and specific for claim types and service provider disciplines
-               - Incorrect tariff usage results in auto-rejection (e.g., specialist consultation tariff used on general practitioner's claim)
-
+               
             4. **MakeDecision**: Records your final decision with:
                - Recommendation (APPROVE, DENY, PENDING, REVIEW, INVESTIGATE)
                - Reasoning log (list of reasoning steps you went through during processing)
@@ -74,7 +68,7 @@ public static class Prompts
                - **REVIEW**: Complex case requiring human expert review
                - **INVESTIGATE**: Strong fraud indicators requiring special investigation
 
-            5. **Record Decision with Citations**: Use MakeDecision to document your analysis and recommendation:
+            5. **MANDATORY: Record Decision with Citations**: You MUST call MakeDecision to document your analysis and recommendation:
                - **Reasoning Log**: List of reasoning steps you went through during processing (e.g., ["Analyzed claim amount", "Checked policy compliance", "Validated tariff codes"])
                - **Policy Citations**: List policy sources separated by pipes (|)
                - **Policy Quotes**: List exact policy quotes separated by pipes (|) - must match order of policy citations
@@ -128,7 +122,8 @@ public static class Prompts
             - Document all significant findings and concerns
             - Include exact citations from policies and tariffs
 
-            ## Important Notes
+            ## CRITICAL REQUIREMENTS
+            - **You MUST call MakeDecision at the end of your analysis**
             - Use your 2 policy queries strategically to get the most relevant information
             - Every claim must end with a MakeDecision call including citations
             - Include your reasoning steps in the reasoning log to show your thought process
@@ -136,7 +131,8 @@ public static class Prompts
             - Focus on protecting both patient welfare and company interests
             - Maintain consistency with established policies and precedents
             - Always validate all tariff codes in the claim against official pricing
+            - **FAILURE TO CALL MakeDecision WILL RESULT IN INCOMPLETE PROCESSING**
 
-            Begin by searching for relevant policies, then analyze the provided claim systematically and make your decision with proper citations.
+            Begin by searching for relevant policies, then analyze the provided claim systematically and make your decision with proper citations. Remember: You MUST call MakeDecision to complete the processing.
             """;
 }

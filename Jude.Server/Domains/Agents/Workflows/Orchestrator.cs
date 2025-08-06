@@ -96,9 +96,8 @@ public class Orchestrator
         var formattedNote = $"[{timestamp} - Orchestrator]: {note}";
 
         var existingReasoning = claim.AgentReasoningLog ?? [];
-        claim.AgentReasoningLog = existingReasoning.Count == 0
-            ? [formattedNote]
-            : [..existingReasoning, formattedNote];
+        claim.AgentReasoningLog =
+            existingReasoning.Count == 0 ? [formattedNote] : [.. existingReasoning, formattedNote];
 
         await _claimsService.UpdateClaimAsync(claim);
     }

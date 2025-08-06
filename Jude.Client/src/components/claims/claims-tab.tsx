@@ -199,8 +199,51 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 												</div>
 											))
 										) : (
-											<div className="text-sm text-foreground-500 italic">
-												No reasoning log available for this claim.
+											<div className="space-y-4">
+												<div className="flex gap-2">
+													<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">1</span>
+													<div>
+														<p className="text-sm">
+															<span className="font-medium">Claim Analysis Pending</span>
+														</p>
+														<p className="text-xs text-foreground-600 mt-1">
+															AI Agent will analyze claim details, validate against policies, and check tariff compliance.
+														</p>
+													</div>
+												</div>
+												<div className="flex gap-2">
+													<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">2</span>
+													<div>
+														<p className="text-sm">
+															<span className="font-medium">Policy Validation</span>
+														</p>
+														<p className="text-xs text-foreground-600 mt-1">
+															Checking coverage limits, pre-authorization requirements, and network status.
+														</p>
+													</div>
+												</div>
+												<div className="flex gap-2">
+													<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">3</span>
+													<div>
+														<p className="text-sm">
+															<span className="font-medium">Fraud Risk Assessment</span>
+														</p>
+														<p className="text-xs text-foreground-600 mt-1">
+															Evaluating billing patterns, provider history, and unusual claim characteristics.
+														</p>
+													</div>
+												</div>
+												<div className="flex gap-2">
+													<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">4</span>
+													<div>
+														<p className="text-sm">
+															<span className="font-medium">Decision Generation</span>
+														</p>
+														<p className="text-xs text-foreground-600 mt-1">
+															Finalizing recommendation based on comprehensive analysis and policy compliance.
+														</p>
+													</div>
+												</div>
 											</div>
 										)}
 									</div>
@@ -220,13 +263,18 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 													<UserCheck className="text-warning" width={20} />
 													<h4 className="font-medium">
 														{claim.agentRecommendation ||
-															"Requires Human Review - High Value Claim"}
+															"Pending Agent Processing"}
 													</h4>
 												</div>
 												<p className="text-sm">
 													{claim.agentReasoning ||
-														"This claim exceeds the automatic approval threshold of $1,000 and requires human verification. All other policy checks have passed. Historical data shows similar claims were approved."}
+														"This claim is queued for AI agent processing. The agent will analyze policy compliance, validate tariff codes, assess fraud risk, and provide a comprehensive recommendation with supporting citations."}
 												</p>
+												{!claim.agentRecommendation && (
+													<div className="mt-3 p-2 bg-warning-100 rounded text-xs">
+														<strong>Processing Status:</strong> Claim submitted and awaiting AI analysis
+													</div>
+												)}
 											</CardBody>
 										</Card>
 									</div>
@@ -239,26 +287,37 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 												<div className="flex justify-between mb-1">
 													<span className="text-sm">Fraud Risk</span>
 													<span className="text-sm font-medium">
-														{claim.fraudRiskLevel}
+														{claim.fraudRiskLevel || "Pending"}
 													</span>
 												</div>
 												<Progress
 													value={
-														{
-															[FraudRiskLevel.Low]: 15,
-															[FraudRiskLevel.Medium]: 40,
-															[FraudRiskLevel.High]: 70,
-															[FraudRiskLevel.Critical]: 90,
-														}[claim.fraudRiskLevel]}
+														claim.fraudRiskLevel
+															? {
+																	[FraudRiskLevel.Low]: 15,
+																	[FraudRiskLevel.Medium]: 40,
+																	[FraudRiskLevel.High]: 70,
+																	[FraudRiskLevel.Critical]: 90,
+																}[claim.fraudRiskLevel]
+															: 25
+													}
 													color={
-														{
-															[FraudRiskLevel.Low]: "success" as const,
-															[FraudRiskLevel.Medium]: "warning" as const,
-															[FraudRiskLevel.High]: "danger" as const,
-															[FraudRiskLevel.Critical]: "danger" as const,
-														}[claim.fraudRiskLevel]}
+														claim.fraudRiskLevel
+															? {
+																	[FraudRiskLevel.Low]: "success" as const,
+																	[FraudRiskLevel.Medium]: "warning" as const,
+																	[FraudRiskLevel.High]: "danger" as const,
+																	[FraudRiskLevel.Critical]: "danger" as const,
+																}[claim.fraudRiskLevel]
+															: "warning"
+													}
 													className="h-2"
 												/>
+												{!claim.fraudRiskLevel && (
+													<p className="text-xs text-foreground-500 mt-1">
+														Risk assessment pending AI analysis
+													</p>
+												)}
 											</div>
 											<div>
 												<div className="flex justify-between mb-1">
@@ -266,18 +325,23 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 													<span className="text-sm font-medium">
 														{claim.agentConfidenceScore
 															? Math.round(claim.agentConfidenceScore * 100) + "%"
-															: "85%"}
+															: "Pending"}
 													</span>
 												</div>
 												<Progress
 													value={
 														claim.agentConfidenceScore
 															? claim.agentConfidenceScore * 100
-															: 85
+															: 0
 													}
 													color="primary"
 													className="h-2"
 												/>
+												{!claim.agentConfidenceScore && (
+													<p className="text-xs text-foreground-500 mt-1">
+														Confidence score will be calculated after processing
+													</p>
+												)}
 											</div>
 										</div>
 									</div>
@@ -332,14 +396,46 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 										</Card>
 									))
 								) : (
-									<div className="text-center py-8">
-										<BookOpen className="w-12 h-12 text-foreground-400 mx-auto mb-4" />
-										<p className="text-foreground-500">
-											No policy citations available for this claim.
-										</p>
-										<p className="text-sm text-foreground-400 mt-1">
-											Policy context will appear here when the AI agent processes the claim.
-										</p>
+									<div className="space-y-4">
+										<div className="text-center py-8">
+											<BookOpen className="w-12 h-12 text-foreground-400 mx-auto mb-4" />
+											<p className="text-foreground-500 font-medium">
+												Policy Analysis Pending
+											</p>
+											<p className="text-sm text-foreground-400 mt-1">
+												AI Agent will search relevant policies and tariffs to support the decision.
+											</p>
+										</div>
+										
+										<Card className="shadow-none border border-divider bg-content1">
+											<CardBody>
+												<div className="flex items-center justify-between mb-2">
+													<h4 className="font-medium text-foreground-500">
+														Expected Policy Analysis
+													</h4>
+													<Chip size="sm" variant="flat" color="default">
+														Pending
+													</Chip>
+												</div>
+												<div className="mt-3 p-3 bg-content2 rounded-md">
+													<p className="text-sm text-foreground-500 italic">
+														The AI agent will search for relevant coverage policies, billing guidelines, and tariff information to validate this claim.
+													</p>
+												</div>
+												<div className="mt-3">
+													<h5 className="text-sm font-medium text-foreground-500">
+														Expected Analysis Areas:
+													</h5>
+													<ul className="text-xs text-foreground-500 mt-1 space-y-1">
+														<li>• Coverage limits and eligibility</li>
+														<li>• Pre-authorization requirements</li>
+														<li>• Network provider status</li>
+														<li>• Tariff code validation</li>
+														<li>• Fraud detection indicators</li>
+													</ul>
+												</div>
+											</CardBody>
+										</Card>
 									</div>
 								)}
 							</div>
@@ -581,15 +677,19 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 										<p className="text-sm text-foreground-500 mt-1">
 											{claim.agentProcessedAt
 												? new Date(claim.agentProcessedAt).toLocaleString()
-												: "Processing..."}
+												: "Pending"}
 										</p>
 										<p className="text-sm mt-2">
-											AI Agent{" "}
 											{claim.agentProcessedAt
-												? "completed processing and flagged for human review due to high value claim"
-												: "is currently processing the claim"}
+												? `AI Agent completed processing with recommendation: ${claim.agentRecommendation || "Review"}`
+												: "AI Agent is queued for processing this claim"}
 											.
 										</p>
+										{!claim.agentProcessedAt && (
+											<div className="mt-2 p-2 bg-secondary-100 rounded text-xs">
+												<strong>Processing Queue:</strong> Claim is in the AI processing queue
+											</div>
+										)}
 									</div>
 								</div>
 
