@@ -91,3 +91,25 @@ public record ClaimsActivityResponse(
     int Rejected
 );
 
+public record CreateOrUpdateClaimReviewRequest(
+    Guid ClaimId,
+    ClaimReviewDecision Decision,
+    string Notes
+);
+
+public record ClaimReviewResponse(
+    Guid Id,
+    Guid ClaimId,
+    ReviewerInfo Reviewer,
+    ClaimReviewDecision Decision,
+    string Notes,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    DateTime? SubmittedAt,
+    bool IsEdited
+);
+
+public record GetClaimReviewsResponse(
+    ClaimReviewResponse[] Reviews
+);
+

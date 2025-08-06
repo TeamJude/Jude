@@ -5,6 +5,7 @@ using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Jude.Server.Migrations
 {
     [DbContext(typeof(JudeDbContext))]
-    partial class JudeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250804203612_AddClaimReviews")]
+    partial class AddClaimReviews
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -223,6 +226,9 @@ namespace Jude.Server.Migrations
 
                     b.Property<Guid>("ReviewerId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("SubmittedAt")
                         .HasColumnType("timestamp with time zone");

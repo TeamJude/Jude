@@ -22,6 +22,18 @@ export enum FraudRiskLevel {
 	Critical,
 }
 
+export enum ClaimReviewDecision {
+	Approve,
+	Reject,
+	Pend,
+	Partial,
+}
+
+export enum ClaimReviewStatus {
+	Draft,
+	Submitted,
+}
+
 export enum ClaimsDashboardPeriod {
 	Last24Hours,
     Last7Days,
@@ -36,6 +48,23 @@ export interface Citation {
 	quote: string;
 	context: string;
 	citedAt: string;
+}
+
+export interface ClaimReview {
+	id: string;
+	claimId: string;
+	reviewer: {
+		id: string;
+		username?: string;
+		email: string;
+	};
+	decision: ClaimReviewDecision;
+	notes: string;
+	status: ClaimReviewStatus;
+	createdAt: string;
+	updatedAt: string;
+	submittedAt?: string;
+	isEdited: boolean;
 }
 
 export interface Claim {
@@ -74,6 +103,7 @@ export interface Claim {
 	updatedAt: string;
 	cimasPayload?: string;
 	citations?: Citation[];
+	reviews: ClaimReview[];
 }
 
 export type ClaimSummary = Pick<
@@ -97,3 +127,19 @@ export type ClaimSummary = Pick<
 > & {
 	submittedAt: string;
 };
+
+// Review-related request/response types
+export interface CreateClaimReviewRequest {
+	claimId: string;
+	decision: ClaimReviewDecision;
+	notes: string;
+}
+
+export interface UpdateClaimReviewRequest {
+	decision: ClaimReviewDecision;
+	notes: string;
+}
+
+export interface GetClaimReviewsResponse {
+	reviews: ClaimReview[];
+}

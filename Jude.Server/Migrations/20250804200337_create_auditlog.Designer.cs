@@ -5,6 +5,7 @@ using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Jude.Server.Migrations
 {
     [DbContext(typeof(JudeDbContext))]
-    partial class JudeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250804200337_create_auditlog")]
+    partial class create_auditlog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -197,47 +200,6 @@ namespace Jude.Server.Migrations
                     b.HasIndex("ReviewedById");
 
                     b.ToTable("Claims");
-                });
-
-            modelBuilder.Entity("Jude.Server.Data.Models.ClaimReviewModel", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ClaimId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Decision")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsEdited")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("ReviewerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("SubmittedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReviewerId");
-
-                    b.HasIndex("ClaimId", "ReviewerId")
-                        .IsUnique();
-
-                    b.ToTable("ClaimReviews");
                 });
 
             modelBuilder.Entity("Jude.Server.Data.Models.FraudIndicatorModel", b =>
@@ -426,25 +388,6 @@ namespace Jude.Server.Migrations
                     b.Navigation("ReviewedBy");
                 });
 
-            modelBuilder.Entity("Jude.Server.Data.Models.ClaimReviewModel", b =>
-                {
-                    b.HasOne("Jude.Server.Data.Models.ClaimModel", "Claim")
-                        .WithMany("Reviews")
-                        .HasForeignKey("ClaimId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Jude.Server.Data.Models.UserModel", "Reviewer")
-                        .WithMany()
-                        .HasForeignKey("ReviewerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Claim");
-
-                    b.Navigation("Reviewer");
-                });
-
             modelBuilder.Entity("Jude.Server.Data.Models.FraudIndicatorModel", b =>
                 {
                     b.HasOne("Jude.Server.Data.Models.UserModel", "CreatedBy")
@@ -492,8 +435,6 @@ namespace Jude.Server.Migrations
             modelBuilder.Entity("Jude.Server.Data.Models.ClaimModel", b =>
                 {
                     b.Navigation("Citations");
-
-                    b.Navigation("Reviews");
                 });
 #pragma warning restore 612, 618
         }
