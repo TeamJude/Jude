@@ -1,15 +1,13 @@
 
 using Jude.Server.Data.Models;
+using Jude.Server.Domains.Claims.Providers.CIMAS;
 
 namespace Jude.Server.Domains.Claims;
 
 public record GetClaimsRequest(
     int Page = 1,
     int PageSize = 10,
-    ClaimStatus[]? Status = null,
-    FraudRiskLevel[]? RiskLevel = null,
-    bool? RequiresHumanReview = null,
-    string? Search = null
+    ClaimStatus[]? Status = null
 );
 
 public record GetClaimsResponse(ClaimSummaryResponse[] Claims, int TotalCount);
@@ -17,63 +15,42 @@ public record GetClaimsResponse(ClaimSummaryResponse[] Claims, int TotalCount);
 public record ClaimSummaryResponse(
     Guid Id,
     string TransactionNumber,
-    string PatientName,
-    string MembershipNumber,
-    string ProviderPractice,
-    decimal ClaimAmount,
-    decimal? ApprovedAmount,
-    string Currency,
+    string ClaimNumber,
+    string PatientFirstName,
+    string PatientSurname,
+    string MedicalSchemeName,
+    decimal TotalClaimAmount,
     ClaimStatus Status,
-    ClaimSource Source,
-    DateTime SubmittedAt,
-    FraudRiskLevel FraudRiskLevel,
-    bool IsFlagged,
-    bool RequiresHumanReview,
-    string? AgentRecommendation,
     DateTime IngestedAt,
     DateTime UpdatedAt
 );
 
-public record CitationResponse(
-    Guid Id,
-    string Type,
-    string Source,
-    string Quote,
-    string Context,
-    DateTime CitedAt
-);
-
 public record ClaimDetailResponse(
     Guid Id,
-    string TransactionNumber,
-    string ClaimNumber,
-    string PatientName,
-    string MembershipNumber,
-    string ProviderPractice,
-    decimal ClaimAmount,
-    decimal? ApprovedAmount,
-    string Currency,
-    ClaimStatus Status,
-    ClaimSource Source,
-    DateTime? SubmittedAt,
-    DateTime? ProcessedAt,
-    string? AgentRecommendation,
-    List<string>? AgentReasoningLog,
-    decimal? AgentConfidenceScore,
-    DateTime? AgentProcessedAt,
-    List<string>? FraudIndicators,
-    FraudRiskLevel FraudRiskLevel,
-    bool IsFlagged,
-    bool RequiresHumanReview,
-    ClaimDecision? FinalDecision,
-    string? ReviewerComments,
-    string? RejectionReason,
-    DateTime? ReviewedAt,
-    ReviewerInfo? ReviewedBy,
     DateTime IngestedAt,
     DateTime UpdatedAt,
-    string? CIMASPayload,
-    List<CitationResponse>? Citations
+    ClaimStatus Status,
+    ClaimResponse Data,
+    ClaimSummaryResponse Summary,
+    AgentReviewResponse? AgentReview,
+    HumanReviewResponse? HumanReview,
+    ReviewerInfo? ReviewedBy
+);
+
+public record AgentReviewResponse(
+    Guid Id,
+    DateTime ReviewedAt,
+    DecisionStatus DecisionStatus,
+    string Recommendation,
+    string Reasoning,
+    decimal ConfidenceScore
+);
+
+public record HumanReviewResponse(
+    Guid Id,
+    DateTime ReviewedAt,
+    DecisionStatus DecisionStatus,
+    string Comments
 );
 
 public record ReviewerInfo(
@@ -81,7 +58,6 @@ public record ReviewerInfo(
     string? Username,
     string Email
 );
-
 
 public enum ClaimsDashboardPeriod
 {

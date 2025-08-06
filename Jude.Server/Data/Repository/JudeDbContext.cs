@@ -20,11 +20,30 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
 
         modelBuilder.Entity<UserModel>().HasIndex(u => u.Username).IsUnique();
 
-        // Configure the relationship between Claims and Citations
-        modelBuilder.Entity<CitationModel>()
-            .HasOne(c => c.Claim)
-            .WithMany(claim => claim.Citations)
-            .HasForeignKey(c => c.ClaimId)
+        // Configure ClaimModel Data property as JSONB
+        modelBuilder
+            .Entity<ClaimModel>()
+            .Property(c => c.Data)
+            .HasColumnType("jsonb")
+            .IsRequired();
+
+        // Configure one-to-one relationships for ClaimModel
+        modelBuilder.Entity<ClaimModel>()
+            .HasOne(c => c.AgentReview)
+            .WithOne(ar => ar.Claim)
+            .HasForeignKey<AgentReviewModel>(ar => ar.ClaimId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClaimModel>()
+            .HasOne(c => c.HumanReview)
+            .WithOne(hr => hr.Claim)
+            .HasForeignKey<HumanReviewModel>(hr => hr.ClaimId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClaimModel>()
+            .HasOne(c => c.Summary)
+            .WithOne(cs => cs.Claim)
+            .HasForeignKey<ClaimSummaryModel>(cs => cs.ClaimId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 
@@ -33,6 +52,9 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
     public DbSet<RuleModel> Rules { get; set; }
     public DbSet<FraudIndicatorModel> FraudIndicators { get; set; }
     public DbSet<ClaimModel> Claims { get; set; }
+    public DbSet<AgentReviewModel> AgentReviews { get; set; }
+    public DbSet<HumanReviewModel> HumanReviews { get; set; }
+    public DbSet<ClaimSummaryModel> ClaimSummaries { get; set; }
     public DbSet<PolicyModel> Policies { get; set; }
-    public DbSet<CitationModel> Citations { get; set; }
+
 }

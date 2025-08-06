@@ -89,10 +89,12 @@ public class Jude
             {
                 responseContent += response.Message.Content;
                 thread = response.Thread;
-                
+
                 // Check if MakeDecision was called
-                if (response.Message.Content?.Contains("MakeDecision") == true || 
-                    response.Message.Content?.Contains("Decision recorded successfully") == true)
+                if (
+                    response.Message.Content?.Contains("MakeDecision") == true
+                    || response.Message.Content?.Contains("Decision recorded successfully") == true
+                )
                 {
                     decisionMade = true;
                 }
@@ -111,16 +113,19 @@ public class Jude
                     "Agent did not call MakeDecision for claim {ClaimId}. Forcing decision with default values.",
                     claim.Id
                 );
-                
+
                 // Force a default decision if the agent didn't make one
                 claim.AgentRecommendation = "REVIEW";
-                claim.AgentReasoningLog = ["Agent failed to make explicit decision - defaulting to review"];
+                claim.AgentReasoningLog =
+                [
+                    "Agent failed to make explicit decision - defaulting to review",
+                ];
                 claim.AgentConfidenceScore = 0.5m;
                 claim.RequiresHumanReview = true;
                 claim.AgentProcessedAt = DateTime.UtcNow;
                 claim.Status = ClaimStatus.Review;
                 claim.UpdatedAt = DateTime.UtcNow;
-                
+
                 var updateResult = await _claimsService.UpdateClaimAsync(claim);
                 if (!updateResult.Success)
                 {
