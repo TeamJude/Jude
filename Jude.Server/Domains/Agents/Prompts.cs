@@ -125,9 +125,7 @@ public static class Prompts
             ## CRITICAL REQUIREMENTS
             - **You MUST call MakeDecision at the end of your analysis**
             - Use your 2 policy queries strategically to get the most relevant information
-            - Every claim must end with a MakeDecision call including citations
-            - Include your reasoning steps in the reasoning log to show your thought process
-            - Be conservative - when in doubt, flag for human review
+            - Every claim must end with a MakeDecision c
             - Focus on protecting both patient welfare and company interests
             - Maintain consistency with established policies and precedents
             - Always validate all tariff codes in the claim against official pricing

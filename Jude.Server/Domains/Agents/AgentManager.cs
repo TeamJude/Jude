@@ -57,11 +57,7 @@ public class AgentManager : IAgentManager
 
             if (success)
             {
-                _logger.LogInformation(
-                    "Successfully processed claim {ClaimId} with recommendation: {Recommendation}",
-                    claim.Id,
-                    claim.AgentRecommendation
-                );
+                _logger.LogInformation("Successfully processed claim {ClaimId}", claim.Id);
             }
             else
             {
@@ -73,15 +69,8 @@ public class AgentManager : IAgentManager
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing claim {ClaimId} with agent manager", claim.Id);
-
-            // Ensure claim is flagged for human review on processing failure
-            claim.RequiresHumanReview = true;
-            claim.FraudRiskLevel = FraudRiskLevel.Medium;
             claim.Status = ClaimStatus.Failed;
-            claim.AgentReasoningLog = [
-                $"Agent processing failed: {ex.Message}"
-            ];
-
+            claim.UpdatedAt = DateTime.UtcNow;
             return false;
         }
         finally
@@ -94,17 +83,15 @@ public class AgentManager : IAgentManager
     {
         try
         {
-            // Try to get context from cache first
-            if (_contextCache.TryGetValue(CONTEXT_CACHE_KEY, out string cachedContext))
+            if (_contextCache.TryGetValue(CONTEXT_CACHE_KEY, out string? cachedContext))
             {
                 _logger.LogDebug("Using cached processing context");
-                return cachedContext;
+                return cachedContext!;
             }
 
             _logger.LogDebug("Building new processing context");
             var context = await BuildProcessingContextAsync();
 
-            // Cache the context for future use
             var cacheOptions = new MemoryCacheEntryOptions
             {
                 SlidingExpiration = ContextCacheExpiry,
@@ -166,9 +153,6 @@ public class AgentManager : IAgentManager
             context += "No active fraud indicators found in the system.\n\n";
         }
 
-        // Add company policies
-        context += GetCompanyPolicies();
-
         _logger.LogDebug(
             "Successfully built context with {RuleCount} rules and {IndicatorCount} fraud indicators",
             activeRules.Length,
@@ -178,72 +162,11 @@ public class AgentManager : IAgentManager
         return context;
     }
 
-    private string GetCompanyPolicies()
-    {
-        return """
-            ## Company Policies and Guidelines
-
-            ### Maximum Coverage Limits
-            - Annual maximum per member: $50,000
-            - Single claim maximum: $10,000
-            - Emergency services: Up to $25,000 per incident
-            - Preventive care: 100% coverage up to $2,000 annually
-
-            ### Pre-Authorization Requirements
-            - Elective surgeries over $5,000
-            - Specialized treatments and procedures
-            - Experimental or investigational treatments
-            - Durable medical equipment over $1,000
-
-            ### Network Requirements
-            - In-network providers: Standard coverage rates
-            - Out-of-network providers: Reduced coverage (70% vs 90%)
-            - Emergency services: Full coverage regardless of network status
-
-            ### Documentation Requirements
-            - Medical records for services over $1,000
-            - Prior authorization for specified procedures
-            - Diagnosis codes must support treatment
-            - Provider credentials must be current
-
-            ### Exclusions
-            - Cosmetic procedures (unless medically necessary)
-            - Experimental treatments not FDA approved
-            - Services outside coverage period
-            - Duplicate or overlapping services
-
-            ### Billing Code Guidelines
-            #### CPT Codes (Current Procedural Terminology)
-            - 99000-99999: Evaluation and Management
-            - 10000-69999: Surgery
-            - 70000-79999: Radiology
-            - 80000-89999: Pathology and Laboratory
-            - 90000-99999: Medicine
-
-            #### Typical Cost Ranges (USD)
-            - Office visits: $150-$400
-            - Basic lab work: $25-$200
-            - X-rays: $100-$300
-            - CT scans: $500-$1,500
-            - MRI: $1,000-$3,000
-            - Minor procedures: $200-$1,000
-            - Major surgeries: $5,000-$50,000+
-
-            """;
-    }
-
-    /// <summary>
-    /// Invalidates the cached context, forcing a rebuild on next request
-    /// Call this when rules or fraud indicators are updated
-    /// </summary>
     public void InvalidateContext()
     {
         _contextCache.Remove(CONTEXT_CACHE_KEY);
         _logger.LogInformation("Processing context cache invalidated");
     }
 
-    /// <summary>
-    /// Gets the current cache status for monitoring purposes
-    /// </summary>
     public bool IsContextCached => _contextCache.TryGetValue(CONTEXT_CACHE_KEY, out _);
 }

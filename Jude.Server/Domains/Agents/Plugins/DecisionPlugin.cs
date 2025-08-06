@@ -28,39 +28,15 @@ public class DecisionPlugin
         "Make a decision for the claim by updating the recommendation, reasoning, confidence score, and other relevant fields. This function MUST be called to complete claim processing."
     )]
     public async Task<string> MakeDecision(
-        [Description(
-            "The recommendation for the claim (APPROVE, DENY, PENDING, REVIEW, INVESTIGATE)"
-        )]
+        [Description("Your final decision on the claim must be  either Approve | Reject")]
+            string decision,
+        [Description("Your justification and reasoning for your final decision")] string reasoning,
+        [Description("The recommandation to the human reviewer on the claim")]
             string recommendation,
-        [Description("List of reasoning steps the you went through during processing")]
-            List<string>? reasoningLog = null,
-        [Description("Confidence score between 0.0 and 1.0")] decimal confidenceScore = 0.0m,
-        [Description("Fraud risk level (Low, Medium, High, Critical)")]
-            string fraudRiskLevel = "Low",
-        [Description("Whether the claim requires human review (true/false)")]
-            bool requiresHumanReview = false,
-        [Description("Approved amount if different from claimed amount")]
-            decimal? approvedAmount = null,
         [Description(
-            "Policy citations - pipe-separated list of policy sources that support this decision (e.g., 'Section 3.15|Section 2.12|Coverage Policy 4.1')"
+            "Confidence score how confident you are about your decision between 0.0 and 1.0"
         )]
-            string? policyCitations = null,
-        [Description(
-            "Policy quotes - pipe-separated list of exact quotes from policies (must match order of policyCitations)"
-        )]
-            string? policyQuotes = null,
-        [Description(
-            "Tariff citations - pipe-separated list of tariff codes used in decision (e.g., '98101|98411|CON-2023')"
-        )]
-            string? tariffCitations = null,
-        [Description(
-            "Tariff details - pipe-separated list of tariff descriptions and pricing info (must match order of tariffCitations)"
-        )]
-            string? tariffDetails = null,
-        [Description(
-            "Citation contexts - pipe-separated list explaining how each citation supports the decision (must match total citation count)"
-        )]
-            string? citationContexts = null
+            decimal confidenceScore = 0.0m
     )
     {
         try
@@ -71,173 +47,23 @@ public class DecisionPlugin
                 recommendation
             );
 
-            // Validate recommendation
-            var validRecommendations = new[]
+            var review = new AgentReviewModel()
             {
-                "APPROVE",
-                "DENY",
-                "PENDING",
-                "REVIEW",
-                "INVESTIGATE",
-            };
-            var normalizedRecommendation = recommendation?.ToUpper()?.Trim();
-
-            if (
-                string.IsNullOrEmpty(normalizedRecommendation)
-                || !validRecommendations.Contains(normalizedRecommendation)
-            )
-            {
-                _logger.LogWarning(
-                    "Invalid recommendation '{Recommendation}' for claim {ClaimId}, defaulting to REVIEW",
-                    recommendation,
-                    _claim.Id
-                );
-                normalizedRecommendation = "REVIEW";
-            }
-
-            // Update claim with agent decision
-            _claim.AgentRecommendation = normalizedRecommendation;
-            _claim.AgentReasoningLog = reasoningLog ?? ["No detailed reasoning provided"];
-            _claim.AgentConfidenceScore = Math.Max(0.0m, Math.Min(1.0m, confidenceScore)); // Clamp between 0 and 1
-            _claim.RequiresHumanReview = requiresHumanReview;
-            _claim.AgentProcessedAt = DateTime.UtcNow;
-
-            // Set approved amount if provided, or full amount for approvals
-            if (approvedAmount.HasValue)
-            {
-                _claim.ApprovedAmount = approvedAmount.Value;
-            }
-            else if (normalizedRecommendation == "APPROVE")
-            {
-                _claim.ApprovedAmount = _claim.ClaimAmount;
-            }
-
-            // Parse and set fraud risk level
-            if (Enum.TryParse<FraudRiskLevel>(fraudRiskLevel, true, out var riskLevel))
-            {
-                _claim.FraudRiskLevel = riskLevel;
-            }
-
-            var citationList = new List<CitationModel>();
-
-            if (!string.IsNullOrWhiteSpace(policyCitations))
-            {
-                var sources = policyCitations.Split('|', StringSplitOptions.RemoveEmptyEntries);
-                var quotes = policyQuotes?.Split('|', StringSplitOptions.RemoveEmptyEntries) ?? [];
-                var contexts =
-                    citationContexts?.Split('|', StringSplitOptions.RemoveEmptyEntries) ?? [];
-
-                for (int i = 0; i < sources.Length; i++)
-                {
-                    citationList.Add(
-                        new CitationModel
-                        {
-                            Id = Guid.NewGuid(),
-                            Type = "Policy",
-                            Source = sources[i].Trim(),
-                            Quote = i < quotes.Length ? quotes[i].Trim() : "",
-                            Context = i < contexts.Length ? contexts[i].Trim() : "",
-                            ClaimId = _claim.Id,
-                            CitedAt = DateTime.UtcNow,
-                        }
-                    );
-                }
-            }
-
-            // Process tariff citations
-            if (!string.IsNullOrWhiteSpace(tariffCitations))
-            {
-                var sources = tariffCitations.Split('|', StringSplitOptions.RemoveEmptyEntries);
-                var details =
-                    tariffDetails?.Split('|', StringSplitOptions.RemoveEmptyEntries) ?? [];
-                var contexts =
-                    citationContexts?.Split('|', StringSplitOptions.RemoveEmptyEntries) ?? [];
-                var contextOffset = citationList.Count; // Offset for tariff contexts
-
-                for (int i = 0; i < sources.Length; i++)
-                {
-                    citationList.Add(
-                        new CitationModel
-                        {
-                            Id = Guid.NewGuid(),
-                            Type = "Tariff",
-                            Source = sources[i].Trim(),
-                            Quote = i < details.Length ? details[i].Trim() : "",
-                            Context =
-                                (contextOffset + i) < contexts.Length
-                                    ? contexts[contextOffset + i].Trim()
-                                    : "",
-                            ClaimId = _claim.Id,
-                            CitedAt = DateTime.UtcNow,
-                        }
-                    );
-                }
-            }
-
-            if (citationList.Any())
-            {
-                _claim.Citations = citationList;
-                _logger.LogInformation(
-                    "Successfully parsed {CitationCount} citations for claim {ClaimId}",
-                    citationList.Count,
-                    _claim.Id
-                );
-            }
-
-            // Update claim status based on recommendation
-            _claim.Status = normalizedRecommendation switch
-            {
-                "APPROVE" => requiresHumanReview ? ClaimStatus.Review : ClaimStatus.Completed,
-                "DENY" => ClaimStatus.Review, // Denials always require human review
-                "PENDING" => ClaimStatus.Pending,
-                "REVIEW" => ClaimStatus.Review,
-                "INVESTIGATE" => ClaimStatus.Review,
-                _ => ClaimStatus.Review,
+                ClaimId = _claim.Id,
+                Decision = (ClaimDecision)Enum.Parse(typeof(ClaimDecision), decision),
+                Reasoning = reasoning,
+                Recommendation = recommendation,
+                ConfidenceScore = confidenceScore,
+                ReviewedAt = DateTime.UtcNow,
             };
 
-            if (
-                _claim.Status == ClaimStatus.Completed
-                && normalizedRecommendation.Equals(
-                    "APPROVE",
-                    StringComparison.CurrentCultureIgnoreCase
-                )
-            )
+            var result = await _claimsService.UpdateAgentReview(review);
+
+            if (result.Success)
             {
-                _claim.FinalDecision = ClaimDecision.Approved;
+                return "Claim processed successfully";
             }
-
-            _claim.UpdatedAt = DateTime.UtcNow;
-
-            var updateResult = await _claimsService.UpdateClaimAsync(_claim);
-            if (!updateResult.Success)
-            {
-                _logger.LogError(
-                    "Failed to update claim {ClaimId}: {Error}",
-                    _claim.Id,
-                    updateResult.Errors.FirstOrDefault()
-                );
-                return $"Error updating claim: {updateResult.Errors.FirstOrDefault()}";
-            }
-
-            var result =
-                $"Decision recorded successfully for claim {_claim.Id}:\n"
-                + $"- Recommendation: {normalizedRecommendation}\n"
-                + $"- Confidence: {confidenceScore:P}\n"
-                + $"- Status: {_claim.Status}\n"
-                + $"- Requires Review: {requiresHumanReview}";
-
-            if (approvedAmount.HasValue)
-            {
-                result += $"\n- Approved Amount: {approvedAmount:C}";
-            }
-
-            if (_claim.Citations?.Any() == true)
-            {
-                result += $"\n- Citations Used: {_claim.Citations.Count}";
-            }
-
-            _logger.LogInformation("Successfully recorded decision for claim {ClaimId}", _claim.Id);
-            return result;
+            return "Something went wrong whilst making the decion";
         }
         catch (Exception ex)
         {

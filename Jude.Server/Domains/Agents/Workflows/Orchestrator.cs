@@ -29,8 +29,7 @@ public class Orchestrator
 
         try
         {
-            // Check if claim has already been processed
-            if (claim.Status != ClaimStatus.Pending && claim.AgentProcessedAt.HasValue)
+            if (claim.Status != ClaimStatus.Pending || claim.Status != ClaimStatus.Failed)
             {
                 _logger.LogInformation(
                     "Claim {ClaimId} has already been processed, skipping",
@@ -39,8 +38,7 @@ public class Orchestrator
                 return true;
             }
 
-            // Update claim status to processing
-            await UpdateClaimStatus(claim, ClaimStatus.Processing, "Agent processing started");
+            await _claimsService.UpdateClaimStatus(claim.Id, ClaimStatus.UnderAgentReview);
 
             // Process the claim using the agent manager
             var success = await _agentManager.ProcessClaimAsync(claim);
@@ -50,17 +48,13 @@ public class Orchestrator
                 _logger.LogInformation(
                     "Successfully processed claim {ClaimId} with recommendation: {Recommendation}",
                     claim.Id,
-                    claim.AgentRecommendation
+                    claim.AgentReview?.Recommendation
                 );
             }
             else
             {
                 _logger.LogWarning("Agent processing failed for claim {ClaimId}", claim.Id);
-                await UpdateClaimStatus(
-                    claim,
-                    ClaimStatus.Review,
-                    "Agent processing failed - requires human review"
-                );
+                await _claimsService.UpdateClaimStatus(claim.Id, ClaimStatus.UnderHumanReview);
             }
 
             return success;
@@ -72,33 +66,8 @@ public class Orchestrator
                 "Error in claim processing orchestration for claim {ClaimId}",
                 claim.Id
             );
-
-            // Ensure claim is flagged for human review on orchestration failure
-            await UpdateClaimStatus(
-                claim,
-                ClaimStatus.Review,
-                $"Orchestration failed: {ex.Message}"
-            );
-            claim.RequiresHumanReview = true;
-            claim.FraudRiskLevel = FraudRiskLevel.Medium;
-
+            await _claimsService.UpdateClaimStatus(claim.Id, ClaimStatus.Failed);
             return false;
         }
-    }
-
-    private async Task UpdateClaimStatus(ClaimModel claim, ClaimStatus status, string note)
-    {
-        claim.Status = status;
-        claim.UpdatedAt = DateTime.UtcNow;
-
-        // Add note to reasoning
-        var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC");
-        var formattedNote = $"[{timestamp} - Orchestrator]: {note}";
-
-        var existingReasoning = claim.AgentReasoningLog ?? [];
-        claim.AgentReasoningLog =
-            existingReasoning.Count == 0 ? [formattedNote] : [.. existingReasoning, formattedNote];
-
-        await _claimsService.UpdateClaimAsync(claim);
     }
 }

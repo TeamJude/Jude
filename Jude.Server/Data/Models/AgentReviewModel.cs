@@ -7,19 +7,19 @@ public class AgentReviewModel
 {
     public Guid Id { get; set; }
     public DateTime ReviewedAt { get; set; } = DateTime.UtcNow;
-    public DecisionStatus DecisionStatus { get; set; } = DecisionStatus.None;
+    public ClaimDecision Decision { get; set; } = ClaimDecision.None;
     public string Recommendation { get; set; } = string.Empty;
     public string Reasoning { get; set; } = string.Empty;
     public decimal ConfidenceScore { get; set; } = 0;
-    
+
     [ForeignKey(nameof(ClaimModel))]
     public Guid ClaimId { get; set; }
     public ClaimModel Claim { get; set; } = null!;
 }
 
-public enum DecisionStatus
+public enum ClaimDecision
 {
     None,
-    Approved,
-    Rejected,
-} 
+    Approve,
+    Reject,
+}

@@ -1,14 +1,9 @@
-
 using Jude.Server.Data.Models;
 using Jude.Server.Domains.Claims.Providers.CIMAS;
 
 namespace Jude.Server.Domains.Claims;
 
-public record GetClaimsRequest(
-    int Page = 1,
-    int PageSize = 10,
-    ClaimStatus[]? Status = null
-);
+public record GetClaimsRequest(int Page = 1, int PageSize = 10, ClaimStatus[]? Status = null);
 
 public record GetClaimsResponse(ClaimSummaryResponse[] Claims, int TotalCount);
 
@@ -40,7 +35,7 @@ public record ClaimDetailResponse(
 public record AgentReviewResponse(
     Guid Id,
     DateTime ReviewedAt,
-    DecisionStatus DecisionStatus,
+    ClaimDecision DecisionStatus,
     string Recommendation,
     string Reasoning,
     decimal ConfidenceScore
@@ -49,27 +44,21 @@ public record AgentReviewResponse(
 public record HumanReviewResponse(
     Guid Id,
     DateTime ReviewedAt,
-    DecisionStatus DecisionStatus,
+    ClaimDecision DecisionStatus,
     string Comments
 );
 
-public record ReviewerInfo(
-    Guid Id,
-    string? Username,
-    string Email
-);
+public record ReviewerInfo(Guid Id, string? Username, string Email);
 
 public enum ClaimsDashboardPeriod
 {
     Last24Hours,
     Last7Days,
     Last30Days,
-    LastQuarter
+    LastQuarter,
 }
 
-public record ClaimsDashboardRequest(
-ClaimsDashboardPeriod Period
-);
+public record ClaimsDashboardRequest(ClaimsDashboardPeriod Period);
 
 public record ClaimsDashboardResponse(
     int TotalClaims,
@@ -109,7 +98,4 @@ public record ClaimReviewResponse(
     bool IsEdited
 );
 
-public record GetClaimReviewsResponse(
-    ClaimReviewResponse[] Reviews
-);
-
+public record GetClaimReviewsResponse(ClaimReviewResponse[] Reviews);

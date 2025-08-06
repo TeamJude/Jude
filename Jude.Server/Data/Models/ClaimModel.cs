@@ -27,4 +27,5 @@ public enum ClaimStatus
     Approved,
     Rejected,
     Completed,
+    Failed,
 }
