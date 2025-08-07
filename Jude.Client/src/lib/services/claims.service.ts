@@ -1,7 +1,7 @@
 import {
 	ClaimsDashboardPeriod,
 	ClaimStatus,
-	type Claim,
+    type GetClaimDetailResponse,
 	type ClaimReview,
 	type ClaimSummary,
 	type CreateClaimReviewRequest,
@@ -48,8 +48,8 @@ const getClaims = async (data: {
 	});
 };
 
-const getClaim = async (claimId: string): Promise<ApiResponse<Claim>> => {
-	return apiRequest<Claim>(`/api/claims/${claimId}`, {
+const getClaim = async (claimId: string): Promise<ApiResponse<GetClaimDetailResponse>> => {
+    return apiRequest<GetClaimDetailResponse>(`/api/claims/${claimId}`, {
 		method: "GET",
 	});
 };

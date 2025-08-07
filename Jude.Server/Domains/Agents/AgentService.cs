@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Jude.Server.Data.Models;
+using Jude.Server.Domains.Claims;
 using Jude.Server.Domains.Fraud;
 using Jude.Server.Domains.Policies;
 using Jude.Server.Domains.Rules;
@@ -17,17 +18,21 @@ public class AgentService
     private readonly IPolicyContext _policyContext;
     private readonly IRulesService _rulesService;
     private readonly IFraudService _fraudService;
+    private readonly IClaimsService _claimsService;
     private readonly ILogger<AgentService> _logger;
 
     public AgentService(
-        IPolicyContext policyContext, 
+        IPolicyContext policyContext,
         IRulesService rulesService,
         IFraudService fraudService,
-        ILogger<AgentService> logger)
+        IClaimsService claimsService,
+        ILogger<AgentService> logger
+    )
     {
         _policyContext = policyContext;
         _rulesService = rulesService;
         _fraudService = fraudService;
+        _claimsService = claimsService;
         _logger = logger;
     }
 
@@ -46,8 +51,14 @@ public class AgentService
                 .Build();
 
             // Import only policy and pricing plugins (no decision plugin)
-            var policyPlugin = new Plugins.PolicyPlugin(_policyContext, kernel.LoggerFactory.CreateLogger<Plugins.PolicyPlugin>());
-            var pricingPlugin = new Plugins.PricingPlugin(null!, kernel.LoggerFactory.CreateLogger<Plugins.PricingPlugin>()); // null claimsService, only for stateless demo
+            var policyPlugin = new Plugins.PolicyPlugin(
+                _policyContext,
+                kernel.LoggerFactory.CreateLogger<Plugins.PolicyPlugin>()
+            );
+            var pricingPlugin = new Plugins.PricingPlugin(
+                _claimsService,
+                kernel.LoggerFactory.CreateLogger<Plugins.PricingPlugin>()
+            );
             kernel.ImportPluginFromObject(policyPlugin, "Policy");
             kernel.ImportPluginFromObject(pricingPlugin, "Pricing");
 
@@ -84,7 +95,8 @@ public class AgentService
             var chatResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
                 jsonSchemaFormatName: "agent_review_result",
                 jsonSchema: BinaryData.FromString(jsonSchema),
-                jsonSchemaIsStrict: true);
+                jsonSchemaIsStrict: true
+            );
 
             var agent = new ChatCompletionAgent()
             {
@@ -96,7 +108,7 @@ public class AgentService
                     {
                         FunctionChoiceBehavior = FunctionChoiceBehavior.Required(),
                         MaxTokens = 16000,
-                        ResponseFormat = chatResponseFormat
+                        ResponseFormat = chatResponseFormat,
                     }
                 ),
             };
@@ -133,7 +145,11 @@ public class AgentService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Could not parse agent response as AgentReviewModel. Raw response: {Response}", responseContent);
+                    _logger.LogWarning(
+                        ex,
+                        "Could not parse agent response as AgentReviewModel. Raw response: {Response}",
+                        responseContent
+                    );
                 }
             }
             return null;

@@ -1,3 +1,4 @@
+using Jude.Server.Config;
 using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
@@ -715,6 +716,13 @@ public class ClaimsService : IClaimsService
         }
 
         _logger.LogInformation("Getting new pricing access token from CIMAS");
+        _logger.LogDebug("Pricing API Endpoint: {Endpoint}", AppConfig.CIMAS.PricingApiEndpoint);
+        _logger.LogDebug("Pricing API Username: {Username}", AppConfig.CIMAS.PricingApiUsername);
+        _logger.LogDebug(
+            "Pricing API Password: {Password}",
+            !string.IsNullOrEmpty(AppConfig.CIMAS.PricingApiPassword) ? "[SET]" : "[NOT SET]"
+        );
+
         var tokenResult = await _cimasProvider.GetPricingAccessTokenAsync();
 
         if (!tokenResult.Success)
@@ -723,7 +731,9 @@ public class ClaimsService : IClaimsService
                 "Failed to get pricing access token: {Errors}",
                 string.Join(", ", tokenResult.Errors)
             );
-            return Result.Fail("Failed to authenticate with CIMAS pricing API");
+            return Result.Fail(
+                $"Failed to authenticate with CIMAS pricing API: {string.Join(", ", tokenResult.Errors)}"
+            );
         }
 
         if (string.IsNullOrEmpty(tokenResult.Data))

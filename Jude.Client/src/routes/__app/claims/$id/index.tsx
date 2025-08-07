@@ -49,7 +49,7 @@ function RouteComponent() {
 			</main>
 		);
 	}
-	const claim = claimResponse.data;
+    const claim = claimResponse.data;
 
 	return (
 		<main className="min-h-screen py-6 px-4">
@@ -67,8 +67,8 @@ function RouteComponent() {
 				</div>
 
 				<div className="space-y-6">
-					<div className="mt-6 border border-zinc-200 rounded-lg p-4 bg-white">
-						<ClaimTabs claimId={claim.id} />
+                    <div className="mt-6 border border-zinc-200 rounded-lg p-4 bg-white">
+                        <ClaimTabs claim={claim} />
 					</div>
 				</div>
 			</div>

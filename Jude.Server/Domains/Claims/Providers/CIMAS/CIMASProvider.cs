@@ -343,18 +343,21 @@ public class CIMASProvider : ICIMASProvider
                 Password = AppConfig.CIMAS.PricingApiPassword,
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
-                $"{AppConfig.CIMAS.PricingApiEndpoint}/api/v1/auth/login",
-                requestBody
-            );
+            var endpoint = $"{AppConfig.CIMAS.PricingApiEndpoint}/api/v1/auth/login";
+            _logger.LogDebug("Making request to: {Endpoint}", endpoint);
+            _logger.LogDebug("Request body: {RequestBody}", System.Text.Json.JsonSerializer.Serialize(requestBody));
+
+            var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody);
 
             if (!response.IsSuccessStatusCode)
             {
+                var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogError(
-                    "Failed to get pricing API access token. Status: {Status}",
-                    response.StatusCode
+                    "Failed to get pricing API access token. Status: {Status}, Response: {Response}",
+                    response.StatusCode,
+                    errorContent
                 );
-                return Result.Fail("Failed to get pricing API access token");
+                return Result.Fail($"Failed to get pricing API access token. Status: {response.StatusCode}, Response: {errorContent}");
             }
 
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -364,7 +367,8 @@ public class CIMASProvider : ICIMASProvider
             if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.AccessToken))
             {
                 _logger.LogError(
-                    "Failed to deserialize pricing API token response or token is empty"
+                    "Failed to deserialize pricing API token response or token is empty. Response: {Response}",
+                    responseContent
                 );
                 return Result.Fail("Failed to deserialize pricing API token response");
             }
@@ -375,7 +379,7 @@ public class CIMASProvider : ICIMASProvider
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting pricing API access token");
-            return Result.Exception("Error getting pricing API access token");
+            return Result.Exception($"Error getting pricing API access token: {ex.Message}");
         }
     }
 
