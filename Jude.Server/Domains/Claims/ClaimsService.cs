@@ -16,7 +16,7 @@ public interface IClaimsService
     Task<Result<bool>> UpdateClaimAsync(ClaimModel claim);
     Task<Result<bool>> UpdateAgentReview(AgentReviewModel review);
     Task<Result<GetClaimsResponse>> GetClaimsAsync(GetClaimsRequest request);
-    Task<Result<ClaimDetailResponse>> GetClaimAsync(Guid claimId);
+    Task<Result<GetClaimDetailResponse>> GetClaimAsync(Guid claimId);
     Task<Result<ClaimsDashboardResponse>> GetDashboardStatsAsync(ClaimsDashboardRequest request);
     Task<Result<TariffResponse>> GetTariffByCodeAsync(string tariffCode);
     Task<Result<List<TariffResponse>>> GetTariffsByCodesAsync(string[] tariffCodes);
@@ -176,14 +176,14 @@ public class ClaimsService : IClaimsService
                 .OrderByDescending(c => c.IngestedAt)
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(c => new ClaimSummaryResponse(
+                .Select(c => new GetClaimResponse(
                     c.Id,
-                    c.Summary.TransactionNumber,
-                    c.Summary.ClaimNumber,
-                    c.Summary.PatientFirstName,
-                    c.Summary.PatientSurname,
-                    c.Summary.MedicalSchemeName,
-                    c.Summary.TotalClaimAmount,
+                    c.TransactionNumber,
+                    c.ClaimNumber,
+                    c.PatientFirstName,
+                    c.PatientSurname,
+                    c.MedicalSchemeName,
+                    c.TotalClaimAmount,
                     c.Status,
                     c.IngestedAt,
                     c.UpdatedAt
@@ -199,30 +199,24 @@ public class ClaimsService : IClaimsService
         }
     }
 
-    public async Task<Result<ClaimDetailResponse>> GetClaimAsync(Guid claimId)
+    public async Task<Result<GetClaimDetailResponse>> GetClaimAsync(Guid claimId)
     {
         try
         {
             var claim = await _repository
                 .Claims.Where(c => c.Id == claimId)
-                .Select(c => new ClaimDetailResponse(
+                .Select(c => new GetClaimDetailResponse(
                     c.Id,
                     c.IngestedAt,
                     c.UpdatedAt,
                     c.Status,
                     c.Data,
-                    new ClaimSummaryResponse(
-                        c.Summary.Id,
-                        c.Summary.TransactionNumber,
-                        c.Summary.ClaimNumber,
-                        c.Summary.PatientFirstName,
-                        c.Summary.PatientSurname,
-                        c.Summary.MedicalSchemeName,
-                        c.Summary.TotalClaimAmount,
-                        c.Status,
-                        c.IngestedAt,
-                        c.UpdatedAt
-                    ),
+                    c.TransactionNumber,
+                    c.ClaimNumber,
+                    c.PatientFirstName,
+                    c.PatientSurname,
+                    c.MedicalSchemeName,
+                    c.TotalClaimAmount,
                     c.AgentReview != null
                         ? new AgentReviewResponse(
                             c.AgentReview.Id,

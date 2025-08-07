@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
@@ -52,10 +53,7 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
                 );
 
                 // If claim exists but hasn't been processed yet, trigger processing
-                if (
-                    existingClaim.Status == ClaimStatus.Pending
-                    && !existingClaim.AgentProcessedAt.HasValue
-                )
+                if (existingClaim.Status == ClaimStatus.Pending)
                 {
                     _logger.LogInformation(
                         "Triggering processing for existing pending claim {ClaimId}",
@@ -99,118 +97,45 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
         var cimasData = @event.CIMASClaimData;
 
         // Extract patient name from CIMAS data
-        var patientName =
-            $"{cimasData.Patient?.Personal?.FirstName} {cimasData.Patient?.Personal?.Surname}".Trim();
+        var patientFirstName = cimasData.Patient?.Personal?.FirstName ?? "";
+        var patientSurname = cimasData.Patient?.Personal?.Surname ?? "";
 
-        // Calculate claim amount from products and services
-        var claimAmount = CalculateClaimAmount(cimasData);
+        // Calculate total claim amount from services
+        var totalClaimAmount = decimal.Parse(
+            @event.CIMASClaimData.ClaimHeaderResponse.TotalValues.Claimed,
+            NumberStyles.Any,
+            CultureInfo.InvariantCulture
+        );
 
-        // Determine initial fraud risk level based on amount and other factors
-        var fraudRiskLevel = DetermineInitialFraudRisk(claimAmount, cimasData);
+        // Extract claim number from transaction response
+        var claimNumber = cimasData.TransactionResponse?.ClaimNumber ?? "";
+
+        // Extract medical scheme name
+        var medicalSchemeName = cimasData.Member?.MedicalSchemeName ?? "";
 
         var claimModel = new ClaimModel
         {
-            Id = Guid.NewGuid(),
             TransactionNumber = @event.TransactionNumber,
+            ClaimNumber = claimNumber,
+            PatientFirstName = patientFirstName,
+            PatientSurname = patientSurname,
+            MedicalSchemeName = medicalSchemeName,
+            TotalClaimAmount = totalClaimAmount,
             IngestedAt = @event.IngestedAt,
             UpdatedAt = @event.IngestedAt,
             Status = ClaimStatus.Pending,
-            Source = Enum.Parse<ClaimSource>(@event.Source),
-            SubmittedAt = DateTime.TryParse(
-                cimasData.TransactionResponse?.DateTime,
-                out var submittedDate
-            )
-                ? submittedDate.ToUniversalTime()
-                : @event.IngestedAt,
-
-            // Patient and Provider Info (extracted from CIMAS data)
-            PatientName = patientName,
-            MembershipNumber = cimasData.Member?.MedicalSchemeNumber.ToString() ?? "",
-            ProviderPractice = "Unknown",
-
-            // Financial Info
-            ClaimAmount = claimAmount,
-            Currency = cimasData.Member?.Currency ?? "USD",
-
-            // Risk Assessment (initial)
-            FraudRiskLevel = fraudRiskLevel,
-            IsFlagged = fraudRiskLevel >= FraudRiskLevel.High,
-            RequiresHumanReview = true, // All claims require human review initially
-
-            // Store the full CIMAS payload for reference
-            CIMASPayload = JsonSerializer.Serialize(cimasData),
+            Data = cimasData
         };
 
         return claimModel;
     }
 
-    private decimal CalculateClaimAmount(ClaimResponse cimasData)
-    {
-        decimal totalAmount = 0;
-
-        // Sum up product amounts
-        if (cimasData.ProductResponse != null)
-        {
-            foreach (var product in cimasData.ProductResponse)
-            {
-                if (decimal.TryParse(product.TotalValues?.Claimed, out var productAmount))
-                {
-                    totalAmount += productAmount;
-                }
-            }
-        }
-
-        // Sum up service amounts
-        if (cimasData.ServiceResponse != null)
-        {
-            foreach (var service in cimasData.ServiceResponse)
-            {
-                if (decimal.TryParse(service.TotalValues?.Claimed, out var serviceAmount))
-                {
-                    totalAmount += serviceAmount;
-                }
-            }
-        }
-
-        // Fallback to header total if individual items don't sum up
-        if (
-            totalAmount == 0
-            && decimal.TryParse(
-                cimasData.ClaimHeaderResponse?.TotalValues?.Claimed,
-                out var headerAmount
-            )
-        )
-        {
-            totalAmount = headerAmount;
-        }
-
-        return totalAmount;
-    }
-
-    private FraudRiskLevel DetermineInitialFraudRisk(decimal claimAmount, ClaimResponse cimasData)
-    {
-        // Simple initial risk assessment - can be enhanced later
-        if (claimAmount > 5000)
-            return FraudRiskLevel.High;
-        if (claimAmount > 2000)
-            return FraudRiskLevel.Medium;
-
-        // Check if CIMAS flagged it
-        var isHeldForReview =
-            cimasData.ClaimHeaderResponse?.ResponseCode?.Contains("HELD_FOR_REVIEW") == true;
-        if (isHeldForReview)
-            return FraudRiskLevel.Medium;
-
-        return FraudRiskLevel.Low;
-    }
-
     private async Task TriggerAdjudicationWorkflow(ClaimModel claim)
     {
         _logger.LogInformation(
-            "Triggering adjudication workflow for claim {ClaimId} - Amount: {Amount} {Currency}",
+            "Triggering adjudication workflow for claim {ClaimId} - Amount: {Amount}",
             claim.Id,
-            claim.ClaimAmount,
-            claim.Currency
+            claim.TotalClaimAmount
         );
 
         try
@@ -221,9 +146,8 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
             if (success)
             {
                 _logger.LogInformation(
-                    "Successfully processed claim {ClaimId} through orchestration with recommendation: {Recommendation}",
-                    claim.Id,
-                    claim.AgentRecommendation ?? "None"
+                    "Successfully processed claim {ClaimId} through orchestration",
+                    claim.Id
                 );
             }
             else
@@ -240,10 +164,7 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
                 ex.Message
             );
 
-            // Ensure claim is flagged for review if agent processing fails
-            claim.RequiresHumanReview = true;
-            claim.FraudRiskLevel = FraudRiskLevel.Medium;
-            claim.AgentReasoningLog = [$"Adjudication workflow failed: {ex.Message}"];
+            // Mark claim as failed if processing fails
             claim.Status = ClaimStatus.Failed;
             await _dbContext.SaveChangesAsync();
         }

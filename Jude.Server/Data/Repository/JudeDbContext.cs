@@ -39,12 +39,6 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
             .WithOne(hr => hr.Claim)
             .HasForeignKey<HumanReviewModel>(hr => hr.ClaimId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<ClaimModel>()
-            .HasOne(c => c.Summary)
-            .WithOne(cs => cs.Claim)
-            .HasForeignKey<ClaimSummaryModel>(cs => cs.ClaimId)
-            .OnDelete(DeleteBehavior.Cascade);
     }
 
     public DbSet<UserModel> Users { get; set; }
@@ -54,7 +48,5 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
     public DbSet<ClaimModel> Claims { get; set; }
     public DbSet<AgentReviewModel> AgentReviews { get; set; }
     public DbSet<HumanReviewModel> HumanReviews { get; set; }
-    public DbSet<ClaimSummaryModel> ClaimSummaries { get; set; }
     public DbSet<PolicyModel> Policies { get; set; }
-
 }

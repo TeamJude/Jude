@@ -152,8 +152,7 @@ public class ClaimsIngestProcessor : BackgroundService
             var ingestEvent = new ClaimIngestEvent(
                 TransactionNumber: transactionNumber,
                 CIMASClaimData: claim,
-                IngestedAt: DateTime.UtcNow,
-                Source: "CIMAS"
+                IngestedAt: DateTime.UtcNow
             );
 
             // Add to the processing queue

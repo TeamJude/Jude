@@ -5,9 +5,9 @@ namespace Jude.Server.Domains.Claims;
 
 public record GetClaimsRequest(int Page = 1, int PageSize = 10, ClaimStatus[]? Status = null);
 
-public record GetClaimsResponse(ClaimSummaryResponse[] Claims, int TotalCount);
+public record GetClaimsResponse(GetClaimResponse[] Claims, int TotalCount);
 
-public record ClaimSummaryResponse(
+public record GetClaimResponse(
     Guid Id,
     string TransactionNumber,
     string ClaimNumber,
@@ -20,13 +20,18 @@ public record ClaimSummaryResponse(
     DateTime UpdatedAt
 );
 
-public record ClaimDetailResponse(
+public record GetClaimDetailResponse(
     Guid Id,
     DateTime IngestedAt,
     DateTime UpdatedAt,
     ClaimStatus Status,
     ClaimResponse Data,
-    ClaimSummaryResponse Summary,
+    string TransactionNumber,
+    string ClaimNumber,
+    string PatientFirstName,
+    string PatientSurname,
+    string MedicalSchemeName,
+    decimal TotalClaimAmount,
     AgentReviewResponse? AgentReview,
     HumanReviewResponse? HumanReview,
     ReviewerInfo? ReviewedBy

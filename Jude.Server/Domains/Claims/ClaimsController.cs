@@ -85,14 +85,7 @@ public class ClaimsController : ControllerBase
         return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
 
-    [HttpPost("reviews")]
-    [Authorize]
-    public async Task<IActionResult> CreateOrUpdateReview([FromBody] CreateOrUpdateClaimReviewRequest request)
-    {
-        var reviewerId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException());
-        var result = await _claimsService.CreateOrUpdateReviewAsync(request, reviewerId);
-        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
-    }
+
 
     [HttpGet("{claimId:guid}")]
     [Authorize]
@@ -102,12 +95,4 @@ public class ClaimsController : ControllerBase
         return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
     }
 
-    [HttpGet("{claimId:guid}/my-review")]
-    [Authorize]
-    public async Task<IActionResult> GetMyReviewForClaim(Guid claimId)
-    {
-        var reviewerId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException());
-        var result = await _claimsService.GetUserReviewForClaimAsync(claimId, reviewerId);
-        return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
-    }
 }
