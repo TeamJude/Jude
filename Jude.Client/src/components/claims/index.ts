@@ -1,5 +1,5 @@
-export { ClaimCard } from "./claim-card";
-export { ClaimDetailHeader } from "./claim-detail-header";
-export { ClaimTabs } from "./claims-tab";
-export { ClaimsTable } from "./claims-table";
+export { ClaimSummaryTab } from './claim-summary-tab';
+export { ClaimPolicyTab } from './claim-policy-tab';
+export { ClaimAdjudicationTab } from './claim-adjudication-tab';
+export { ClaimAuditTab } from './claim-audit-tab';
 

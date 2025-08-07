@@ -1,7 +1,7 @@
 import { getClaims } from "@/lib/services/claims.service";
 import {
 	ClaimStatus,
-	type ClaimSummary,
+	type GetClaimResponse,
 } from "@/lib/types/claim";
 import {
 	Button,
@@ -141,8 +141,8 @@ export function ClaimsTable() {
 	};
 
 	const renderCell = React.useCallback(
-		(claim: ClaimSummary, columnKey: React.Key) => {
-			const cellValue = claim[columnKey as keyof ClaimSummary];
+		(claim: GetClaimResponse, columnKey: React.Key) => {
+			const cellValue = claim[columnKey as keyof GetClaimResponse];
 
 			switch (columnKey) {
 				case "id":

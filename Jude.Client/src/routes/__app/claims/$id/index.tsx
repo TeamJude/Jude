@@ -1,4 +1,3 @@
-import { ClaimDetailHeader } from "@/components/claims/claim-detail-header";
 import { ClaimTabs } from "@/components/claims/claims-tab";
 import { getClaim } from "@/lib/services/claims.service";
 import { Spinner } from "@heroui/react";
@@ -68,18 +67,6 @@ function RouteComponent() {
 				</div>
 
 				<div className="space-y-6">
-					<ClaimDetailHeader
-						claimId={claim.id}
-						memberName={`${claim.patientFirstName} ${claim.patientSurname}`}
-						memberId={claim.data?.membershipNumber || "N/A"}
-						providerName={claim.data?.providerPractice || "N/A"}
-						providerId={claim.data?.providerId || "N/A"}
-						dateReceived={claim.ingestedAt}
-						dateOfService={claim.data?.dateOfService || claim.ingestedAt}
-						amount={claim.totalClaimAmount}
-						status={claim.status}
-					/>
-
 					<div className="mt-6 border border-zinc-200 rounded-lg p-4 bg-white">
 						<ClaimTabs claimId={claim.id} />
 					</div>

@@ -24,6 +24,12 @@ export const sidebarItems: SidebarItem[] = [
 		title: "Claims",
 	},
 	{
+		key: "agent",
+		href: "/agent",
+		iconName: "bot",
+		title: "Agent",
+	},
+	{
 		key: "knowledge",
 		href: "/knowledge",
 		iconName: "library-big",

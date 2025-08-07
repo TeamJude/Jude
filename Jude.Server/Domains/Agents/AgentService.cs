@@ -57,8 +57,9 @@ public class AgentService
                     "type": "object",
                     "properties": {
                         "Decision": {
-                            "type": "string",
-                            "enum": ["Approve", "Reject"]
+                            "type": "integer",
+                            "enum": [1, 2],
+                            "description": "1 for Approve, 2 for Reject"
                         },
                         "Recommendation": {
                             "type": "string",

@@ -17,6 +17,7 @@ import { Route as AuthLoginImport } from './routes/auth/login'
 import { Route as appKnowledgeIndexImport } from './routes/__app/knowledge/index'
 import { Route as appDashboardIndexImport } from './routes/__app/dashboard/index'
 import { Route as appClaimsIndexImport } from './routes/__app/claims/index'
+import { Route as appAgentIndexImport } from './routes/__app/agent/index'
 import { Route as appClaimsIdIndexImport } from './routes/__app/claims/$id/index'
 
 // Create/Update Routes
@@ -56,6 +57,12 @@ const appClaimsIndexRoute = appClaimsIndexImport.update({
   getParentRoute: () => appRoute,
 } as any)
 
+const appAgentIndexRoute = appAgentIndexImport.update({
+  id: '/agent/',
+  path: '/agent/',
+  getParentRoute: () => appRoute,
+} as any)
+
 const appClaimsIdIndexRoute = appClaimsIdIndexImport.update({
   id: '/claims/$id/',
   path: '/claims/$id/',
@@ -86,6 +93,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/login'
       preLoaderRoute: typeof AuthLoginImport
       parentRoute: typeof rootRoute
+    }
+    '/__app/agent/': {
+      id: '/__app/agent/'
+      path: '/agent'
+      fullPath: '/agent'
+      preLoaderRoute: typeof appAgentIndexImport
+      parentRoute: typeof appImport
     }
     '/__app/claims/': {
       id: '/__app/claims/'
@@ -121,6 +135,7 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface appRouteChildren {
+  appAgentIndexRoute: typeof appAgentIndexRoute
   appClaimsIndexRoute: typeof appClaimsIndexRoute
   appDashboardIndexRoute: typeof appDashboardIndexRoute
   appKnowledgeIndexRoute: typeof appKnowledgeIndexRoute
@@ -128,6 +143,7 @@ interface appRouteChildren {
 }
 
 const appRouteChildren: appRouteChildren = {
+  appAgentIndexRoute: appAgentIndexRoute,
   appClaimsIndexRoute: appClaimsIndexRoute,
   appDashboardIndexRoute: appDashboardIndexRoute,
   appKnowledgeIndexRoute: appKnowledgeIndexRoute,
@@ -140,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof appRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
+  '/agent': typeof appAgentIndexRoute
   '/claims': typeof appClaimsIndexRoute
   '/dashboard': typeof appDashboardIndexRoute
   '/knowledge': typeof appKnowledgeIndexRoute
@@ -150,6 +167,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '': typeof appRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
+  '/agent': typeof appAgentIndexRoute
   '/claims': typeof appClaimsIndexRoute
   '/dashboard': typeof appDashboardIndexRoute
   '/knowledge': typeof appKnowledgeIndexRoute
@@ -161,6 +179,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/__app': typeof appRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
+  '/__app/agent/': typeof appAgentIndexRoute
   '/__app/claims/': typeof appClaimsIndexRoute
   '/__app/dashboard/': typeof appDashboardIndexRoute
   '/__app/knowledge/': typeof appKnowledgeIndexRoute
@@ -173,6 +192,7 @@ export interface FileRouteTypes {
     | '/'
     | ''
     | '/auth/login'
+    | '/agent'
     | '/claims'
     | '/dashboard'
     | '/knowledge'
@@ -182,6 +202,7 @@ export interface FileRouteTypes {
     | '/'
     | ''
     | '/auth/login'
+    | '/agent'
     | '/claims'
     | '/dashboard'
     | '/knowledge'
@@ -191,6 +212,7 @@ export interface FileRouteTypes {
     | '/'
     | '/__app'
     | '/auth/login'
+    | '/__app/agent/'
     | '/__app/claims/'
     | '/__app/dashboard/'
     | '/__app/knowledge/'
@@ -231,6 +253,7 @@ export const routeTree = rootRoute
     "/__app": {
       "filePath": "__app.tsx",
       "children": [
+        "/__app/agent/",
         "/__app/claims/",
         "/__app/dashboard/",
         "/__app/knowledge/",
@@ -239,6 +262,10 @@ export const routeTree = rootRoute
     },
     "/auth/login": {
       "filePath": "auth/login.tsx"
+    },
+    "/__app/agent/": {
+      "filePath": "__app/agent/index.tsx",
+      "parent": "/__app"
     },
     "/__app/claims/": {
       "filePath": "__app/claims/index.tsx",
