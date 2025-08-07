@@ -17,10 +17,12 @@ interface ClaimDetailHeaderProps {
 
 const statusColorMap: Record<ClaimStatus, string> = {
 	[ClaimStatus.Pending]: "ring-yellow-500",
-	[ClaimStatus.Processing]: "ring-blue-500",
-	[ClaimStatus.Failed]: "ring-red-500",
-	[ClaimStatus.Review]: "ring-orange-500",
+	[ClaimStatus.UnderAgentReview]: "ring-blue-500",
+	[ClaimStatus.UnderHumanReview]: "ring-orange-500",
+	[ClaimStatus.Approved]: "ring-green-500",
+	[ClaimStatus.Rejected]: "ring-red-500",
 	[ClaimStatus.Completed]: "ring-green-500",
+	[ClaimStatus.Failed]: "ring-red-500",
 };
 
 export const ClaimDetailHeader: React.FC<ClaimDetailHeaderProps> = ({

@@ -2,7 +2,6 @@ import { getClaims } from "@/lib/services/claims.service";
 import {
 	ClaimStatus,
 	type ClaimSummary,
-	FraudRiskLevel,
 } from "@/lib/types/claim";
 import {
 	Button,
@@ -40,54 +39,40 @@ const columns = [
 	{ name: "CLAIM ID", uid: "id", sortable: true },
 	{ name: "PATIENT", uid: "patient", sortable: true },
 	{ name: "AMOUNT", uid: "amount", sortable: true },
-	{ name: "RISK", uid: "risk", sortable: true },
+	{ name: "STATUS", uid: "status", sortable: true },
 	{ name: "ACTIONS", uid: "actions" },
 ];
 
 const statusOptions = [
 	{ name: "Pending", uid: ClaimStatus.Pending },
-	{ name: "Processing", uid: ClaimStatus.Processing },
-	{ name: "Failed", uid: ClaimStatus.Failed },
-	{ name: "Review", uid: ClaimStatus.Review },
+	{ name: "Under Agent Review", uid: ClaimStatus.UnderAgentReview },
+	{ name: "Under Human Review", uid: ClaimStatus.UnderHumanReview },
+	{ name: "Approved", uid: ClaimStatus.Approved },
+	{ name: "Rejected", uid: ClaimStatus.Rejected },
 	{ name: "Completed", uid: ClaimStatus.Completed },
+	{ name: "Failed", uid: ClaimStatus.Failed },
 ];
-
-const riskOptions = [
-	{ name: "Low", uid: FraudRiskLevel.Low },
-	{ name: "Medium", uid: FraudRiskLevel.Medium },
-	{ name: "High", uid: FraudRiskLevel.High },
-	{ name: "Critical", uid: FraudRiskLevel.Critical },
-];
-
-const capitalize = (s: string) => {
-	if (s.length === 0) return s;
-	return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-};
 
 const statusColorMap: Record<ClaimStatus, ChipProps["color"]> = {
 	[ClaimStatus.Pending]: "default",
-	[ClaimStatus.Processing]: "primary",
-	[ClaimStatus.Failed]: "danger",
-	[ClaimStatus.Review]: "warning",
+	[ClaimStatus.UnderAgentReview]: "primary",
+	[ClaimStatus.UnderHumanReview]: "warning",
+	[ClaimStatus.Approved]: "success",
+	[ClaimStatus.Rejected]: "danger",
 	[ClaimStatus.Completed]: "success",
-};
-
-const riskColorMap: Record<FraudRiskLevel, ChipProps["color"]> = {
-	[FraudRiskLevel.Low]: "success",
-	[FraudRiskLevel.Medium]: "warning",
-	[FraudRiskLevel.High]: "danger",
-	[FraudRiskLevel.Critical]: "danger",
+	[ClaimStatus.Failed]: "danger",
 };
 
 const getStatusIcon = (status: ClaimStatus) => {
 	switch (status) {
 		case ClaimStatus.Completed:
+		case ClaimStatus.Approved:
 			return <CheckCircle className="w-4 h-4" />;
 		case ClaimStatus.Failed:
+		case ClaimStatus.Rejected:
 			return <XCircle className="w-4 h-4" />;
-		case ClaimStatus.Processing:
-			return <Clock className="w-4 h-4" />;
-		case ClaimStatus.Review:
+		case ClaimStatus.UnderAgentReview:
+		case ClaimStatus.UnderHumanReview:
 			return <AlertCircle className="w-4 h-4" />;
 		case ClaimStatus.Pending:
 		default:
@@ -95,7 +80,7 @@ const getStatusIcon = (status: ClaimStatus) => {
 	}
 };
 
-const INITIAL_VISIBLE_COLUMNS = ["id", "patient", "amount", "risk", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["id", "patient", "amount", "status", "actions"];
 
 export function ClaimsTable() {
 	const [search, setSearch] = React.useState("");
@@ -106,7 +91,6 @@ export function ClaimsTable() {
 		new Set(INITIAL_VISIBLE_COLUMNS),
 	);
 	const [statusFilter, setStatusFilter] = React.useState<Selection>("all");
-	const [riskFilter, setRiskFilter] = React.useState<Selection>("all");
 	const [rowsPerPage, setRowsPerPage] = React.useState(10);
 	const [page, setPage] = React.useState(1);
 	const navigate = useNavigate();
@@ -117,30 +101,23 @@ export function ClaimsTable() {
 		error,
 		refetch,
 	} = useQuery({
-		queryKey: ["claims", search, rowsPerPage, page],
+		queryKey: ["claims", page, rowsPerPage, statusFilter],
 		queryFn: () =>
 			getClaims({
 				page,
 				pageSize: rowsPerPage,
-				search: search || undefined,
 				status:
 					statusFilter !== "all" && statusFilter.size > 0
 						? (Array.from(statusFilter).map((key) =>
 								Number(key),
 							) as ClaimStatus[])
 						: undefined,
-				riskLevel:
-					riskFilter !== "all" && riskFilter.size > 0
-						? (Array.from(riskFilter).map((key) =>
-								Number(key),
-							) as FraudRiskLevel[])
-						: undefined,
 			}),
 	});
 
-	const claims = claimsResponse?.success ? claimsResponse.data.claims : [];
+	const claims = claimsResponse?.success ? claimsResponse.data.claims || [] : [];
 	const totalCount = claimsResponse?.success
-		? claimsResponse.data.totalCount
+		? claimsResponse.data.totalCount || 0
 		: 0;
 	const pages = Math.ceil(totalCount / rowsPerPage);
 
@@ -150,20 +127,6 @@ export function ClaimsTable() {
 			Array.from(visibleColumns).includes(column.uid),
 		);
 	}, [visibleColumns]);
-
-	const onSearchChange = React.useCallback((value?: string) => {
-		if (value) {
-			setSearch(value);
-			setPage(1);
-		} else {
-			setSearch("");
-		}
-	}, []);
-
-	const onClear = React.useCallback(() => {
-		setSearch("");
-		setPage(1);
-	}, []);
 
 	const onRowsPerPageChange = React.useCallback(
 		(e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -176,6 +139,7 @@ export function ClaimsTable() {
 	const handleClaimClick = (claimId: string) => {
 		navigate({ to: `/claims/${claimId}` });
 	};
+
 	const renderCell = React.useCallback(
 		(claim: ClaimSummary, columnKey: React.Key) => {
 			const cellValue = claim[columnKey as keyof ClaimSummary];
@@ -193,10 +157,10 @@ export function ClaimsTable() {
 					return (
 						<div className="flex flex-col">
 							<p className="text-bold text-small capitalize">
-								{claim.patientName}
+								{claim.patientFirstName} {claim.patientSurname}
 							</p>
 							<p className="text-bold text-tiny capitalize text-default-500">
-								{claim.membershipNumber}
+								{claim.medicalSchemeName}
 							</p>
 						</div>
 					);
@@ -204,39 +168,20 @@ export function ClaimsTable() {
 					return (
 						<div className="flex flex-col">
 							<span className="font-medium">
-								{claim.currency}
-								{claim.claimAmount.toLocaleString()}
+								${claim.totalClaimAmount.toLocaleString()}
 							</span>
-							{claim.approvedAmount ? (
-								<span className="text-tiny text-success">
-									Approved: {claim.currency}
-									{claim.approvedAmount.toLocaleString()}
-								</span>
-							) : null}
 						</div>
 					);
 				case "status":
 					return (
 						<Chip
-							className="capitalize border-none gap-1 text-default-600"
+							className="capitalize"
 							color={statusColorMap[claim.status]}
 							size="sm"
-							variant="dot"
+							variant="flat"
 							startContent={getStatusIcon(claim.status)}
 						>
 							{ClaimStatus[claim.status]}
-						</Chip>
-					);
-				case "risk":
-					return (
-						<Chip
-							className="capitalize border-none gap-1 text-default-600"
-							color={riskColorMap[claim.fraudRiskLevel]}
-							size="sm"
-							variant="flat"
-						>
-							{FraudRiskLevel[claim.fraudRiskLevel]}
-							{claim.isFlagged && " 🚩"}
 						</Chip>
 					);
 				case "actions":
@@ -245,30 +190,19 @@ export function ClaimsTable() {
 							<Dropdown>
 								<DropdownTrigger>
 									<Button isIconOnly size="sm" variant="light">
-										<EllipsisVertical className="w-4 h-4" />
+										<EllipsisVertical className="text-default-300" />
 									</Button>
 								</DropdownTrigger>
 								<DropdownMenu>
-									<DropdownItem
-										key="view"
-										onPress={() => handleClaimClick(claim.id)}
-									>
+									<DropdownItem key="view" onClick={() => handleClaimClick(claim.id)}>
 										View Details
-									</DropdownItem>
-									<DropdownItem key="edit">Edit</DropdownItem>
-									<DropdownItem
-										key="delete"
-										className="text-danger"
-										color="danger"
-									>
-										Delete
 									</DropdownItem>
 								</DropdownMenu>
 							</Dropdown>
 						</div>
 					);
 				default:
-					return cellValue as React.ReactNode;
+					return cellValue;
 			}
 		},
 		[navigate],
@@ -276,17 +210,16 @@ export function ClaimsTable() {
 
 	const topContent = React.useMemo(() => {
 		return (
-			<div className="flex flex-col gap-4 pb-4">
+			<div className="flex flex-col gap-4">
 				<div className="flex justify-between gap-3 items-end">
 					<Input
 						isClearable
 						className="w-full sm:max-w-[44%]"
-						placeholder="Search by claim ID, patient, or provider..."
-						startContent={<Search className="text-default-300" />}
+						placeholder="Search by transaction number or patient name..."
+						startContent={<Search />}
 						value={search}
-						variant="bordered"
-						onClear={onClear}
-						onValueChange={onSearchChange}
+						onClear={() => setSearch("")}
+						onValueChange={setSearch}
 					/>
 					<div className="flex gap-3">
 						<Dropdown>
@@ -319,30 +252,6 @@ export function ClaimsTable() {
 									endContent={<ChevronDown className="text-small" />}
 									variant="flat"
 								>
-									Risk Level
-								</Button>
-							</DropdownTrigger>
-							<DropdownMenu
-								disallowEmptySelection
-								aria-label="Risk Filter"
-								closeOnSelect={false}
-								selectedKeys={riskFilter}
-								selectionMode="multiple"
-								onSelectionChange={setRiskFilter}
-							>
-								{riskOptions.map((risk) => (
-									<DropdownItem key={risk.uid} className="capitalize">
-										{risk.name}
-									</DropdownItem>
-								))}
-							</DropdownMenu>
-						</Dropdown>
-						<Dropdown>
-							<DropdownTrigger className="hidden sm:flex">
-								<Button
-									endContent={<ChevronDown className="text-small" />}
-									variant="flat"
-								>
 									Columns
 								</Button>
 							</DropdownTrigger>
@@ -356,26 +265,32 @@ export function ClaimsTable() {
 							>
 								{columns.map((column) => (
 									<DropdownItem key={column.uid} className="capitalize">
-										{capitalize(column.name)}
+										{column.name}
 									</DropdownItem>
 								))}
 							</DropdownMenu>
 						</Dropdown>
 					</div>
 				</div>
+				<div className="flex justify-between items-center">
+					<span className="text-default-400 text-small">
+						Total {totalCount} claims
+					</span>
+					<label className="flex items-center text-default-400 text-small">
+						Rows per page:
+						<select
+							className="bg-transparent outline-none text-default-400 text-small"
+							onChange={onRowsPerPageChange}
+						>
+							<option value="5">5</option>
+							<option value="10">10</option>
+							<option value="15">15</option>
+						</select>
+					</label>
+				</div>
 			</div>
 		);
-	}, [
-		search,
-		statusFilter,
-		riskFilter,
-		visibleColumns,
-		onSearchChange,
-		onClear,
-		onRowsPerPageChange,
-		totalCount,
-		rowsPerPage,
-	]);
+	}, [search, statusFilter, visibleColumns, totalCount, onRowsPerPageChange]);
 
 	const bottomContent = React.useMemo(() => {
 		return (
@@ -383,8 +298,7 @@ export function ClaimsTable() {
 				<span className="w-[30%] text-small text-default-400">
 					{selectedKeys === "all"
 						? "All items selected"
-						: `${selectedKeys.size} of ${totalCount} selected `}
-					({totalCount} total claims)
+						: `${selectedKeys.size} of ${claims.length} selected`}
 				</span>
 				<Pagination
 					isCompact
@@ -396,88 +310,87 @@ export function ClaimsTable() {
 					onChange={setPage}
 				/>
 				<div className="hidden sm:flex w-[30%] justify-end gap-2">
-					<div className="flex justify-between items-center">
-						<label className="flex items-center text-default-400 text-small gap-2">
-							<span>Rows per page:</span>
-							<select
-								className="bg-transparent outline-none text-default-400 text-small"
-								onChange={onRowsPerPageChange}
-								value={rowsPerPage}
-							>
-								<option value="5">5</option>
-								<option value="10">10</option>
-								<option value="15">15</option>
-								<option value="20">20</option>
-							</select>
-						</label>
-					</div>
+					<Button
+						isDisabled={page === 1}
+						size="sm"
+						variant="flat"
+						onPress={() => setPage(Math.max(1, page - 1))}
+					>
+						Previous
+					</Button>
+					<Button
+						isDisabled={page === pages}
+						size="sm"
+						variant="flat"
+						onPress={() => setPage(Math.min(pages, page + 1))}
+					>
+						Next
+					</Button>
 				</div>
 			</div>
 		);
-	}, [selectedKeys, totalCount, page, pages]);
+	}, [selectedKeys, page, pages, claims.length]);
+
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center h-40">
+				<Spinner label="Loading claims..." />
+			</div>
+		);
+	}
 
 	if (error) {
 		return (
-			<div className="flex flex-col items-center justify-center p-8">
+			<div className="flex flex-col items-center justify-center h-40">
 				<AlertCircle className="w-8 h-8 text-danger mb-2" />
 				<p className="text-danger">Failed to load claims</p>
-				<Button
-					size="sm"
-					color="primary"
-					variant="flat"
-					onPress={() => refetch()}
-					className="mt-2"
-				>
+				<Button size="sm" variant="flat" onPress={() => refetch()}>
 					Retry
 				</Button>
 			</div>
 		);
 	}
+
 	return (
-		<div className="flex flex-col h-full w-full">
-			<Table
-				aria-label="Claims table"
-				bottomContent={bottomContent}
-				className="h-full"
-				bottomContentPlacement="outside"
-				classNames={{
-					wrapper: "max-h-[calc(100vh-300px)] h-full overflow-y-scroll",
-					base: "flex flex-col h-full",
-					table: "min-h-0",
-				}}
-				selectedKeys={selectedKeys}
-				selectionMode="multiple"
-				sortDescriptor={undefined}
-				topContent={topContent}
-				topContentPlacement="outside"
-				onSelectionChange={setSelectedKeys}
-			>
-				<TableHeader columns={headerColumns}>
-					{(column) => (
-						<TableColumn
-							key={column.uid}
-							align={column.uid === "actions" ? "center" : "start"}
-							allowsSorting={column.sortable}
-						>
-							{column.name}
-						</TableColumn>
-					)}
-				</TableHeader>
-				<TableBody
-					emptyContent="No claims found"
-					items={claims}
-					isLoading={isLoading}
-					loadingContent={<Spinner label="Loading claims..." />}
-				>
-					{(item) => (
-						<TableRow key={item.id}>
-							{(columnKey) => (
-								<TableCell>{renderCell(item, columnKey)}</TableCell>
-							)}
-						</TableRow>
-					)}
-				</TableBody>
-			</Table>
-		</div>
+		<Table
+			aria-label="Claims table"
+			isHeaderSticky
+			bottomContent={bottomContent}
+			bottomContentPlacement="outside"
+			classNames={{
+				wrapper: "max-h-[382px]",
+			}}
+			selectedKeys={selectedKeys}
+			selectionMode="multiple"
+			sortDescriptor={undefined}
+			topContent={topContent}
+			topContentPlacement="outside"
+			onSelectionChange={setSelectedKeys}
+		>
+			<TableHeader columns={headerColumns}>
+				{(column) => (
+					<TableColumn
+						key={column.uid}
+						align={column.uid === "actions" ? "center" : "start"}
+						allowsSorting={column.sortable}
+					>
+						{column.name}
+					</TableColumn>
+				)}
+			</TableHeader>
+			<TableBody emptyContent={"No claims found"} items={claims}>
+				{(item) => (
+					<TableRow
+						key={item.id}
+						className="cursor-pointer hover:bg-default-100"
+						onClick={() => handleClaimClick(item.id)}
+					>
+						{(columnKey) => (
+							<TableCell>{renderCell(item, columnKey)}</TableCell>
+						)}
+					</TableRow>
+				)}
+			</TableBody>
+		</Table>
 	);
 }

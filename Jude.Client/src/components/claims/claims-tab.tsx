@@ -1,5 +1,6 @@
 import { createReview, getClaim, getUserReviewForClaim, submitReview, updateReview } from "@/lib/services/claims.service";
 import { authState } from "@/lib/state/auth.state";
+import type { Citation, ClaimReview } from "@/lib/types/claim";
 import { ClaimReviewDecision, FraudRiskLevel } from "@/lib/types/claim";
 import {
 	addToast,
@@ -63,7 +64,6 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 		enabled: !!user?.id,
 	});
 
-	// Pre-populate form when user review is loaded
 	React.useEffect(() => {
 		if (userReviewResponse?.success && userReviewResponse.data) {
 			const userReview = userReviewResponse.data;
@@ -226,8 +226,8 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 														Billed Amount
 													</span>
 													<span className="text-sm">
-														{claim.currency}
-														{claim.claimAmount.toLocaleString()}
+														$
+													{claim.totalClaimAmount.toLocaleString()}	
 													</span>
 												</div>
 												<div className="flex justify-between">
@@ -235,7 +235,7 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 														Allowed Amount
 													</span>
 													<span className="text-sm">
-														{claim.approvedAmount
+														{claim.app && claim.currency && claim.approvedAmount
 															? `${claim.currency}${claim.approvedAmount.toLocaleString()}`
 															: "Pending"}
 													</span>
@@ -269,7 +269,7 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 
 									<div className="bg-content2 p-4 rounded-md space-y-4">
 										{claim.agentReasoningLog && claim.agentReasoningLog.length > 0 ? (
-											claim.agentReasoningLog.map((reasoning, index) => (
+											claim.agentReasoningLog.map((reasoning: string, index: number) => (
 												<div key={index} className="flex gap-2">
 													<span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5">
 														{index + 1}
@@ -368,33 +368,33 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 												<div className="flex justify-between mb-1">
 													<span className="text-sm">Fraud Risk</span>
 													<span className="text-sm font-medium">
-														{claim.fraudRiskLevel || "Pending"}
+														{claim.fraudRiskLevel !== undefined ? FraudRiskLevel[claim.fraudRiskLevel] : "Pending"}
 													</span>
 												</div>
 												<Progress
 													value={
-														claim.fraudRiskLevel
+														claim.fraudRiskLevel !== undefined
 															? {
 																	[FraudRiskLevel.Low]: 15,
 																	[FraudRiskLevel.Medium]: 40,
 																	[FraudRiskLevel.High]: 70,
 																	[FraudRiskLevel.Critical]: 90,
-																}[claim.fraudRiskLevel]
+																}[claim.fraudRiskLevel] || 25
 															: 25
 													}
 													color={
-														claim.fraudRiskLevel
-															? {
+														claim.fraudRiskLevel !== undefined
+															? ({
 																	[FraudRiskLevel.Low]: "success" as const,
 																	[FraudRiskLevel.Medium]: "warning" as const,
 																	[FraudRiskLevel.High]: "danger" as const,
 																	[FraudRiskLevel.Critical]: "danger" as const,
-																}[claim.fraudRiskLevel]
+																}[claim.fraudRiskLevel] || "warning")
 															: "warning"
 													}
 													className="h-2"
 												/>
-												{!claim.fraudRiskLevel && (
+												{claim.fraudRiskLevel === undefined && (
 													<p className="text-xs text-foreground-500 mt-1">
 														Risk assessment pending AI analysis
 													</p>
@@ -404,21 +404,21 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 												<div className="flex justify-between mb-1">
 													<span className="text-sm">Agent Confidence</span>
 													<span className="text-sm font-medium">
-														{claim.agentConfidenceScore
+														{claim.agentConfidenceScore !== undefined
 															? Math.round(claim.agentConfidenceScore * 100) + "%"
 															: "Pending"}
 													</span>
 												</div>
 												<Progress
 													value={
-														claim.agentConfidenceScore
+														claim.agentConfidenceScore !== undefined
 															? claim.agentConfidenceScore * 100
 															: 0
 													}
 													color="primary"
 													className="h-2"
 												/>
-												{!claim.agentConfidenceScore && (
+												{claim.agentConfidenceScore === undefined && (
 													<p className="text-xs text-foreground-500 mt-1">
 														Confidence score will be calculated after processing
 													</p>
@@ -446,7 +446,7 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 
 							<div className="space-y-4">
 								{claim.citations && claim.citations.length > 0 ? (
-									claim.citations.map((citation, index) => (
+									claim.citations.map((citation: Citation, index: number) => (
 										<Card key={citation.id} className="shadow-none border border-divider">
 											<CardBody>
 												<div className="flex items-center justify-between mb-2">
@@ -554,7 +554,7 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claimId }) => {
 										showPreviousReviews ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
 									}`}>
 										<div className="space-y-4 mb-6">
-											{previousReviews.map((review) => (
+											{previousReviews.map((review: ClaimReview) => (
 												<Card key={review.id} className="border border-divider">
 													<CardBody className="p-4">
 														<div className="flex items-center justify-between mb-2">

@@ -1,7 +1,6 @@
 import {
 	ClaimsDashboardPeriod,
 	ClaimStatus,
-	FraudRiskLevel,
 	type Claim,
 	type ClaimReview,
 	type ClaimSummary,
@@ -14,9 +13,6 @@ const getClaims = async (data: {
 	page?: number;
 	pageSize?: number;
 	status?: ClaimStatus[];
-	riskLevel?: FraudRiskLevel[];
-	requiresHumanReview?: boolean;
-	search?: string;
 }): Promise<
 	ApiResponse<{
 		claims: ClaimSummary[];
@@ -25,14 +21,12 @@ const getClaims = async (data: {
 > => {
 	const searchParams = new URLSearchParams();
 	Object.entries(data).forEach(([key, value]) => {
-		if (value !== undefined && value !== null && value !== "") {
+		if (value !== undefined && value !== null) {
 			if (Array.isArray(value)) {
 				value.forEach((item) => {
 					if (item !== undefined && item !== null) {
 						if (key === "status") {
 							searchParams.append(key, ClaimStatus[item as ClaimStatus]);
-						} else if (key === "riskLevel") {
-							searchParams.append(key, FraudRiskLevel[item as FraudRiskLevel]);
 						} else {
 							searchParams.append(key, item.toString());
 						}
@@ -45,6 +39,7 @@ const getClaims = async (data: {
 	});
 	const queryString = searchParams.toString();
 	const url = queryString ? `/api/claims?${queryString}` : "/api/claims";
+	
 	return apiRequest<{
 		claims: ClaimSummary[];
 		totalCount: number;

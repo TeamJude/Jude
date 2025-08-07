@@ -70,13 +70,13 @@ function RouteComponent() {
 				<div className="space-y-6">
 					<ClaimDetailHeader
 						claimId={claim.id}
-						memberName={claim.patientName}
-						memberId={claim.membershipNumber}
-						providerName={claim.providerPractice}
-						providerId={claim.providerPractice}
+						memberName={`${claim.patientFirstName} ${claim.patientSurname}`}
+						memberId={claim.data?.membershipNumber || "N/A"}
+						providerName={claim.data?.providerPractice || "N/A"}
+						providerId={claim.data?.providerId || "N/A"}
 						dateReceived={claim.ingestedAt}
-						dateOfService={claim.submittedAt || claim.ingestedAt}
-						amount={claim.claimAmount}
+						dateOfService={claim.data?.dateOfService || claim.ingestedAt}
+						amount={claim.totalClaimAmount}
 						status={claim.status}
 					/>
 
