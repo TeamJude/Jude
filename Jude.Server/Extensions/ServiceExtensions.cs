@@ -160,6 +160,7 @@ public static class ServiceExtensions
         services.AddScoped<Domains.Agents.Jude>();
         services.AddScoped<IAgentManager, AgentManager>();
         services.AddScoped<Orchestrator>();
+        services.AddScoped<AgentService>();
 
         services.AddScoped<IPolicyContext, PolicyContext>();
         services.AddScoped<IPolicyService, PolicyService>();

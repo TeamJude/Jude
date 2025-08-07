@@ -99,6 +99,14 @@ app.UseExceptionHandler(options => { });
 
 app.UseCors("jude");
 
+app.MapPost("/api/agent/test", async ([FromServices] Jude.Server.Domains.Agents.AgentService agentService, [FromBody] string claimData) =>
+{
+    var result = await agentService.TestAgentAsync(claimData);
+    if (result == null)
+        return Results.BadRequest("Agent could not process the claim or returned invalid response.");
+    return Results.Ok(result);
+});
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

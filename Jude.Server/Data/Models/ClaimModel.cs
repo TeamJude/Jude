@@ -13,15 +13,12 @@ public class ClaimModel
     public HumanReviewModel? HumanReview { get; set; }
     public ClaimStatus Status { get; set; } = ClaimStatus.Pending;
 
-    // Summary fields to show in table
     public string TransactionNumber { get; set; } = string.Empty;
     public string ClaimNumber { get; set; } = string.Empty;
     public string PatientFirstName { get; set; } = string.Empty;
     public string PatientSurname { get; set; } = string.Empty;
     public string MedicalSchemeName { get; set; } = string.Empty;
     public decimal TotalClaimAmount { get; set; }
-
-    
 
     [ForeignKey(nameof(UserModel))]
     public Guid? ReviewedById { get; set; }

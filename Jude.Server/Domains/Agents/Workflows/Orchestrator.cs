@@ -29,7 +29,7 @@ public class Orchestrator
 
         try
         {
-            if (claim.Status != ClaimStatus.Pending || claim.Status != ClaimStatus.Failed)
+            if (claim.Status != ClaimStatus.Pending && claim.Status != ClaimStatus.Failed)
             {
                 _logger.LogInformation(
                     "Claim {ClaimId} has already been processed, skipping",
