@@ -6,10 +6,12 @@ using Jude.Server.Domains.Policies;
 using Jude.Server.Domains.Rules;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 using OpenAI.Chat;
+using Azure.Storage.Blobs;
+using System.Net.Http;
+using Jude.Server.Config;
 
 namespace Jude.Server.Domains.Agents;
 
@@ -40,27 +42,43 @@ public class AgentService
     {
         try
         {
-            // Build the kernel (no DB dependencies)
+            // Build the kernel with OpenAI chat completion
             var kernel = Kernel
                 .CreateBuilder()
-                .AddAzureOpenAIChatCompletion(
-                    Config.AppConfig.Azure.AI.ModelId,
-                    Config.AppConfig.Azure.AI.Endpoint,
-                    Config.AppConfig.Azure.AI.ApiKey
+                // .AddAzureOpenAIChatCompletion(
+                //     Config.AppConfig.Azure.AI.ModelId,
+                //     Config.AppConfig.Azure.AI.Endpoint,
+                //     Config.AppConfig.Azure.AI.ApiKey
+                // )
+                .AddOpenAIChatCompletion(
+                    modelId: "gpt-4.1",
+                    apiKey:AppConfig.OpenAI.ApiKey
                 )
                 .Build();
 
-            // Import only policy and pricing plugins (no decision plugin)
-            var policyPlugin = new Plugins.PolicyPlugin(
-                _policyContext,
-                kernel.LoggerFactory.CreateLogger<Plugins.PolicyPlugin>()
-            );
-            var pricingPlugin = new Plugins.PricingPlugin(
-                _claimsService,
-                kernel.LoggerFactory.CreateLogger<Plugins.PricingPlugin>()
-            );
-            kernel.ImportPluginFromObject(policyPlugin, "Policy");
-            kernel.ImportPluginFromObject(pricingPlugin, "Pricing");
+            var chatService = kernel.GetRequiredService<IChatCompletionService>();
+
+            // Get policy PDF bytes
+            var policyBytes = await GetPolicyPdfBytesAsync();
+            if (policyBytes == null || policyBytes.Length == 0)
+            {
+                _logger.LogWarning("No policy PDF found, proceeding without policy context");
+            }
+
+            // Build processing context
+            var processingContext = await BuildProcessingContextAsync();
+            var fullContext = $"{processingContext}\n\n{context ?? string.Empty}";
+
+            // Create chat history
+            var history = new ChatHistory();
+            history.AddSystemMessage(GetSystemPrompt());
+
+            // Create user content with policy PDF if available
+            var userContent = CreateUserContent(claimData, fullContext, policyBytes);
+            history.AddUserMessage(userContent);
+
+
+
 
             // Create JSON schema for AgentReviewModel
             var jsonSchema = """
@@ -98,37 +116,16 @@ public class AgentService
                 jsonSchemaIsStrict: true
             );
 
-            var agent = new ChatCompletionAgent()
+            // Create execution settings
+            var executionSettings = new AzureOpenAIPromptExecutionSettings
             {
-                Name = "Jude",
-                Instructions = Prompts.AdjudicationEngine,
-                Kernel = kernel,
-                Arguments = new KernelArguments(
-                    new AzureOpenAIPromptExecutionSettings()
-                    {
-                        FunctionChoiceBehavior = FunctionChoiceBehavior.Required(),
-                        MaxTokens = 16000,
-                        ResponseFormat = chatResponseFormat,
-                    }
-                ),
+                MaxTokens = 16000,
+                ResponseFormat = chatResponseFormat,
             };
 
-            // Build processing context (without caching)
-            var processingContext = await BuildProcessingContextAsync();
-            var fullContext = $"{processingContext}\n\n{context ?? string.Empty}";
-
-            var initialMessage = new Microsoft.SemanticKernel.ChatMessageContent(
-                role: AuthorRole.User,
-                content: $"Please process this medical claim for adjudication (test mode, stateless):\n\n{claimData}\n\n{fullContext}\nAnalyze the claim and return your decision as a structured AgentReviewModel object."
-            );
-
-            AgentThread? thread = null;
-            string? responseContent = null;
-            await foreach (var response in agent.InvokeAsync(initialMessage, thread))
-            {
-                responseContent = response.Message.Content;
-                thread = response.Thread;
-            }
+            // Get response
+            var response = await chatService.GetChatMessageContentAsync(history, executionSettings);
+            var responseContent = response.Content;
 
             // Parse the structured response as AgentReviewModel
             if (!string.IsNullOrWhiteSpace(responseContent))
@@ -159,6 +156,88 @@ public class AgentService
             _logger.LogError(ex, "Error running test agent");
             return null;
         }
+    }
+
+    private async Task<byte[]?> GetPolicyPdfBytesAsync()
+    {
+        try
+        {
+            var policyUrl = "https://judestore.blob.core.windows.net/policies/policy_index/7b0131003a8b4a6a80cd60be91f99470202508071105519294434/main_policy_e6d9f03a-2756-4504-80ef-31d98063717b.pdf";
+            
+            _logger.LogInformation("Downloading policy PDF from: {Url}", policyUrl);
+            
+            using var httpClient = new HttpClient();
+            var response = await httpClient.GetAsync(policyUrl);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to download policy PDF. Status: {Status}", response.StatusCode);
+                return null;
+            }
+            
+            var pdfBytes = await response.Content.ReadAsByteArrayAsync();
+            _logger.LogInformation("Successfully downloaded policy PDF. Size: {Size} bytes", pdfBytes.Length);
+            
+            return pdfBytes;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving policy PDF");
+            return null;
+        }
+    }
+
+    #pragma warning disable SKEXP0001 
+    private ChatMessageContentItemCollection CreateUserContent(string claimData, string context, byte[]? policyBytes)
+    {
+        var textContent = new TextContent($"Please process this medical claim for adjudication:\n\nClaim Data: {claimData}\n\nContext: {context}");
+
+        if (policyBytes != null && policyBytes.Length > 0)
+        {
+            return [textContent, new BinaryContent(policyBytes, "application/pdf")];
+        }
+
+        return [textContent];
+    }
+
+    private string GetSystemPrompt()
+    {
+        return @"You are Jude, an expert medical claims adjudication AI system. Your role is to analyze medical claims and provide structured decisions.
+
+You can process both text-based claim data and PDF policy documents. When a policy PDF is provided, use it as the primary reference for adjudication rules and guidelines.
+
+IMPORTANT: You must respond with ONLY a valid JSON object. Do not include any other text, explanations, or formatting.
+
+Your response must be a valid JSON object with the following structure:
+{
+    ""Decision"": 1 or 2 (1 for Approve, 2 for Reject),
+    ""Recommendation"": ""Markdown-formatted guidance for human reviewers with policy citations"",
+    ""Reasoning"": ""Detailed markdown-formatted justification with specific policy references"",
+    ""ConfidenceScore"": 0.0 to 1.0 (confidence level in the decision)
+}
+
+Key guidelines:
+- Analyze the claim data thoroughly
+- When a policy PDF is provided, cite specific sections, clauses, or rules from the policy document
+- Use markdown formatting for better readability:
+  - Use **bold** for important points and section headers
+  - Use bullet points for lists
+  - Use > for direct policy quotes
+  - Use `code` for specific policy references (e.g., `Section 3.2`, `Clause 5.1`)
+- Structure your reasoning with clear sections:
+  - **Policy Analysis**: What specific policy rules apply to this claim
+  - **Claim Assessment**: How the claim meets or fails policy requirements
+  - **Risk Factors**: Any concerns, fraud indicators, or billing irregularities
+  - **Recommendation**: Clear guidance for human reviewers with specific next steps
+- When citing policy sections, use format: `Section X.Y` or `Clause X.Y.Z`
+- Always explain WHY a policy section is relevant to the decision
+- Consider medical necessity, coverage rules, and billing accuracy
+- Flag potential fraud or billing irregularities
+- Provide clear reasoning for your decision
+- Be conservative with confidence scores
+- If uncertain, recommend human review
+- Always reference specific policy sections when making decisions
+- Return ONLY the JSON object, no additional text";
     }
 
     private async Task<string> BuildProcessingContextAsync()

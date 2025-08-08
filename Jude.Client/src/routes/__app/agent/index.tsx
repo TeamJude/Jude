@@ -15,6 +15,7 @@ import {
 } from "@heroui/react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { AlertCircle } from "lucide-react";
+import { Markdown } from "@/components/ai/markdown";
 
 export const Route = createFileRoute("/__app/agent/")({
 	component: AgentTest,
@@ -116,22 +117,6 @@ function AgentTest() {
 								/>
 							</div>
 							
-							<div>
-								<label className="text-sm font-medium text-gray-700 mb-2 block">
-									Additional Context (Optional)
-								</label>
-								<Textarea
-									placeholder="Add any additional context or instructions..."
-									value={context}
-									onValueChange={setContext}
-									minRows={3}
-									maxRows={6}
-									className="w-full"
-									classNames={{
-										input: "resize-none",
-									}}
-								/>
-							</div>
 
 							<Button
 								color="primary"
@@ -235,9 +220,9 @@ function AgentTest() {
 									<div className="space-y-2">
 										<h4 className="text-sm font-medium text-gray-700">Recommendation</h4>
 										<div className="bg-gray-50 rounded-lg p-3">
-											<p className="text-sm text-gray-700 whitespace-pre-wrap">
-												{result.data.recommendation}
-											</p>
+											<div className="text-sm text-gray-700">
+												<Markdown>{result.data.recommendation}</Markdown>
+											</div>
 										</div>
 									</div>
 
@@ -247,9 +232,9 @@ function AgentTest() {
 									<div className="space-y-2">
 										<h4 className="text-sm font-medium text-gray-700">Detailed Reasoning</h4>
 										<div className="bg-gray-50 rounded-lg p-3">
-											<p className="text-sm text-gray-700 whitespace-pre-wrap">
-												{result.data.reasoning}
-											</p>
+											<div className="text-sm text-gray-700">
+												<Markdown>{result.data.reasoning}</Markdown>
+											</div>
 										</div>
 									</div>
 
@@ -269,6 +254,16 @@ function AgentTest() {
 													{new Date(result.data.reviewedAt).toLocaleString()}
 												</p>
 											</div>
+										</div>
+										
+										<div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200">
+											<div className="flex items-center gap-2">
+												<DynamicIcon name="file-text" size={14} className="text-blue-600" />
+												<span className="text-xs font-medium text-blue-800">Policy Document Analyzed</span>
+											</div>
+											<p className="text-xs text-blue-700 mt-1">
+												The AI agent analyzed the uploaded policy document to inform this decision.
+											</p>
 										</div>
 									</div>
 								</div>

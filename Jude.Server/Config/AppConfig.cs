@@ -94,6 +94,12 @@ public static class AppConfig
                 ?? throw new Exception("custom azure ai apikey is not set")
         );
 
+    public static OpenAI OpenAI { get; } =
+        new OpenAI(
+            Environment.GetEnvironmentVariable("OPEN_AI_APIKEY")
+                ?? throw new Exception("Open AI API Key is not set")
+        );
+
     public static string VectorDbUrl { get; } =
         Environment.GetEnvironmentVariable("VECTOR_DB_URL")
         ?? throw new Exception("Vector DB URL is not set");
@@ -133,3 +139,5 @@ public record AzureBlob(
 );
 
 public record CustomAzureAI(string ModelId, string Endpoint, string ApiKey);
+
+public record OpenAI(string ApiKey);

@@ -21,8 +21,8 @@
     <PackageReference Include="Microsoft.KernelMemory.DocumentStorage.AzureBlobs" Version="0.98.250508.3" />
     <PackageReference Include="Microsoft.KernelMemory.MemoryDb.AzureAISearch" Version="0.98.250508.3" />
     <PackageReference Include="Microsoft.KernelMemory.MemoryDb.Postgres" Version="0.98.250508.3" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.58.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.58.0" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.60.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.60.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.2" />
   </ItemGroup>
