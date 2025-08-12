@@ -31,6 +31,7 @@ services:
       - AZURE_BLOB_CONNECTION_STRING
       - AZURE_BLOB_URL
       - POLICY_INDEX_NAME
+      - OPEN_AI_APIKEY
     networks:
       - jude-network
     restart: unless-stopped
