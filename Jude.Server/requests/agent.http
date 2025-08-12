@@ -11,7 +11,7 @@ expand_less
 @baseUrl = https://localhost:7001
 
 # Test 1: Basic medical claim
-POST {{baseUrl}}/api/agent/test
+POST {{baseUrl}}/api/agents
 Content-Type: application/json
 
 "{\"CLAIM NO\": 348994, \"CLAIM LINE NO\": 793838, \"AUTH NO\": \"3.39E+08\", \"MEMBER ID\": null, \"DEP NO\": 2, \"ICD10 COD\": \"Z01.7\", \"PRACTICE\": 866547, \"DISCIPLINE\": \"Pathologis\", \"TARIFF CO\": 89101, \"ASSESS DATE\": \"########\", \"DATE REC\": \"########\", \"CURRENCY\": \"ZWL\", \"AMOUNT\": 1000, \"TARIFF AMOUNT\": 1000, \"SERVICE DESCRIPTION\": \"MISCELLAI\", \"SERVICE DATE\": \"5/10/2020\", \"UNITS\": 1}"
@@ -19,7 +19,7 @@ Content-Type: application/json
 ###
 
 # Test 2: Simple text claim
-POST {{baseUrl}}/api/agent/test
+POST {{baseUrl}}/api/agents
 Content-Type: application/json
 
 "Patient: John Doe, Age: 45, Diagnosis: Hypertension, Procedure: Blood pressure monitoring, Cost: $150, Provider: Dr. Smith Medical Center, Date: 2024-01-15"
@@ -27,7 +27,7 @@ Content-Type: application/json
 ###
 
 # Test 3: Complex medical claim
-POST {{baseUrl}}/api/agent/test
+POST {{baseUrl}}/api/agents
 Content-Type: application/json
 
 "Patient: Jane Smith, Age: 32, Diagnosis: Appendicitis, Procedures: Appendectomy (laparoscopic), Anesthesia, Post-op care, Total Cost: $12,500, Provider: City General Hospital, Date: 2024-01-20, Insurance: Blue Cross Blue Shield"
@@ -35,7 +35,7 @@ Content-Type: application/json
 ###
 
 # Test 4: High-value claim
-POST {{baseUrl}}/api/agent/test
+POST {{baseUrl}}/api/agents
 Content-Type: application/json
 
 "Patient: Lisa Anderson, Age: 42, Diagnosis: Cancer treatment, Procedures: Chemotherapy, Radiation therapy, Surgery, Hospital stay (15 days), Total Cost: $150,000, Provider: Memorial Cancer Center, Date: 2024-01-05, Pre-authorization: Approved"
@@ -43,7 +43,7 @@ Content-Type: application/json
 ###
 
 # Test 5: Empty string (error handling)
-POST {{baseUrl}}/api/agent/test
+POST {{baseUrl}}/api/agents
 Content-Type: application/json
 
 ""

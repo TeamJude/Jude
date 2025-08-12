@@ -10,7 +10,7 @@ export interface AgentReviewResult {
 }
 
 const testAgent = async (claimData: string): Promise<ApiResponse<AgentReviewResult>> => {
-	return apiRequest<AgentReviewResult>("/api/agent/test", {
+    return apiRequest<AgentReviewResult>("/api/agents", {
 		method: "POST",
 		body: JSON.stringify(claimData),
 	});
