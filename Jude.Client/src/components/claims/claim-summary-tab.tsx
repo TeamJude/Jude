@@ -66,8 +66,8 @@ export const ClaimSummaryTab: React.FC<ClaimSummaryTabProps> = ({ claim }) => {
 										Allowed Amount
 									</span>
 									<span className="text-sm">
-										{claim.agentReview?.decisionStatus === ClaimDecision.Approve && claim.data.member.currency
-											? `${claim.data.member.currency}${claim.totalClaimAmount.toLocaleString()}`
+										{claim.agentReview?.decisionStatus === ClaimDecision.Approve && (claim.data as any).member.currency
+											? `${(claim.data as any)?.member.currency}${claim.totalClaimAmount.toLocaleString()}`
 											: "Pending"}
 									</span>
 								</div>
