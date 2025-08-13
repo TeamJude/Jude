@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
 namespace Jude.Server.Domains.Agents;
 
@@ -15,6 +16,20 @@ public class AgentsController : ControllerBase
     {
         _agentService = agentService;
         _logger = logger;
+    }
+
+    [HttpPost("extract")]
+    [RequestFormLimits(MultipartBodyLengthLimit = 104857600)] // 100 MB
+    [RequestSizeLimit(104857600)]
+    public async Task<IActionResult> Extract([FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { message = "No file uploaded or file is empty." });
+        }
+
+        var markdown = await _agentService.ExtractClaimDataAsync(file);
+        return Ok(new { content = markdown });
     }
 
     [HttpPost]

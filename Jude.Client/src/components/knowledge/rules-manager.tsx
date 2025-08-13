@@ -11,8 +11,10 @@ import {
 	ModalContent,
 	ModalFooter,
 	ModalHeader,
+	Pagination,
 	Select,
 	SelectItem,
+	Spinner,
 	Switch,
 	Table,
 	TableBody,
@@ -33,10 +35,12 @@ export const RulesManager: React.FC = () => {
 	const { isOpen, onOpen, onOpenChange } = useDisclosure();
 	const [editingRule, setEditingRule] = useState<Rule | null>(null);
 	const [errors, setErrors] = useState<string[]>([]);
+	const [page, setPage] = useState(1);
+	const [rowsPerPage, setRowsPerPage] = useState(10);
 
 	const { isPending, error, data } = useQuery({
-		queryKey: ["rules"],
-		queryFn: () => getRules({ page: 1, pageSize: 100 }),
+		queryKey: ["rules", page, rowsPerPage],
+		queryFn: () => getRules({ page, pageSize: rowsPerPage }),
 	});
 	const createRuleMutation = useMutation({
 		mutationFn: (data: {
@@ -94,6 +98,18 @@ export const RulesManager: React.FC = () => {
 		console.log("Toggle status for:", rule.id);
 	};
 
+	const rules = data?.success ? data.data.rules || [] : [];
+	const totalCount = data?.success ? data.data.totalCount || 0 : 0;
+	const pages = Math.ceil(totalCount / rowsPerPage);
+
+	const onRowsPerPageChange = React.useCallback(
+		(e: React.ChangeEvent<HTMLSelectElement>) => {
+			setRowsPerPage(Number(e.target.value));
+			setPage(1);
+		},
+		[],
+	);
+
 	return (
 		<>
 			<Card className="shadow-sm border-zinc-200 border-1">
@@ -109,27 +125,67 @@ export const RulesManager: React.FC = () => {
 						</Button>
 					</div>
 
-					<Table aria-label="Claims processing rules table" removeWrapper>
-						<TableHeader>
-							<TableColumn key="name">RULE NAME</TableColumn>
-							<TableColumn key="description">DESCRIPTION</TableColumn>
-							<TableColumn key="status">STATUS</TableColumn>
-							<TableColumn key="createdAt">CREATED</TableColumn>
-							<TableColumn key="actions" className="text-right">
-								ACTIONS
-							</TableColumn>
-						</TableHeader>
-						<TableBody
-							emptyContent={
-								isPending
-									? "Loading..."
-									: error
-										? "Error loading rules"
-										: "No rules found"
-							}
-						>
-							{data?.success
-								? data.data.rules.map((rule) => (
+					{isPending ? (
+						<div className="flex items-center justify-center h-40">
+							<Spinner label="Loading rules..." />
+						</div>
+					) : (
+						<>
+							<div className="flex justify-between items-center mb-4">
+								<span className="text-default-400 text-small">
+									Total {totalCount} rules
+								</span>
+								<label className="flex items-center text-default-400 text-small">
+									Rows per page:
+									<select
+										className="bg-transparent outline-none text-default-400 text-small ml-2"
+										value={rowsPerPage}
+										onChange={onRowsPerPageChange}
+									>
+										<option value="5">5</option>
+										<option value="10">10</option>
+										<option value="15">15</option>
+									</select>
+								</label>
+							</div>
+
+							<Table 
+								aria-label="Claims processing rules table" 
+								removeWrapper
+								bottomContent={
+									pages > 1 && (
+										<div className="py-2 px-2 flex justify-center items-center">
+											<Pagination
+												isCompact
+												showControls
+												showShadow
+												color="primary"
+												page={page}
+												total={pages}
+												onChange={setPage}
+											/>
+										</div>
+									)
+								}
+								bottomContentPlacement="outside"
+							>
+								<TableHeader>
+									<TableColumn key="name">RULE NAME</TableColumn>
+									<TableColumn key="description">DESCRIPTION</TableColumn>
+									<TableColumn key="status">STATUS</TableColumn>
+									<TableColumn key="createdAt">CREATED</TableColumn>
+									<TableColumn key="actions" className="text-right">
+										ACTIONS
+									</TableColumn>
+								</TableHeader>
+								<TableBody
+									emptyContent={
+										error
+											? "Error loading rules"
+											: "No rules found"
+									}
+								>
+									{rules.map((rule) => (
 										<TableRow key={rule.id}>
 											<TableCell className="font-medium">{rule.name}</TableCell>
 
@@ -168,10 +224,11 @@ export const RulesManager: React.FC = () => {
 												</div>
 											</TableCell>
 										</TableRow>
-									))
-								: []}
-						</TableBody>
-					</Table>
+									))}
+								</TableBody>
+							</Table>
+						</>
+					)}
 				</CardBody>
 			</Card>
 			<Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">

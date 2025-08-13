@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
-import { ClaimSummaryTab } from "./claim-summary-tab";
+import { AgentReviewTab } from "./agent-review-tab";
 import { ClaimAdjudicationTab } from "./claim-adjudication-tab";
 import { ClaimAuditTab } from "./claim-audit-tab";
 import { ClaimOverviewTab } from "./claim-overview-tab";
@@ -65,17 +65,17 @@ export const ClaimTabs: React.FC<ClaimTabsProps> = ({ claim }) => {
                 >
                     <ClaimOverviewTab claim={claim} />
                 </Tab>
-				<Tab
-					key="summary"
-					title={
-						<div className="flex items-center gap-2">
-							<ClipboardList width={18} />
-							<span>Claim Summary & Agent Output</span>
-						</div>
-					}
-				>
-					<ClaimSummaryTab claim={claim} />
-				</Tab>
+                <Tab
+                    key="agent-review"
+                    title={
+                        <div className="flex items-center gap-2">
+                            <ClipboardList width={18} />
+                            <span>Agent Review</span>
+                        </div>
+                    }
+                >
+                    <AgentReviewTab claim={claim} />
+                </Tab>
 
 				<Tab
 					key="adjudication"

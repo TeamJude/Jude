@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using System.Text.Json;
 
 //init environment var values into our appconfig
 AppConfig.Initialize();
@@ -56,7 +57,18 @@ builder.Services.ConfigureAuthentication();
 builder.Services.ConfigureAuthorization();
 builder.Services.AddServices();
 builder.Services.AddAgentServices();
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+});
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.PropertyNameCaseInsensitive = true;
+});
 builder.Services.AddOpenApi();
 
 builder.Services.ConfigureCors();

@@ -19,12 +19,13 @@ export const apiRequest = async <T>(
 			config.environment == "production"
 				? endpoint
 				: `${config.url}${endpoint}`;
-		const response = await fetch(url, {
+        const response = await fetch(url, {
 			...options,
 			credentials: "include",
-			headers: options.headers || {
-				"Content-Type": "application/json",
-			},
+            headers:
+                options.headers !== undefined
+                    ? options.headers
+                    : { "Content-Type": "application/json" },
 		});
 
 		const data = await response.json();

@@ -12,6 +12,7 @@ using OpenAI.Chat;
 using Azure.Storage.Blobs;
 using System.Net.Http;
 using Jude.Server.Config;
+using Microsoft.AspNetCore.Http;
 
 namespace Jude.Server.Domains.Agents;
 
@@ -22,6 +23,8 @@ public class AgentService
     private readonly IFraudService _fraudService;
     private readonly IClaimsService _claimsService;
     private readonly ILogger<AgentService> _logger;
+    private readonly IChatCompletionService _extractionChatService;
+    private readonly IChatCompletionService _reviewChatService;
 
     public AgentService(
         IPolicyContext policyContext,
@@ -36,35 +39,91 @@ public class AgentService
         _fraudService = fraudService;
         _claimsService = claimsService;
         _logger = logger;
+
+        // Build kernels and chat services once in constructor
+        var extractionKernel = Kernel
+            .CreateBuilder()
+            .AddOpenAIChatCompletion(
+                modelId: "gpt-4.1",
+                apiKey: AppConfig.OpenAI.ApiKey
+            )
+            .Build();
+
+        var reviewKernel = Kernel
+            .CreateBuilder()
+            .AddAzureOpenAIChatCompletion(
+                AppConfig.Azure.AI.ModelId,
+                AppConfig.Azure.AI.Endpoint,
+                AppConfig.Azure.AI.ApiKey
+            )
+            .Build();
+
+        _extractionChatService = extractionKernel.GetRequiredService<IChatCompletionService>();
+        _reviewChatService = reviewKernel.GetRequiredService<IChatCompletionService>();
+    }
+#pragma warning disable SKEXP0001 
+    public async Task<string> ExtractClaimDataAsync(IFormFile file)
+    {
+        try
+        {
+            using var stream = new MemoryStream();
+            await file.CopyToAsync(stream);
+            var fileBytes = stream.ToArray();
+
+            var fileContent = new BinaryContent(fileBytes, "application/pdf");
+
+            var history = new ChatHistory("Extract the captured claim data from the uploaded PDF file and present the patient and claimant details in a structured markdown format.");
+            history.AddUserMessage([fileContent]);
+
+            var response = await _extractionChatService.GetChatMessageContentAsync(history, new AzureOpenAIPromptExecutionSettings { MaxTokens = 16000 });
+
+            var responseContent = response.Content;
+
+
+            // Placeholder extraction result in markdown
+            var markdown = $$"""
+# Extracted Claim Data (Preview)
+
+- **Filename**: {file.FileName}
+- **Size**: {fileSizeKb:F1} KB
+- **Processed At**: {DateTime.UtcNow:O}
+
+## Patient
+- Name: Jane Doe
+- Policy Number: P-123456
+- Date of Birth: 1990-01-01
+
+## Provider
+- Facility: City Health Clinic
+- Provider ID: PRV-98765
+
+## Encounter
+- Admission Date: 2025-07-01
+- Discharge Date: 2025-07-02
+- Diagnosis Codes:
+  - ICD-10: Z00.00 (General adult medical examination)
+s
+## Line Items
+1. CPT 99213 — Office/outpatient visit established patient — Qty: 1 — Amount: $120.00
+2. CPT 81001 — Urinalysis automated — Qty: 1 — Amount: $20.00
+
+## Notes
+> Placeholder: AI-powered PDF form extraction will populate real values here.
+""";
+
+            return responseContent ?? markdown;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting claim data from uploaded PDF");
+            return "# Extraction Failed\n\nAn error occurred while extracting data from the uploaded PDF.";
+        }
     }
 
     public async Task<AgentReviewModel?> TestAgentAsync(string claimData, string? context = null)
     {
         try
         {
-            // Build the kernel with OpenAI chat completion
-            var kernel = Kernel
-                .CreateBuilder()
-                // .AddAzureOpenAIChatCompletion(
-                //     Config.AppConfig.Azure.AI.ModelId,
-                //     Config.AppConfig.Azure.AI.Endpoint,
-                //     Config.AppConfig.Azure.AI.ApiKey
-                // )
-                .AddOpenAIChatCompletion(
-                    modelId: "gpt-4.1",
-                    apiKey:AppConfig.OpenAI.ApiKey
-                )
-                .Build();
-
-            var chatService = kernel.GetRequiredService<IChatCompletionService>();
-
-            // Get policy PDF bytes
-            var policyBytes = await GetPolicyPdfBytesAsync();
-            if (policyBytes == null || policyBytes.Length == 0)
-            {
-                _logger.LogWarning("No policy PDF found, proceeding without policy context");
-            }
-
             // Build processing context
             var processingContext = await BuildProcessingContextAsync();
             var fullContext = $"{processingContext}\n\n{context ?? string.Empty}";
@@ -73,11 +132,9 @@ public class AgentService
             var history = new ChatHistory();
             history.AddSystemMessage(GetSystemPrompt());
 
-            // Create user content with policy PDF if available
-            var userContent = CreateUserContent(claimData, fullContext, policyBytes);
-            history.AddUserMessage(userContent);
+            var textContent = new TextContent($"Please process this medical claim for adjudication:\n\nClaim Data: {claimData}\n\nContext: {fullContext}");
 
-
+            history.AddUserMessage([textContent]);
 
 
             // Create JSON schema for AgentReviewModel
@@ -124,7 +181,7 @@ public class AgentService
             };
 
             // Get response
-            var response = await chatService.GetChatMessageContentAsync(history, executionSettings);
+            var response = await _reviewChatService.GetChatMessageContentAsync(history, executionSettings);
             var responseContent = response.Content;
 
             // Parse the structured response as AgentReviewModel
@@ -156,48 +213,6 @@ public class AgentService
             _logger.LogError(ex, "Error running test agent");
             return null;
         }
-    }
-
-    private async Task<byte[]?> GetPolicyPdfBytesAsync()
-    {
-        try
-        {
-            var policyUrl = "https://judestore.blob.core.windows.net/policies/policy_index/7b0131003a8b4a6a80cd60be91f99470202508071105519294434/main_policy_e6d9f03a-2756-4504-80ef-31d98063717b.pdf";
-            
-            _logger.LogInformation("Downloading policy PDF from: {Url}", policyUrl);
-            
-            using var httpClient = new HttpClient();
-            var response = await httpClient.GetAsync(policyUrl);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Failed to download policy PDF. Status: {Status}", response.StatusCode);
-                return null;
-            }
-            
-            var pdfBytes = await response.Content.ReadAsByteArrayAsync();
-            _logger.LogInformation("Successfully downloaded policy PDF. Size: {Size} bytes", pdfBytes.Length);
-            
-            return pdfBytes;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving policy PDF");
-            return null;
-        }
-    }
-
-    #pragma warning disable SKEXP0001 
-    private ChatMessageContentItemCollection CreateUserContent(string claimData, string context, byte[]? policyBytes)
-    {
-        var textContent = new TextContent($"Please process this medical claim for adjudication:\n\nClaim Data: {claimData}\n\nContext: {context}");
-
-        if (policyBytes != null && policyBytes.Length > 0)
-        {
-            return [textContent, new BinaryContent(policyBytes, "application/pdf")];
-        }
-
-        return [textContent];
     }
 
     private string GetSystemPrompt()

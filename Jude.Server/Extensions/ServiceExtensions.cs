@@ -28,7 +28,7 @@ public static class ServiceExtensions
 {
     public static void ConfigureDatabase(this IServiceCollection services)
     {
-        var db = new NpgsqlDataSourceBuilder(AppConfig.Database.ConnectionString)
+        var db = new NpgsqlDataSourceBuilder(AppConfig.CloudDatabase.ConnectionString)
             .EnableDynamicJson()
             .Build();
         services.AddDbContext<JudeDbContext>(options =>

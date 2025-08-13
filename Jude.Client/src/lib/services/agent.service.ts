@@ -16,4 +16,19 @@ const testAgent = async (claimData: string): Promise<ApiResponse<AgentReviewResu
 	});
 };
 
-export { testAgent };
+export interface ExtractResponse {
+    content: string;
+}
+
+const extractClaim = async (file: File): Promise<ApiResponse<ExtractResponse>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiRequest<ExtractResponse>("/api/agents/extract", {
+        method: "POST",
+        // Important: do not set Content-Type so browser can set multipart boundary
+        headers: {},
+        body: formData as unknown as BodyInit,
+    });
+};
+
+export { testAgent, extractClaim };

@@ -46,79 +46,79 @@ export enum ClaimsDashboardPeriod {
 
 // CIMAS Data Structures
 export interface ClaimResponsePersonal {
-	surname: string;
-	firstName: string;
-	initials?: string;
-	gender: string;
-	dateOfBirth: string;
+	Surname: string;
+	FirstName: string;
+	Initials?: string;
+	Gender: string;
+	DateOfBirth: string;
 }
 
 export interface ClaimResponsePatient {
-	dependantCode: number;
-	personal: ClaimResponsePersonal;
+	DependantCode: number;
+	Personal: ClaimResponsePersonal;
 }
 
 export interface ClaimResponseMember {
-	medicalSchemeNumber: number;
-	medicalSchemeName: string;
-	currency: string;
+	MedicalSchemeNumber: number;
+	MedicalSchemeName: string;
+	Currency: string;
 }
 
 export interface ClaimTotalValues {
-	claimed: string;
-	copayment: string;
-	schemeAmount: string;
-	savingsAmount: string;
-	nettMember: string;
-	nettProvider: string;
+	Claimed: string;
+	Copayment: string;
+	SchemeAmount: string;
+	SavingsAmount: string;
+	NettMember: string;
+	NettProvider: string;
 }
 
 export interface Message {
-	type: string;
-	code?: string;
-	description?: string;
+	Type: string;
+	Code?: string;
+	Description?: string;
 }
 
 export interface ServiceResponse {
-	number: string;
-	code: string;
-	description: string;
-	subTotalValues: ClaimTotalValues;
-	message: Message;
-	totalValues: ClaimTotalValues;
+	Number: string;
+	Code: string;
+	Description: string;
+	SubTotalValues: ClaimTotalValues;
+	Message: Message;
+	TotalValues: ClaimTotalValues;
 }
 
 export interface ProductResponse {
-	number: string;
-	code: string;
-	description: string;
-	subTotalValues: ClaimTotalValues;
-	message: Message;
-	totalValues: ClaimTotalValues;
+	Number: string;
+	Code: string;
+	Description: string;
+	SubTotalValues: ClaimTotalValues;
+	Message: Message;
+	TotalValues: ClaimTotalValues;
 }
 
 export interface TransactionResponse {
-	type?: string;
-	number: string;
-	claimNumber: string;
-	dateTime: string;
-	submittedBy: string;
-	reversed: boolean;
-	dateReversed?: string;
+	Type?: string;
+	Number: string;
+	ClaimNumber: string;
+	DateTime: string;
+	SubmittedBy: string;
+	Reversed: boolean;
+	DateReversed?: string;
 }
 
 export interface ClaimHeaderResponse {
-	responseCode: string;
-	totalValues: ClaimTotalValues;
+	ResponseCode: string;
+	TotalValues: ClaimTotalValues;
 }
 
 export interface ClaimResponse {
-	transactionResponse: TransactionResponse;
-	member: ClaimResponseMember;
-	patient: ClaimResponsePatient;
-	claimHeaderResponse: ClaimHeaderResponse;
-	serviceResponse: ServiceResponse[];
-	productResponse: ProductResponse[];
+	TransactionResponse: TransactionResponse;
+	Member: ClaimResponseMember;
+	Patient: ClaimResponsePatient;
+	ClaimHeaderResponse: ClaimHeaderResponse;
+	ServiceResponse: ServiceResponse[];
+	ProductResponse: ProductResponse[];
 }
 
 // Backend Contract Types

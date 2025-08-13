@@ -1,20 +1,18 @@
-import { testAgent, type AgentReviewResult } from "@/lib/services/agent.service";
+import { testAgent, extractClaim } from "@/lib/services/agent.service";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { 
-	Button, 
-	Card, 
-	CardBody, 
-	CardHeader, 
-	Textarea, 
-	Spinner, 
-	Badge,
-	Divider,
-	Progress
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Spinner,
+  Badge,
+  Divider,
+  Progress,
 } from "@heroui/react";
 import { DynamicIcon } from "lucide-react/dynamic";
-import { AlertCircle } from "lucide-react";
 import { Markdown } from "@/components/ai/markdown";
 
 export const Route = createFileRoute("/__app/agent/")({
@@ -22,34 +20,47 @@ export const Route = createFileRoute("/__app/agent/")({
 });
 
 function AgentTest() {
-	const [claimData, setClaimData] = useState<string>("");
-	const [context, setContext] = useState<string>("");
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+	const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+	const [extractedMarkdown, setExtractedMarkdown] = useState<string>("");
 
 	const {
-		mutate: processClaim,
-		data: result,
-		isPending,
-		error,
-		reset
+		mutate: startExtraction,
+		isPending: isExtracting,
+		error: extractError,
+		reset: resetExtract,
 	} = useMutation({
-		mutationFn: testAgent,
-		onSuccess: () => {
-			// Success handled by displaying result
+		mutationFn: async (file: File) => {
+			const resp = await extractClaim(file);
+			if (resp.success) return resp.data.content;
+			throw new Error(resp.errors?.[0] || "Extraction failed");
 		},
-		onError: () => {
-			// Error handled by displaying error state
-		}
+		onSuccess: (markdown) => {
+			setExtractedMarkdown(markdown);
+		},
 	});
 
-	const handleProcessClaim = () => {
-		if (!claimData.trim()) return;
-		processClaim(claimData);
-	};
+	const {
+		mutate: reviewExtracted,
+		data: reviewResult,
+		isPending: isReviewing,
+		error: reviewError,
+		reset: resetReview,
+	} = useMutation({
+		mutationFn: async (markdown: string) => {
+			const resp = await testAgent(markdown);
+			if (resp.success) return resp.data;
+			throw new Error(resp.errors?.[0] || "Review failed");
+		},
+	});
 
 	const handleClear = () => {
-		setClaimData("");
-		setContext("");
-		reset();
+		if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+		setSelectedFile(null);
+		setFilePreviewUrl(null);
+		setExtractedMarkdown("");
+		resetExtract();
+		resetReview();
 	};
 
 	const getDecisionColor = (decision: number) => {
@@ -66,17 +77,31 @@ function AgentTest() {
 		return "danger";
 	};
 
+	const onFileDrop = (fileList: FileList | null) => {
+		const file = fileList?.[0];
+		if (!file) return;
+		if (file.type !== "application/pdf") {
+			alert("Please upload a PDF file");
+			return;
+		}
+		if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+		setSelectedFile(file);
+		setFilePreviewUrl(URL.createObjectURL(file));
+		setExtractedMarkdown("");
+		resetExtract();
+		resetReview();
+	};
+
+	const canExtract = !!selectedFile && !isExtracting;
+	const canReview = !!extractedMarkdown && !isReviewing;
+
 	return (
 		<main className="h-full py-6 px-4">
 			<div className="max-w-7xl mx-auto px-4 space-y-6">
 				<div className="flex justify-between items-center">
 					<div>
-						<h1 className="text-2xl font-semibold text-gray-800">
-							Agent Playground
-						</h1>
-						<p className="text-sm text-gray-500">
-							Test the AI agent with claim data and view processing results
-						</p>
+						<h1 className="text-2xl font-semibold text-gray-800">Agent Playground</h1>
+						<p className="text-sm text-gray-500">Upload a PDF, extract claim data, and run AI review</p>
 					</div>
 					<div className="flex items-center gap-3">
 						<Button
@@ -90,180 +115,192 @@ function AgentTest() {
 					</div>
 				</div>
 
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-140px)]">
-					{/* Left Panel - Input */}
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
+					{/* Panel 1 - PDF Upload & Preview */}
 					<Card className="shadow-none border-zinc-200 border-1">
 						<CardHeader className="pb-2">
 							<div>
-								<h3 className="text-base font-medium">Claim Data Input</h3>
-								<p className="text-xs text-gray-500">
-									Paste your claim data in JSON format for processing
-								</p>
+								<h3 className="text-base font-medium">Upload PDF</h3>
+								<p className="text-xs text-gray-500">Drop a claim PDF here or click to select a file</p>
 							</div>
 						</CardHeader>
 						<CardBody className="space-y-4">
-							<div>
-
-								<Textarea
-									placeholder="Paste your claim data here in JSON format..."
-									value={claimData}
-									onValueChange={setClaimData}
-									minRows={18}
-									maxRows={25}
-									className="w-full"
-									classNames={{
-										input: "resize-none",
-									}}
+							<div
+								onDragOver={(e) => e.preventDefault()}
+								onDrop={(e) => {
+									e.preventDefault();
+									onFileDrop(e.dataTransfer.files);
+								}}
+								className="border-2 border-dashed border-zinc-300 rounded-lg p-4 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-zinc-50"
+								onClick={() => {
+									const input = document.getElementById("file-input-hidden") as HTMLInputElement | null;
+									input?.click();
+								}}
+							>
+								<input
+									id="file-input-hidden"
+									type="file"
+									accept="application/pdf"
+									className="hidden"
+									onChange={(e) => onFileDrop(e.target.files)}
 								/>
+								<DynamicIcon name="upload" size={20} className="text-zinc-500" />
+								<div className="text-sm text-zinc-600">
+									{selectedFile ? selectedFile.name : "Click to select or drop a PDF here"}
+								</div>
 							</div>
-							
+
+							<div className="h-[480px] border rounded-lg overflow-hidden bg-zinc-50">
+								{!filePreviewUrl ? (
+									<div className="h-full flex items-center justify-center text-sm text-zinc-400">No PDF selected</div>
+								) : (
+									<iframe src={filePreviewUrl} className="w-full h-full" title="PDF Preview" />
+								)}
+							</div>
 
 							<Button
 								color="primary"
 								size="lg"
-								onPress={handleProcessClaim}
-								isDisabled={!claimData.trim() || isPending}
-								startContent={
-									isPending ? (
-										<Spinner size="sm" />
-									) : (
-										<DynamicIcon name="play" size={16} />
-									)
-								}
+								onPress={() => selectedFile && startExtraction(selectedFile)}
+								isDisabled={!canExtract}
+								startContent={isExtracting ? <Spinner size="sm" /> : <DynamicIcon name="sparkles" size={16} />}
 								className="w-full"
 							>
-								{isPending ? "Processing..." : "Process Claim"}
+								{isExtracting ? "Extracting..." : "Process (Extract Data)"}
 							</Button>
+							{extractError && <div className="text-danger text-xs">{(extractError as Error).message}</div>}
 						</CardBody>
 					</Card>
 
-					{/* Right Panel - Results */}
+					{/* Panel 2 - Extracted Data */}
 					<Card className="shadow-none border-zinc-200 border-1">
 						<CardHeader className="pb-2">
 							<div>
-								<h3 className="text-base font-medium">Processing Results</h3>
-								<p className="text-xs text-gray-500">
-									AI agent analysis and decision output
-								</p>
+								<h3 className="text-base font-medium">Extracted Data</h3>
+								<p className="text-xs text-gray-500">AI extraction result from the uploaded PDF</p>
 							</div>
 						</CardHeader>
 						<CardBody>
-							{isPending && (
+							{isExtracting && (
 								<div className="flex flex-col items-center justify-center h-64 space-y-4">
-									<Spinner size="lg" label="Processing claim..." />
-									<p className="text-sm text-gray-500">
-										The AI agent is analyzing your claim data...
-									</p>
+									<Spinner size="lg" label="Extracting data..." />
+									<p className="text-sm text-gray-500">AI is extracting data from your PDF...</p>
 								</div>
 							)}
 
-							{error && (
+							{!isExtracting && !extractedMarkdown && (
 								<div className="flex flex-col items-center justify-center h-64 space-y-4">
-									<AlertCircle className="w-12 h-12 text-danger" />
-									<p className="text-danger font-medium">Processing Failed</p>
-									<p className="text-sm text-gray-500 text-center">
-										{error.message || "An error occurred while processing the claim"}
-									</p>
+									<DynamicIcon name="file-text" className="w-12 h-12 text-gray-400" />
+									<p className="text-gray-500 font-medium">No Extracted Data</p>
+									<p className="text-sm text-gray-400 text-center">Upload and process a PDF to view extracted claim data</p>
+								</div>
+							)}
+
+							{!!extractedMarkdown && (
+								<div className="space-y-4">
+									<div className="bg-gray-50 rounded-lg p-3">
+										<div className="text-sm text-gray-700">
+											<Markdown>{extractedMarkdown}</Markdown>
+										</div>
+									</div>
 									<Button
-										color="primary"
-										variant="flat"
-										onPress={() => reset()}
+										color="secondary"
+										onPress={() => reviewExtracted(extractedMarkdown)}
+										isDisabled={!canReview}
+										startContent={isReviewing ? <Spinner size="sm" /> : <DynamicIcon name="bot" size={16} />}
 									>
-										Try Again
+										{isReviewing ? "Reviewing..." : "Review with AI"}
 									</Button>
+									{reviewError && <div className="text-danger text-xs">{(reviewError as Error).message}</div>}
+								</div>
+							)}
+						</CardBody>
+					</Card>
+
+					{/* Panel 3 - Review Results */}
+					<Card className="shadow-none border-zinc-200 border-1">
+						<CardHeader className="pb-2">
+							<div>
+								<h3 className="text-base font-medium">Review Result</h3>
+								<p className="text-xs text-gray-500">AI agent decision and rationale</p>
+							</div>
+						</CardHeader>
+						<CardBody>
+							{isReviewing && (
+								<div className="flex flex-col items-center justify-center h-64 space-y-4">
+									<Spinner size="lg" label="Running review..." />
+									<p className="text-sm text-gray-500">The AI agent is analyzing the extracted data...</p>
 								</div>
 							)}
 
-							{!isPending && !error && (!result?.success || !result?.data) && (
+							{!isReviewing && !reviewResult && (
 								<div className="flex flex-col items-center justify-center h-64 space-y-4">
 									<DynamicIcon name="bot" className="w-12 h-12 text-gray-400" />
-									<p className="text-gray-500 font-medium">No Results</p>
-									<p className="text-sm text-gray-400 text-center">
-										Process a claim to see the AI agent's analysis
-									</p>
+									<p className="text-gray-500 font-medium">No Review Yet</p>
+									<p className="text-sm text-gray-400 text-center">Run a review after extraction to see the AI decision</p>
 								</div>
 							)}
 
-							{!isPending && !error && result?.success && result.data && (
+							{!!reviewResult && (
 								<div className="space-y-6">
-									{/* Decision Summary */}
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
 											<h4 className="text-sm font-medium text-gray-700">Decision</h4>
-											<Badge
-												color={getDecisionColor(result.data.decision)}
-												variant="flat"
-												size="sm"
-											>
-												{getDecisionText(result.data.decision)}
+											<Badge color={getDecisionColor(reviewResult.decision)} variant="flat" size="sm">
+												{getDecisionText(reviewResult.decision)}
 											</Badge>
 										</div>
-										
 										<div className="space-y-2">
 											<div className="flex items-center justify-between">
 												<span className="text-sm text-gray-600">Confidence Score</span>
-												<span className="text-sm font-medium">
-													{(result.data.confidenceScore * 100).toFixed(1)}%
-												</span>
+												<span className="text-sm font-medium">{(reviewResult.confidenceScore * 100).toFixed(1)}%</span>
 											</div>
-											<Progress
-												value={result.data.confidenceScore * 100}
-												color={getConfidenceColor(result.data.confidenceScore)}
-												className="w-full"
-											/>
+											<Progress value={reviewResult.confidenceScore * 100} color={getConfidenceColor(reviewResult.confidenceScore)} className="w-full" />
 										</div>
 									</div>
 
 									<Divider />
 
-									{/* Recommendation */}
 									<div className="space-y-2">
 										<h4 className="text-sm font-medium text-gray-700">Recommendation</h4>
 										<div className="bg-gray-50 rounded-lg p-3">
 											<div className="text-sm text-gray-700">
-												<Markdown>{result.data.recommendation}</Markdown>
+												<Markdown>{reviewResult.recommendation}</Markdown>
 											</div>
 										</div>
 									</div>
 
 									<Divider />
 
-									{/* Reasoning */}
 									<div className="space-y-2">
 										<h4 className="text-sm font-medium text-gray-700">Detailed Reasoning</h4>
 										<div className="bg-gray-50 rounded-lg p-3">
 											<div className="text-sm text-gray-700">
-												<Markdown>{result.data.reasoning}</Markdown>
+												<Markdown>{reviewResult.reasoning}</Markdown>
 											</div>
 										</div>
 									</div>
 
 									<Divider />
 
-									{/* Metadata */}
 									<div className="space-y-2">
 										<h4 className="text-sm font-medium text-gray-700">Processing Details</h4>
 										<div className="grid grid-cols-2 gap-4 text-sm">
 											<div>
 												<span className="text-gray-500">Review ID:</span>
-												<p className="font-mono text-xs">{result.data.id}</p>
+												<p className="font-mono text-xs">{reviewResult.id}</p>
 											</div>
 											<div>
 												<span className="text-gray-500">Reviewed At:</span>
-												<p className="text-xs">
-													{new Date(result.data.reviewedAt).toLocaleString()}
-												</p>
+												<p className="text-xs">{new Date(reviewResult.reviewedAt).toLocaleString()}</p>
 											</div>
 										</div>
-										
 										<div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200">
 											<div className="flex items-center gap-2">
 												<DynamicIcon name="file-text" size={14} className="text-blue-600" />
 												<span className="text-xs font-medium text-blue-800">Policy Document Analyzed</span>
 											</div>
-											<p className="text-xs text-blue-700 mt-1">
-												The AI agent analyzed the uploaded policy document to inform this decision.
-											</p>
+											<p className="text-xs text-blue-700 mt-1">The AI agent analyzed the uploaded policy document to inform this decision.</p>
 										</div>
 									</div>
 								</div>

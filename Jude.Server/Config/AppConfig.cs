@@ -21,6 +21,12 @@ public static class AppConfig
             Environment.GetEnvironmentVariable("DATABASE_URL")
                 ?? throw new Exception("Database URL is not set")
         );
+ 
+    public static CloudDatabase CloudDatabase { get; } =
+        new CloudDatabase(
+            Environment.GetEnvironmentVariable("CLOUD_DATABASE_URL")
+                ?? throw new Exception("Cloud Database URL is not set")
+        );
 
     public static Client Client { get; } =
         new Client(
@@ -109,6 +115,8 @@ public static class AppConfig
 }
 
 public record Database(string ConnectionString);
+
+public record CloudDatabase(string ConnectionString);
 
 public record Client(string Url);
 
