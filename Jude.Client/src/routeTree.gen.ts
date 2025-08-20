@@ -8,89 +8,189 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as _appRouteImport } from './routes/__app'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthLoginRouteImport } from './routes/auth/login'
-import { Route as _appKnowledgeIndexRouteImport } from './routes/__app/knowledge/index'
-import { Route as _appDashboardIndexRouteImport } from './routes/__app/dashboard/index'
-import { Route as _appClaimsIndexRouteImport } from './routes/__app/claims/index'
-import { Route as _appAgentIndexRouteImport } from './routes/__app/agent/index'
-import { Route as _appClaimsIdIndexRouteImport } from './routes/__app/claims/$id/index'
+// Import Routes
 
-const _appRoute = _appRouteImport.update({
+import { Route as rootRoute } from './routes/__root'
+import { Route as appImport } from './routes/__app'
+import { Route as IndexImport } from './routes/index'
+import { Route as AuthLoginImport } from './routes/auth/login'
+import { Route as appKnowledgeIndexImport } from './routes/__app/knowledge/index'
+import { Route as appDashboardIndexImport } from './routes/__app/dashboard/index'
+import { Route as appClaimsIndexImport } from './routes/__app/claims/index'
+import { Route as appAgentIndexImport } from './routes/__app/agent/index'
+import { Route as appClaimsIdIndexImport } from './routes/__app/claims/$id/index'
+
+// Create/Update Routes
+
+const appRoute = appImport.update({
   id: '/__app',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRoute,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+
+const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRoute,
 } as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
+
+const AuthLoginRoute = AuthLoginImport.update({
   id: '/auth/login',
   path: '/auth/login',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRoute,
 } as any)
-const _appKnowledgeIndexRoute = _appKnowledgeIndexRouteImport.update({
+
+const appKnowledgeIndexRoute = appKnowledgeIndexImport.update({
   id: '/knowledge/',
   path: '/knowledge/',
-  getParentRoute: () => _appRoute,
+  getParentRoute: () => appRoute,
 } as any)
-const _appDashboardIndexRoute = _appDashboardIndexRouteImport.update({
+
+const appDashboardIndexRoute = appDashboardIndexImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
-  getParentRoute: () => _appRoute,
+  getParentRoute: () => appRoute,
 } as any)
-const _appClaimsIndexRoute = _appClaimsIndexRouteImport.update({
+
+const appClaimsIndexRoute = appClaimsIndexImport.update({
   id: '/claims/',
   path: '/claims/',
-  getParentRoute: () => _appRoute,
+  getParentRoute: () => appRoute,
 } as any)
-const _appAgentIndexRoute = _appAgentIndexRouteImport.update({
+
+const appAgentIndexRoute = appAgentIndexImport.update({
   id: '/agent/',
   path: '/agent/',
-  getParentRoute: () => _appRoute,
+  getParentRoute: () => appRoute,
 } as any)
-const _appClaimsIdIndexRoute = _appClaimsIdIndexRouteImport.update({
+
+const appClaimsIdIndexRoute = appClaimsIdIndexImport.update({
   id: '/claims/$id/',
   path: '/claims/$id/',
-  getParentRoute: () => _appRoute,
+  getParentRoute: () => appRoute,
 } as any)
+
+// Populate the FileRoutesByPath interface
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/__app': {
+      id: '/__app'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof appImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginImport
+      parentRoute: typeof rootRoute
+    }
+    '/__app/agent/': {
+      id: '/__app/agent/'
+      path: '/agent'
+      fullPath: '/agent'
+      preLoaderRoute: typeof appAgentIndexImport
+      parentRoute: typeof appImport
+    }
+    '/__app/claims/': {
+      id: '/__app/claims/'
+      path: '/claims'
+      fullPath: '/claims'
+      preLoaderRoute: typeof appClaimsIndexImport
+      parentRoute: typeof appImport
+    }
+    '/__app/dashboard/': {
+      id: '/__app/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof appDashboardIndexImport
+      parentRoute: typeof appImport
+    }
+    '/__app/knowledge/': {
+      id: '/__app/knowledge/'
+      path: '/knowledge'
+      fullPath: '/knowledge'
+      preLoaderRoute: typeof appKnowledgeIndexImport
+      parentRoute: typeof appImport
+    }
+    '/__app/claims/$id/': {
+      id: '/__app/claims/$id/'
+      path: '/claims/$id'
+      fullPath: '/claims/$id'
+      preLoaderRoute: typeof appClaimsIdIndexImport
+      parentRoute: typeof appImport
+    }
+  }
+}
+
+// Create and export the route tree
+
+interface appRouteChildren {
+  appAgentIndexRoute: typeof appAgentIndexRoute
+  appClaimsIndexRoute: typeof appClaimsIndexRoute
+  appDashboardIndexRoute: typeof appDashboardIndexRoute
+  appKnowledgeIndexRoute: typeof appKnowledgeIndexRoute
+  appClaimsIdIndexRoute: typeof appClaimsIdIndexRoute
+}
+
+const appRouteChildren: appRouteChildren = {
+  appAgentIndexRoute: appAgentIndexRoute,
+  appClaimsIndexRoute: appClaimsIndexRoute,
+  appDashboardIndexRoute: appDashboardIndexRoute,
+  appKnowledgeIndexRoute: appKnowledgeIndexRoute,
+  appClaimsIdIndexRoute: appClaimsIdIndexRoute,
+}
+
+const appRouteWithChildren = appRoute._addFileChildren(appRouteChildren)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '': typeof appRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
-  '/agent': typeof _appAgentIndexRoute
-  '/claims': typeof _appClaimsIndexRoute
-  '/dashboard': typeof _appDashboardIndexRoute
-  '/knowledge': typeof _appKnowledgeIndexRoute
-  '/claims/$id': typeof _appClaimsIdIndexRoute
+  '/agent': typeof appAgentIndexRoute
+  '/claims': typeof appClaimsIndexRoute
+  '/dashboard': typeof appDashboardIndexRoute
+  '/knowledge': typeof appKnowledgeIndexRoute
+  '/claims/$id': typeof appClaimsIdIndexRoute
 }
+
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '': typeof appRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
-  '/agent': typeof _appAgentIndexRoute
-  '/claims': typeof _appClaimsIndexRoute
-  '/dashboard': typeof _appDashboardIndexRoute
-  '/knowledge': typeof _appKnowledgeIndexRoute
-  '/claims/$id': typeof _appClaimsIdIndexRoute
+  '/agent': typeof appAgentIndexRoute
+  '/claims': typeof appClaimsIndexRoute
+  '/dashboard': typeof appDashboardIndexRoute
+  '/knowledge': typeof appKnowledgeIndexRoute
+  '/claims/$id': typeof appClaimsIdIndexRoute
 }
+
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
+  __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/__app': typeof _appRouteWithChildren
+  '/__app': typeof appRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
-  '/__app/agent/': typeof _appAgentIndexRoute
-  '/__app/claims/': typeof _appClaimsIndexRoute
-  '/__app/dashboard/': typeof _appDashboardIndexRoute
-  '/__app/knowledge/': typeof _appKnowledgeIndexRoute
-  '/__app/claims/$id/': typeof _appClaimsIdIndexRoute
+  '/__app/agent/': typeof appAgentIndexRoute
+  '/__app/claims/': typeof appClaimsIndexRoute
+  '/__app/dashboard/': typeof appDashboardIndexRoute
+  '/__app/knowledge/': typeof appKnowledgeIndexRoute
+  '/__app/claims/$id/': typeof appClaimsIdIndexRoute
 }
+
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | ''
     | '/auth/login'
     | '/agent'
     | '/claims'
@@ -100,6 +200,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | ''
     | '/auth/login'
     | '/agent'
     | '/claims'
@@ -118,96 +219,70 @@ export interface FileRouteTypes {
     | '/__app/claims/$id/'
   fileRoutesById: FileRoutesById
 }
+
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  _appRoute: typeof _appRouteWithChildren
+  appRoute: typeof appRouteWithChildren
   AuthLoginRoute: typeof AuthLoginRoute
 }
 
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/__app': {
-      id: '/__app'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof _appRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/login': {
-      id: '/auth/login'
-      path: '/auth/login'
-      fullPath: '/auth/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/__app/knowledge/': {
-      id: '/__app/knowledge/'
-      path: '/knowledge'
-      fullPath: '/knowledge'
-      preLoaderRoute: typeof _appKnowledgeIndexRouteImport
-      parentRoute: typeof _appRoute
-    }
-    '/__app/dashboard/': {
-      id: '/__app/dashboard/'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof _appDashboardIndexRouteImport
-      parentRoute: typeof _appRoute
-    }
-    '/__app/claims/': {
-      id: '/__app/claims/'
-      path: '/claims'
-      fullPath: '/claims'
-      preLoaderRoute: typeof _appClaimsIndexRouteImport
-      parentRoute: typeof _appRoute
-    }
-    '/__app/agent/': {
-      id: '/__app/agent/'
-      path: '/agent'
-      fullPath: '/agent'
-      preLoaderRoute: typeof _appAgentIndexRouteImport
-      parentRoute: typeof _appRoute
-    }
-    '/__app/claims/$id/': {
-      id: '/__app/claims/$id/'
-      path: '/claims/$id'
-      fullPath: '/claims/$id'
-      preLoaderRoute: typeof _appClaimsIdIndexRouteImport
-      parentRoute: typeof _appRoute
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  appRoute: appRouteWithChildren,
+  AuthLoginRoute: AuthLoginRoute,
+}
+
+export const routeTree = rootRoute
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
+
+/* ROUTE_MANIFEST_START
+{
+  "routes": {
+    "__root__": {
+      "filePath": "__root.tsx",
+      "children": [
+        "/",
+        "/__app",
+        "/auth/login"
+      ]
+    },
+    "/": {
+      "filePath": "index.tsx"
+    },
+    "/__app": {
+      "filePath": "__app.tsx",
+      "children": [
+        "/__app/agent/",
+        "/__app/claims/",
+        "/__app/dashboard/",
+        "/__app/knowledge/",
+        "/__app/claims/$id/"
+      ]
+    },
+    "/auth/login": {
+      "filePath": "auth/login.tsx"
+    },
+    "/__app/agent/": {
+      "filePath": "__app/agent/index.tsx",
+      "parent": "/__app"
+    },
+    "/__app/claims/": {
+      "filePath": "__app/claims/index.tsx",
+      "parent": "/__app"
+    },
+    "/__app/dashboard/": {
+      "filePath": "__app/dashboard/index.tsx",
+      "parent": "/__app"
+    },
+    "/__app/knowledge/": {
+      "filePath": "__app/knowledge/index.tsx",
+      "parent": "/__app"
+    },
+    "/__app/claims/$id/": {
+      "filePath": "__app/claims/$id/index.tsx",
+      "parent": "/__app"
     }
   }
 }
-
-interface _appRouteChildren {
-  _appAgentIndexRoute: typeof _appAgentIndexRoute
-  _appClaimsIndexRoute: typeof _appClaimsIndexRoute
-  _appDashboardIndexRoute: typeof _appDashboardIndexRoute
-  _appKnowledgeIndexRoute: typeof _appKnowledgeIndexRoute
-  _appClaimsIdIndexRoute: typeof _appClaimsIdIndexRoute
-}
-
-const _appRouteChildren: _appRouteChildren = {
-  _appAgentIndexRoute: _appAgentIndexRoute,
-  _appClaimsIndexRoute: _appClaimsIndexRoute,
-  _appDashboardIndexRoute: _appDashboardIndexRoute,
-  _appKnowledgeIndexRoute: _appKnowledgeIndexRoute,
-  _appClaimsIdIndexRoute: _appClaimsIdIndexRoute,
-}
-
-const _appRouteWithChildren = _appRoute._addFileChildren(_appRouteChildren)
-
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  _appRoute: _appRouteWithChildren,
-  AuthLoginRoute: AuthLoginRoute,
-}
-export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+ROUTE_MANIFEST_END */

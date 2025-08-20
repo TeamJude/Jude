@@ -19,9 +19,10 @@ public class AgentsController : ControllerBase
     }
 
     [HttpPost("extract")]
+    [Consumes("multipart/form-data")]
     [RequestFormLimits(MultipartBodyLengthLimit = 104857600)] // 100 MB
     [RequestSizeLimit(104857600)]
-    public async Task<IActionResult> Extract([FromForm] IFormFile file)
+    public async Task<IActionResult> Extract(IFormFile file)
     {
         if (file == null || file.Length == 0)
         {
