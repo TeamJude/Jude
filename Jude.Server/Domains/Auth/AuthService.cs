@@ -68,7 +68,8 @@ public class AuthService : IAuthService
             user.Username,
             user.AvatarUrl,
             user.CreatedAt,
-            role
+            role,
+            token
         );
 
         return Result.Ok(new AuthResponse(token, userData));
@@ -131,7 +132,8 @@ public class AuthService : IAuthService
             user.Username,
             user.AvatarUrl,
             user.CreatedAt,
-            new(user.Role.Name, user.Role.Permissions)
+            new(user.Role.Name, user.Role.Permissions),
+            token
         );
 
         return Result.Ok(new AuthResponse(token, userData));
@@ -154,7 +156,8 @@ public class AuthService : IAuthService
             user.Username,
             user.AvatarUrl,
             user.CreatedAt,
-            new(user.Role.Name, user.Role.Permissions)
+            new(user.Role.Name, user.Role.Permissions),
+            ""
         );
 
         return Result.Ok(userData);

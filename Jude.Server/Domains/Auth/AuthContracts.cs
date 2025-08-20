@@ -21,7 +21,8 @@ public record UserDataResponse(
     string? Username,
     string? AvatarUrl,
     DateTime CreatedAt,
-    UserRole Role
+    UserRole Role,
+    string token
 );
 
 public record UserRole(string Name, Dictionary<string, Permission> Permissions);
