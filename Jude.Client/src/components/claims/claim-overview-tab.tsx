@@ -1,4 +1,4 @@
-import type { GetClaimDetailResponse, ClaimTotalValues, ServiceResponse, ProductResponse } from "@/lib/types/claim";
+import type { GetClaimDetailResponse, ClaimTotalValues, ServiceResponse, ProductResponse, ClaimSource } from "@/lib/types/claim";
 import {
   Card,
   CardBody,
@@ -12,6 +12,7 @@ import {
   Chip,
 } from "@heroui/react";
 import React from "react";
+import { Markdown } from "@/components/ai/markdown";
 
 interface ClaimOverviewTabProps {
   claim: GetClaimDetailResponse;
@@ -35,13 +36,46 @@ const AmountList: React.FC<{ values?: ClaimTotalValues; currency?: string }> = (
 
 export const ClaimOverviewTab: React.FC<ClaimOverviewTabProps> = ({ claim }) => {
   const data = claim.data;
-  console.log(data);
   const currency = data?.Member?.Currency || "";
-console.log(data.TransactionResponse);
+  
+  // Check if this is an uploaded claim
+  const isUploadedClaim = claim.source === 1; // 1 = Upload enum value
+  
+
+
+  // If it's an uploaded claim, show the markdown content
+  if (isUploadedClaim && claim.claimMarkdown) {
+    return (
+      <Card shadow="none">
+        <CardBody className="space-y-6">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-lg font-medium">Uploaded Claim Data</h3>
+              <Chip color="primary" variant="flat" size="sm">
+                Uploaded PDF
+              </Chip>
+            </div>
+            <div className="bg-content2 p-4 rounded-md">
+              <Markdown>{claim.claimMarkdown}</Markdown>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+    );
+  }
 
   return (
     <Card shadow="none">
       <CardBody className="space-y-6">
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-semibold">CIMAS API Data</h2>
+            <Chip color="secondary" variant="flat" size="sm">
+              Structured Data
+            </Chip>
+          </div>
+        </div>
+        
         <div>
           <h3 className="text-lg font-medium mb-3">Transaction</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">

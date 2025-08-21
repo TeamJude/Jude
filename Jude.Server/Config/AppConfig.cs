@@ -112,6 +112,9 @@ public static class AppConfig
 
     public static string PolicyIndexName { get; } =
         Environment.GetEnvironmentVariable("POLICY_INDEX_NAME") ?? "policy_index";
+
+    public static bool DemoMode { get; } =
+        bool.TryParse(Environment.GetEnvironmentVariable("DEMO_MODE"), out var demoMode) && demoMode;
 }
 
 public record Database(string ConnectionString);

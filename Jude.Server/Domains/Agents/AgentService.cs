@@ -303,4 +303,170 @@ Key guidelines:
 
         return context;
     }
+
+    public async Task<ExtractedClaimData> ExtractClaimDataStructuredAsync(IFormFile file)
+    {
+        try
+        {
+            using var stream = new MemoryStream();
+            await file.CopyToAsync(stream);
+            var fileBytes = stream.ToArray();
+
+            var fileContent = new BinaryContent(fileBytes, "application/pdf");
+
+            var jsonSchema = """
+                {
+                    "type": "object",
+                    "properties": {
+                        "PatientFirstName": {
+                            "type": "string",
+                            "description": "Patient's first name"
+                        },
+                        "PatientSurname": {
+                            "type": "string", 
+                            "description": "Patient's surname/last name"
+                        },
+
+                        "TransactionNumber": {
+                            "type": "string",
+                            "description": "Transaction number if available, empty string if not found"
+                        },
+                        "MedicalSchemeName": {
+                            "type": "string",
+                            "description": "Medical scheme/insurance name, empty string if not found"
+                        },
+                        "TotalClaimAmount": {
+                            "type": "number",
+                            "description": "Total claim amount in decimal format, 0 if not found"
+                        },
+                        "ClaimMarkdown": {
+                            "type": "string",
+                            "description": "Full claim data extracted in markdown format with all available details"
+                        }
+                    },
+                    "required": ["PatientFirstName", "PatientSurname", "TransactionNumber", "MedicalSchemeName", "TotalClaimAmount", "ClaimMarkdown"],
+                    "additionalProperties": false
+                }
+                """;
+
+            var chatResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
+                jsonSchemaFormatName: "extracted_claim_data",
+                jsonSchema: BinaryData.FromString(jsonSchema),
+                jsonSchemaIsStrict: true
+            );
+
+            var history = new ChatHistory(@"Extract claim data from the uploaded medical claim form. 
+                Extract patient information and present ALL available claim details in structured markdown format.
+                
+                IMPORTANT: You must provide ALL required fields:
+                - PatientFirstName and PatientSurname: Extract from the form
+                - TransactionNumber: Look for transaction/reference numbers, use empty string if not found
+                - MedicalSchemeName: Look for medical scheme/insurance names, use empty string if not found  
+                - TotalClaimAmount: Extract total amount claimed, use 0 if not found
+                - ClaimMarkdown: Comprehensive, well-formatted representation of ALL visible claim data
+                
+                Extract what you can see clearly and use appropriate defaults for missing required fields.");
+            
+            history.AddUserMessage([fileContent]);
+
+            var executionSettings = new AzureOpenAIPromptExecutionSettings
+            {
+                MaxTokens = 16000,
+                ResponseFormat = chatResponseFormat,
+            };
+
+            var response = await _extractionChatService.GetChatMessageContentAsync(history, executionSettings);
+            var responseContent = response.Content;
+
+            if (!string.IsNullOrWhiteSpace(responseContent))
+            {
+                try
+                {
+                    var extractedData = JsonSerializer.Deserialize<ExtractedClaimData>(responseContent);
+                    return extractedData ?? new ExtractedClaimData();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not parse extraction response as ExtractedClaimData. Raw response: {Response}", responseContent);
+                }
+            }
+
+            return new ExtractedClaimData 
+            { 
+                ClaimMarkdown = "# Extraction Failed\n\nAn error occurred while extracting data from the uploaded PDF."
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting structured claim data from uploaded PDF");
+            return new ExtractedClaimData 
+            { 
+                ClaimMarkdown = "# Extraction Failed\n\nAn error occurred while extracting data from the uploaded PDF."
+            };
+        }
+    }
+
+    public async Task<ClaimModel> ProcessUploadedClaimAsync(IFormFile file)
+    {
+        try
+        {
+            _logger.LogInformation("Processing uploaded claim file: {FileName}", file.FileName);
+
+            // Extract basic claim data
+            var extractedData = await ExtractClaimDataStructuredAsync(file);
+
+            // Create claim model with extracted data
+            var claimModel = new ClaimModel
+            {
+                Id = Guid.NewGuid(),
+                Source = ClaimSource.Upload,
+                Status = ClaimStatus.UnderAgentReview,
+                IngestedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                
+                // Basic extracted fields
+                PatientFirstName = extractedData.PatientFirstName,
+                PatientSurname = extractedData.PatientSurname,
+                ClaimNumber = !string.IsNullOrEmpty(extractedData.ClaimNumber)
+                    ? extractedData.ClaimNumber
+                    : $"CLM-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpper()}",
+                TransactionNumber = !string.IsNullOrEmpty(extractedData.TransactionNumber) 
+                    ? extractedData.TransactionNumber 
+                    : $"UPL-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpper()}",
+                MedicalSchemeName = extractedData.MedicalSchemeName,
+                TotalClaimAmount = extractedData.TotalClaimAmount,
+                ClaimMarkdown = extractedData.ClaimMarkdown,
+
+                // Empty CIMAS data since this is an upload
+                Data = new()
+            };
+
+            // Get agent review
+            var agentReview = await TestAgentAsync(extractedData.ClaimMarkdown);
+            if (agentReview != null)
+            {
+                claimModel.AgentReview = agentReview;
+                claimModel.Status = ClaimStatus.UnderHumanReview;
+            }
+
+            _logger.LogInformation("Successfully processed uploaded claim {ClaimId}", claimModel.Id);
+            return claimModel;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing uploaded claim");
+            throw;
+        }
+    }
+}
+
+public class ExtractedClaimData
+{
+    public string PatientFirstName { get; set; } = string.Empty;
+    public string PatientSurname { get; set; } = string.Empty;
+    public string ClaimNumber { get; set; } = string.Empty;
+    public string TransactionNumber { get; set; } = string.Empty;
+    public string MedicalSchemeName { get; set; } = string.Empty;
+    public decimal TotalClaimAmount { get; set; } = 0;
+    public string ClaimMarkdown { get; set; } = string.Empty;
 }

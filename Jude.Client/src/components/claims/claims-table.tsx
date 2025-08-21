@@ -1,4 +1,5 @@
 import { getClaims } from "@/lib/services/claims.service";
+import { uploadClaim } from "@/lib/services/agent.service";
 import {
 	ClaimStatus,
 	type GetClaimResponse,
@@ -31,6 +32,7 @@ import {
 	Clock,
 	EllipsisVertical,
 	Search,
+	Upload,
 	XCircle,
 } from "lucide-react";
 import React from "react";
@@ -93,6 +95,7 @@ export function ClaimsTable() {
 	const [statusFilter, setStatusFilter] = React.useState<Selection>("all");
 	const [rowsPerPage, setRowsPerPage] = React.useState(10);
 	const [page, setPage] = React.useState(1);
+	const [isUploading, setIsUploading] = React.useState(false);
 	const navigate = useNavigate();
 
 	const {
@@ -138,6 +141,32 @@ export function ClaimsTable() {
 
 	const handleClaimClick = (claimId: string) => {
 		navigate({ to: `/claims/${claimId}` });
+	};
+
+	const handleFileUpload = async (file: File) => {
+		if (!file || file.type !== "application/pdf") {
+			alert("Please select a PDF file");
+			return;
+		}
+
+		setIsUploading(true);
+		
+		try {
+			const result = await uploadClaim(file);
+			
+			if (result.success) {
+				// Refresh claims list to include the new uploaded claim
+				await refetch();
+				alert(`Claim processed successfully!\nTransaction: ${result.data.transactionNumber}\nPatient: ${result.data.patientFirstName} ${result.data.patientSurname}`);
+			} else {
+				throw new Error(result.errors?.[0] || "Upload failed");
+			}
+		} catch (error) {
+			console.error("Upload error:", error);
+			alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+		} finally {
+			setIsUploading(false);
+		}
 	};
 
 	const renderCell = React.useCallback(
@@ -222,6 +251,27 @@ export function ClaimsTable() {
 						onValueChange={setSearch}
 					/>
 					<div className="flex gap-3">
+						<Button
+							color="primary"
+							startContent={<Upload className="w-4 h-4" />}
+							isLoading={isUploading}
+							isDisabled={isUploading}
+							onPress={() => {
+								if (isUploading) return;
+								const input = document.createElement("input");
+								input.type = "file";
+								input.accept = "application/pdf";
+								input.onchange = (e) => {
+									const file = (e.target as HTMLInputElement).files?.[0];
+									if (file) {
+										handleFileUpload(file);
+									}
+								};
+								input.click();
+							}}
+						>
+							{isUploading ? "Processing..." : "Upload Claim"}
+						</Button>
 						<Dropdown>
 							<DropdownTrigger className="hidden sm:flex">
 								<Button

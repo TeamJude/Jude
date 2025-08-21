@@ -23,6 +23,9 @@ public class ClaimModel
     [ForeignKey(nameof(UserModel))]
     public Guid? ReviewedById { get; set; }
     public UserModel? ReviewedBy { get; set; }
+
+    public ClaimSource Source { get; set; } = ClaimSource.CIMAS;
+    public string? ClaimMarkdown { get; set; }
 }
 
 public enum ClaimStatus
@@ -34,4 +37,10 @@ public enum ClaimStatus
     Rejected,
     Completed,
     Failed,
+}
+
+public enum ClaimSource
+{
+    CIMAS,
+    Upload
 }

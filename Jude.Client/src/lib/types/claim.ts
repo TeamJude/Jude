@@ -10,6 +10,7 @@ export enum ClaimStatus {
 
 export enum ClaimSource {
 	CIMAS,
+	Upload,
 }
 
 export enum ClaimDecision {
@@ -172,6 +173,8 @@ export interface GetClaimDetailResponse {
 	agentReview?: AgentReviewResponse;
 	humanReview?: HumanReviewResponse;
 	reviewedBy?: ReviewerInfo;
+	source: ClaimSource;
+	claimMarkdown?: string;
 }
 
 export interface Citation {

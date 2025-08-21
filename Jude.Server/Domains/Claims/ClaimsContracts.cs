@@ -34,7 +34,9 @@ public record GetClaimDetailResponse(
     decimal TotalClaimAmount,
     AgentReviewResponse? AgentReview,
     HumanReviewResponse? HumanReview,
-    ReviewerInfo? ReviewedBy
+    ReviewerInfo? ReviewedBy,
+    ClaimSource Source,
+    string? ClaimMarkdown
 );
 
 public record AgentReviewResponse(

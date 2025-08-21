@@ -28,6 +28,21 @@ public class ClaimsIngestProcessor : BackgroundService
     {
         _logger.LogInformation("ClaimIngestProcessor starting up");
 
+        // Check if demo mode is enabled - if so, skip CIMAS polling
+        if (AppConfig.DemoMode)
+        {
+            _logger.LogInformation("Demo mode enabled - CIMAS polling disabled. Only processing queue events.");
+            
+            // Wait for initial delay to ensure application is fully started
+            await Task.Delay(_initialDelay, stoppingToken);
+
+            // Only start queue processing task in demo mode
+            await StartQueueProcessingTask(stoppingToken);
+            
+            _logger.LogInformation("ClaimIngestProcessor shutting down");
+            return;
+        }
+
         // Wait for initial delay to ensure application is fully started
         await Task.Delay(_initialDelay, stoppingToken);
 

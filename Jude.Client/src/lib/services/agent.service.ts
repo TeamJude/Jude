@@ -31,4 +31,27 @@ const extractClaim = async (file: File): Promise<ApiResponse<ExtractResponse>> =
     });
 };
 
-export { testAgent, extractClaim };
+export interface UploadClaimResponse {
+    id: string;
+    transactionNumber: string;
+    patientFirstName: string;
+    patientSurname: string;
+    medicalSchemeName: string;
+    totalClaimAmount: number;
+    status: number;
+    source: number;
+    ingestedAt: string;
+}
+
+const uploadClaim = async (file: File): Promise<ApiResponse<UploadClaimResponse>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiRequest<UploadClaimResponse>("/api/agents/upload", {
+        method: "POST",
+        // Important: do not set Content-Type so browser can set multipart boundary
+        headers: {},
+        body: formData as unknown as BodyInit,
+    });
+};
+
+export { testAgent, extractClaim, uploadClaim };

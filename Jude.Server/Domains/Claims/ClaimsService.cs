@@ -242,7 +242,9 @@ public class ClaimsService : IClaimsService
                             c.ReviewedBy.Username,
                             c.ReviewedBy.Email
                         )
-                        : null
+                        : null,
+                    c.Source,
+                    c.ClaimMarkdown
                 ))
                 .FirstOrDefaultAsync();
 
