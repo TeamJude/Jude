@@ -23,12 +23,12 @@ export const sidebarItems: SidebarItem[] = [
 		iconName: "file-text",
 		title: "Claims",
 	},
-	{
-		key: "agent",
-		href: "/agent",
-		iconName: "bot",
-		title: "Agent",
-	},
+	// {
+	// 	key: "agent",
+	// 	href: "/agent",
+	// 	iconName: "bot",
+	// 	title: "Agent",
+	// },
 	{
 		key: "knowledge",
 		href: "/knowledge",
