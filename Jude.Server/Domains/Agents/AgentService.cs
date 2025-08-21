@@ -26,6 +26,12 @@ public class AgentService
     private readonly IChatCompletionService _extractionChatService;
     private readonly IChatCompletionService _reviewChatService;
 
+    // Use a shared HttpClient with extended timeout to prevent request timeouts on long-running operations
+    private static readonly HttpClient s_longTimeoutHttpClient = new HttpClient
+    {
+        Timeout = TimeSpan.FromSeconds(500)
+    };
+
     public AgentService(
         IPolicyContext policyContext,
         IRulesService rulesService,
@@ -45,7 +51,8 @@ public class AgentService
             .CreateBuilder()
             .AddOpenAIChatCompletion(
                 modelId: "gpt-4.1",
-                apiKey: AppConfig.OpenAI.ApiKey
+                apiKey: AppConfig.OpenAI.ApiKey,
+                httpClient: s_longTimeoutHttpClient
             )
             .Build();
 
@@ -54,7 +61,8 @@ public class AgentService
             .AddAzureOpenAIChatCompletion(
                 AppConfig.Azure.AI.ModelId,
                 AppConfig.Azure.AI.Endpoint,
-                AppConfig.Azure.AI.ApiKey
+                AppConfig.Azure.AI.ApiKey,
+                httpClient: s_longTimeoutHttpClient
             )
             .Build();
 
@@ -366,7 +374,7 @@ Key guidelines:
                 - ClaimMarkdown: Comprehensive, well-formatted representation of ALL visible claim data
                 
                 Extract what you can see clearly and use appropriate defaults for missing required fields.");
-            
+
             history.AddUserMessage([fileContent]);
 
             var executionSettings = new AzureOpenAIPromptExecutionSettings
@@ -391,16 +399,16 @@ Key guidelines:
                 }
             }
 
-            return new ExtractedClaimData 
-            { 
+            return new ExtractedClaimData
+            {
                 ClaimMarkdown = "# Extraction Failed\n\nAn error occurred while extracting data from the uploaded PDF."
             };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error extracting structured claim data from uploaded PDF");
-            return new ExtractedClaimData 
-            { 
+            return new ExtractedClaimData
+            {
                 ClaimMarkdown = "# Extraction Failed\n\nAn error occurred while extracting data from the uploaded PDF."
             };
         }
@@ -423,15 +431,15 @@ Key guidelines:
                 Status = ClaimStatus.UnderAgentReview,
                 IngestedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                
+
                 // Basic extracted fields
                 PatientFirstName = extractedData.PatientFirstName,
                 PatientSurname = extractedData.PatientSurname,
                 ClaimNumber = !string.IsNullOrEmpty(extractedData.ClaimNumber)
                     ? extractedData.ClaimNumber
                     : $"CLM-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpper()}",
-                TransactionNumber = !string.IsNullOrEmpty(extractedData.TransactionNumber) 
-                    ? extractedData.TransactionNumber 
+                TransactionNumber = !string.IsNullOrEmpty(extractedData.TransactionNumber)
+                    ? extractedData.TransactionNumber
                     : $"UPL-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpper()}",
                 MedicalSchemeName = extractedData.MedicalSchemeName,
                 TotalClaimAmount = extractedData.TotalClaimAmount,

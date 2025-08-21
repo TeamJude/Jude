@@ -21,7 +21,7 @@ public static class AppConfig
             Environment.GetEnvironmentVariable("DATABASE_URL")
                 ?? throw new Exception("Database URL is not set")
         );
- 
+
     public static CloudDatabase CloudDatabase { get; } =
         new CloudDatabase(
             Environment.GetEnvironmentVariable("CLOUD_DATABASE_URL")
@@ -113,8 +113,7 @@ public static class AppConfig
     public static string PolicyIndexName { get; } =
         Environment.GetEnvironmentVariable("POLICY_INDEX_NAME") ?? "policy_index";
 
-    public static bool DemoMode { get; } =
-        bool.TryParse(Environment.GetEnvironmentVariable("DEMO_MODE"), out var demoMode) && demoMode;
+    public static bool DemoMode { get; } = true;
 }
 
 public record Database(string ConnectionString);

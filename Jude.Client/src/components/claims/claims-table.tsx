@@ -1,5 +1,5 @@
-import { getClaims } from "@/lib/services/claims.service";
 import { uploadClaim } from "@/lib/services/agent.service";
+import { getClaims } from "@/lib/services/claims.service";
 import {
 	ClaimStatus,
 	type GetClaimResponse,
@@ -22,6 +22,7 @@ import {
 	TableColumn,
 	TableHeader,
 	TableRow,
+	addToast,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -145,7 +146,11 @@ export function ClaimsTable() {
 
 	const handleFileUpload = async (file: File) => {
 		if (!file || file.type !== "application/pdf") {
-			alert("Please select a PDF file");
+			addToast({
+				title: "Invalid file type",
+				description: "Please select a PDF file.",
+				color: "warning",
+			});
 			return;
 		}
 
@@ -157,13 +162,21 @@ export function ClaimsTable() {
 			if (result.success) {
 				// Refresh claims list to include the new uploaded claim
 				await refetch();
-				alert(`Claim processed successfully!\nTransaction: ${result.data.transactionNumber}\nPatient: ${result.data.patientFirstName} ${result.data.patientSurname}`);
+				addToast({
+					title: "Claim processed successfully!",
+					description: `Transaction: ${result.data.transactionNumber} — ${result.data.patientFirstName} ${result.data.patientSurname}`,
+					color: "success",
+				});
 			} else {
 				throw new Error(result.errors?.[0] || "Upload failed");
 			}
 		} catch (error) {
 			console.error("Upload error:", error);
-			alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+			addToast({
+				title: "Upload failed",
+				description: error instanceof Error ? error.message : "Unknown error",
+				color: "danger",
+			});
 		} finally {
 			setIsUploading(false);
 		}
@@ -340,7 +353,7 @@ export function ClaimsTable() {
 				</div>
 			</div>
 		);
-	}, [search, statusFilter, visibleColumns, totalCount, onRowsPerPageChange]);
+	}, [search, statusFilter, visibleColumns, totalCount, onRowsPerPageChange, isUploading]);
 
 	const bottomContent = React.useMemo(() => {
 		return (
