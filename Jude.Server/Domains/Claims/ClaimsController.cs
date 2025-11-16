@@ -81,4 +81,28 @@ public class ClaimsController : ControllerBase
         return Ok(result.Data);
     }
 
+    [HttpPost("{claimId:guid}/human-review")]
+    [Authorize]
+    public async Task<IActionResult> SubmitHumanReview(
+        Guid claimId,
+        [FromBody] SubmitHumanReviewRequest request
+    )
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+        {
+            return Unauthorized(new { message = "User not authenticated" });
+        }
+
+        var result = await _claimsService.SubmitHumanReviewAsync(claimId, userGuid, request);
+
+        if (!result.Success)
+        {
+            return BadRequest(new { message = result.Errors.FirstOrDefault() });
+        }
+
+        return Ok(result.Data);
+    }
+
 }

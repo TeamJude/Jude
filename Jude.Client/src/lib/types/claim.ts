@@ -235,6 +235,18 @@ export interface UploadExcelResponse {
 	errors: string[];
 }
 
+export interface SubmitHumanReviewRequest {
+	decision: ClaimDecision;
+	comments: string;
+}
+
+export interface SubmitHumanReviewResponse {
+	id: string;
+	reviewedAt: string;
+	decision: ClaimDecision;
+	comments: string;
+}
+
 // Review-related request/response types
 export interface CreateClaimReviewRequest {
 	claimId: string;

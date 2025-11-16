@@ -355,16 +355,26 @@ export function ClaimsTable() {
 						<select
 							className="bg-transparent outline-none text-default-400 text-small"
 							onChange={onRowsPerPageChange}
+							value={rowsPerPage}
 						>
 							<option value="5">5</option>
 							<option value="10">10</option>
 							<option value="15">15</option>
+							<option value="20">20</option>
+							<option value="25">25</option>
 						</select>
 					</label>
 				</div>
 			</div>
 		);
-	}, [search, statusFilter, visibleColumns, totalCount, onRowsPerPageChange]);
+	}, [
+		search,
+		statusFilter,
+		visibleColumns,
+		totalCount,
+		rowsPerPage,
+		onRowsPerPageChange,
+	]);
 
 	const bottomContent = React.useMemo(() => {
 		return (
@@ -432,7 +442,7 @@ export function ClaimsTable() {
 			bottomContent={bottomContent}
 			bottomContentPlacement="outside"
 			classNames={{
-				wrapper: "max-h-[382px]",
+				wrapper: "min-h-[520px] max-h-[calc(100vh-500px)]",
 			}}
 			selectedKeys={selectedKeys}
 			selectionMode="multiple"

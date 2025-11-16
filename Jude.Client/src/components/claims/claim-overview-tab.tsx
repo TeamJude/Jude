@@ -239,7 +239,7 @@ export const ClaimOverviewTab: React.FC<ClaimOverviewTabProps> = ({
 								<div className="text-xs text-foreground-500 uppercase">
 									Total Paid
 								</div>
-								<div className="text-2xl font-semibold text-success">
+								<div className="text-2xl font-semibold text-primary">
 									${claim.totalAmountPaid?.toFixed(2) || "0.00"}
 								</div>
 							</div>

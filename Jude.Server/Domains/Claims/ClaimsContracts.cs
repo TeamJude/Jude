@@ -130,3 +130,7 @@ public record UploadExcelResponse(
 );
 
 public record ClaimUploadError(int RowNumber, string Error);
+
+public record SubmitHumanReviewRequest(ClaimDecision Decision, string Comments);
+
+public record SubmitHumanReviewResponse(Guid Id, DateTime ReviewedAt, ClaimDecision Decision, string Comments);

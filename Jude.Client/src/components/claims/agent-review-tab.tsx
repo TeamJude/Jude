@@ -1,19 +1,21 @@
 import type { GetClaimDetailResponse } from "@/lib/types/claim";
 import { Badge, Card, CardBody, Divider, Progress } from "@heroui/react";
 import { Markdown } from "@/components/ai/markdown";
+import { CheckCircle, XCircle } from "lucide-react";
 
 interface AgentReviewTabProps {
-  claim: GetClaimDetailResponse;
+	claim: GetClaimDetailResponse;
 }
 
 export const AgentReviewTab: React.FC<AgentReviewTabProps> = ({ claim }) => {
-  // Use placeholder data when no agent review exists
-  const placeholderReview = {
-    id: "demo-review-id",
-    reviewedAt: new Date().toISOString(),
-    decisionStatus: 2, // REJECT
-    recommendation: "Immediate rejection with optional manual review for fraud investigation",
-    reasoning: `### **Claim Adjudication Breakdown**
+	// Use placeholder data when no agent review exists
+	const placeholderReview = {
+		id: "demo-review-id",
+		reviewedAt: new Date().toISOString(),
+		decisionStatus: 2, // REJECT
+		recommendation:
+			"Immediate rejection with optional manual review for fraud investigation",
+		reasoning: `### **Claim Adjudication Breakdown**
 
 #### **1. Invalid Patient Information**  
 - **Rule Violated**:  
@@ -50,92 +52,121 @@ export const AgentReviewTab: React.FC<AgentReviewTabProps> = ({ claim }) => {
 
 ### **Conclusion**  
 This claim exhibits **multiple critical violations** of CIMAS adjudication rules, including fraudulent patient data, incomplete dental documentation, and non-compliant currency. **Immediate rejection** is recommended, with an optional fraud investigation flag.`,
-    confidenceScore: 0.99
-  };
+		confidenceScore: 0.99,
+	};
 
-  const review = claim.agentReview || placeholderReview;
+	const review = claim.agentReview || placeholderReview;
 
-  const getDecisionText = (decision: number | undefined) => {
-    if (decision === 1) return "Approve";
-    if (decision === 2) return "Reject";
-    return "Pending";
-  };
+	const getDecisionText = (decision: number | undefined) => {
+		if (decision === 1) return "Approve";
+		if (decision === 2) return "Reject";
+		return "Pending";
+	};
 
-  const getDecisionColor = (decision: number | undefined) => {
-    if (decision === 1) return "success" as const;
-    if (decision === 2) return "danger" as const;
-    return "default" as const;
-  };
+	const getDecisionColor = (decision: number | undefined) => {
+		if (decision === 1) return "success" as const;
+		if (decision === 2) return "danger" as const;
+		return "default" as const;
+	};
 
-  const confidence = review?.confidenceScore ?? 0;
+	const getDecisionIcon = (decision: number | undefined) => {
+		if (decision === 1) return <CheckCircle className="w-6 h-6 text-success" />;
+		if (decision === 2) return <XCircle className="w-6 h-6 text-danger" />;
+		return null;
+	};
 
-  return (
-    <Card shadow="none">
-      <CardBody className="space-y-6">
-        {/* Decision Summary */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-gray-700">Decision</h4>
-            <Badge color={getDecisionColor(review?.decisionStatus as unknown as number)} variant="flat" size="sm">
-              {getDecisionText(review?.decisionStatus as unknown as number)}
-            </Badge>
-          </div>
+	const confidence = review?.confidenceScore ?? 0;
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Confidence Score</span>
-              <span className="text-sm font-medium">{Math.round(confidence * 100)}%</span>
-            </div>
-            <Progress value={confidence * 100} color="primary" className="w-full" />
-          </div>
-        </div>
+	return (
+		<Card shadow="none">
+			<CardBody className="space-y-6">
+				{/* Decision Summary */}
+				<div className="space-y-3">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2">
+							{getDecisionIcon(review?.decisionStatus as unknown as number)}
+							<h4 className="text-sm font-medium text-gray-700">Decision</h4>
+						</div>
+						<Badge
+							color={getDecisionColor(
+								review?.decisionStatus as unknown as number,
+							)}
+							variant="flat"
+							size="sm"
+						>
+							{getDecisionText(review?.decisionStatus as unknown as number)}
+						</Badge>
+					</div>
 
-        <Divider />
+					<div className="space-y-2">
+						<div className="flex items-center justify-between">
+							<span className="text-sm text-gray-600">Confidence Score</span>
+							<span className="text-sm font-medium">
+								{Math.round(confidence * 100)}%
+							</span>
+						</div>
+						<Progress
+							value={confidence * 100}
+							color="primary"
+							className="w-full"
+						/>
+					</div>
+				</div>
 
-        {/* Recommendation */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Recommendation</h4>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-sm text-gray-700">
-              <Markdown>{review?.recommendation || "Pending Agent Processing"}</Markdown>
-            </div>
-          </div>
-        </div>
+				<Divider />
 
-        <Divider />
+				{/* Recommendation */}
+				<div className="space-y-2">
+					<h4 className="text-sm font-medium text-gray-700">Recommendation</h4>
+					<div className="bg-gray-50 rounded-lg p-3">
+						<div className="text-sm text-gray-700">
+							<Markdown>
+								{review?.recommendation || "Pending Agent Processing"}
+							</Markdown>
+						</div>
+					</div>
+				</div>
 
-        {/* Reasoning */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Detailed Reasoning</h4>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-sm text-gray-700">
-              <Markdown>
-                {review?.reasoning ||
-                  "The AI agent is analyzing policy compliance, coverage rules, and fraud indicators to generate a decision."}
-              </Markdown>
-            </div>
-          </div>
-        </div>
+				<Divider />
 
-        <Divider />
+				{/* Reasoning */}
+				<div className="space-y-2">
+					<h4 className="text-sm font-medium text-gray-700">
+						Detailed Reasoning
+					</h4>
+					<div className="bg-gray-50 rounded-lg p-3">
+						<div className="text-sm text-gray-700">
+							<Markdown>
+								{review?.reasoning ||
+									"The AI agent is analyzing policy compliance, coverage rules, and fraud indicators to generate a decision."}
+							</Markdown>
+						</div>
+					</div>
+				</div>
 
-        {/* Metadata */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Processing Details</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">Review ID:</span>
-              <p className="font-mono text-xs">{review?.id || "—"}</p>
-            </div>
-            <div>
-              <span className="text-gray-500">Reviewed At:</span>
-              <p className="text-xs">{review?.reviewedAt ? new Date(review.reviewedAt).toLocaleString() : "—"}</p>
-            </div>
-          </div>
-        </div>
-      </CardBody>
-    </Card>
-  );
+				<Divider />
+
+				{/* Metadata */}
+				<div className="space-y-2">
+					<h4 className="text-sm font-medium text-gray-700">
+						Processing Details
+					</h4>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+						<div>
+							<span className="text-gray-500">Review ID:</span>
+							<p className="font-mono text-xs">{review?.id || "—"}</p>
+						</div>
+						<div>
+							<span className="text-gray-500">Reviewed At:</span>
+							<p className="text-xs">
+								{review?.reviewedAt
+									? new Date(review.reviewedAt).toLocaleString()
+									: "—"}
+							</p>
+						</div>
+					</div>
+				</div>
+			</CardBody>
+		</Card>
+	);
 };
-
-

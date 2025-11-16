@@ -16,6 +16,7 @@ public interface IClaimsService
     Task<Result<ClaimsDashboardResponse>> GetDashboardStatsAsync(ClaimsDashboardRequest request);
     Task<Result<bool>> UpdateClaimStatus(Guid ClaimId, ClaimStatus status);
     Task<Result<UploadExcelResponse>> ProcessExcelUploadAsync(Stream excelStream, string fileName);
+    Task<Result<SubmitHumanReviewResponse>> SubmitHumanReviewAsync(Guid claimId, Guid userId, SubmitHumanReviewRequest request);
 }
 
 public class ClaimsService : IClaimsService
@@ -624,6 +625,67 @@ public class ClaimsService : IClaimsService
             Duplicates: 0,
             Failed: 0,
             Errors: new List<string>()
+        );
+
+        return Result.Ok(response);
+    }
+
+    public async Task<Result<SubmitHumanReviewResponse>> SubmitHumanReviewAsync(
+        Guid claimId,
+        Guid userId,
+        SubmitHumanReviewRequest request
+    )
+    {
+        var claim = await _repository.Claims.Include(c => c.HumanReview).FirstOrDefaultAsync(c =>
+            c.Id == claimId
+        );
+
+        if (claim == null)
+            return Result.Fail($"Claim with id {claimId} not found");
+
+        if (string.IsNullOrWhiteSpace(request.Comments))
+            return Result.Fail("Comments are required for human review");
+
+        if (request.Decision == ClaimDecision.None)
+            return Result.Fail("A decision (Approve or Reject) must be made");
+
+        var humanReview = new HumanReviewModel
+        {
+            Id = Guid.NewGuid(),
+            ClaimId = claimId,
+            ReviewedAt = DateTime.UtcNow,
+            Decision = request.Decision,
+            Comments = request.Comments,
+        };
+
+        if (claim.HumanReview != null)
+        {
+            _repository.HumanReviews.Remove(claim.HumanReview);
+        }
+
+        await _repository.HumanReviews.AddAsync(humanReview);
+
+        claim.ReviewedById = userId;
+        claim.Status =
+            request.Decision == ClaimDecision.Approve
+                ? ClaimStatus.Approved
+                : ClaimStatus.Rejected;
+        claim.UpdatedAt = DateTime.UtcNow;
+
+        await _repository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Human review submitted for claim {ClaimId} by user {UserId} with decision {Decision}",
+            claimId,
+            userId,
+            request.Decision
+        );
+
+        var response = new SubmitHumanReviewResponse(
+            humanReview.Id,
+            humanReview.ReviewedAt,
+            humanReview.Decision,
+            humanReview.Comments
         );
 
         return Result.Ok(response);

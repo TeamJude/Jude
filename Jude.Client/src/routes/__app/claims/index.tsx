@@ -8,7 +8,7 @@ export const Route = createFileRoute("/__app/claims/")({
 function RouteComponent() {
 	return (
 		<main className="h-full py-6 px-4">
-			<div className="max-w-7xl mx-auto px-4 space-y-6 h-full min-h-0 flex flex-col">
+			<div className="w-full mx-auto px-4 space-y-6 h-full min-h-0 flex flex-col">
 				<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 					<div>
 						<h1 className="text-2xl font-semibold text-gray-900">Claims</h1>
@@ -17,7 +17,9 @@ function RouteComponent() {
 						</p>
 					</div>
 				</div>
-				<ClaimsTable />
+				<div className="flex-1 min-h-0">
+					<ClaimsTable />
+				</div>
 			</div>
 		</main>
 	);
