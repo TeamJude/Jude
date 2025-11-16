@@ -1,157 +1,146 @@
-import type { GetClaimDetailResponse } from "@/lib/types/claim";
-import {
-	Card,
-	CardBody,
-	Chip,
-} from "@heroui/react";
-import {
-	Cpu,
-	Inbox,
-	User,
-	UserCheck,
-} from "lucide-react";
+import { getClaimAuditLogs } from "@/lib/services/claims.service";
+import { AuditActorType, type GetClaimDetailResponse } from "@/lib/types/claim";
+import { Card, CardBody, Chip, type ChipProps, Spinner } from "@heroui/react";
+import { useQuery } from "@tanstack/react-query";
+import { Cpu, Inbox, User } from "lucide-react";
 import React from "react";
 
 interface ClaimAuditTabProps {
 	claim: GetClaimDetailResponse;
 }
 
+const getActorIcon = (actorType: AuditActorType) => {
+	switch (actorType) {
+		case AuditActorType.User:
+			return <User className="w-4 h-4" />;
+		case AuditActorType.AiAgent:
+			return <Cpu className="w-4 h-4" />;
+		case AuditActorType.System:
+			return <Inbox className="w-4 h-4" />;
+		default:
+			return <Inbox className="w-4 h-4" />;
+	}
+};
+
+const getActorColor = (actorType: AuditActorType): ChipProps["color"] => {
+	switch (actorType) {
+		case AuditActorType.User:
+			return "default";
+		case AuditActorType.AiAgent:
+			return "secondary";
+		case AuditActorType.System:
+			return "primary";
+		default:
+			return "default";
+	}
+};
+
+const getActorLabel = (actorType: AuditActorType): string => {
+	switch (actorType) {
+		case AuditActorType.User:
+			return "User";
+		case AuditActorType.AiAgent:
+			return "AI Agent";
+		case AuditActorType.System:
+			return "System";
+		default:
+			return "Unknown";
+	}
+};
+
 export const ClaimAuditTab: React.FC<ClaimAuditTabProps> = ({ claim }) => {
+	const {
+		data: auditLogsResponse,
+		isLoading,
+		error,
+	} = useQuery({
+		queryKey: ["claimAuditLogs", claim.id],
+		queryFn: () => getClaimAuditLogs(claim.id),
+	});
+
+	if (isLoading) {
+		return (
+			<Card shadow="none">
+				<CardBody>
+					<div className="flex items-center justify-center p-8">
+						<Spinner label="Loading audit logs..." />
+					</div>
+				</CardBody>
+			</Card>
+		);
+	}
+
+	if (error || !auditLogsResponse?.success) {
+		return (
+			<Card shadow="none">
+				<CardBody>
+					<div className="flex flex-col items-center justify-center p-8">
+						<p className="text-danger">Failed to load audit logs</p>
+					</div>
+				</CardBody>
+			</Card>
+		);
+	}
+
+	const auditLogs = auditLogsResponse.data.auditLogs;
+
+	if (auditLogs.length === 0) {
+		return (
+			<Card shadow="none">
+				<CardBody>
+					<h3 className="text-lg font-medium mb-4">Claim Activity Log</h3>
+					<div className="text-center py-8 text-foreground-500">
+						<p>No audit logs available for this claim.</p>
+					</div>
+				</CardBody>
+			</Card>
+		);
+	}
+
 	return (
 		<Card shadow="none">
 			<CardBody>
 				<h3 className="text-lg font-medium mb-4">Claim Activity Log</h3>
 
 				<div className="space-y-6">
-					<div className="flex gap-4">
-						<div className="flex flex-col items-center">
-							<div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
-								<Inbox width={16} />
-							</div>
-							<div className="flex-grow w-0.5 bg-divider my-2"></div>
-						</div>
-						<div>
-							<div className="flex items-center gap-2">
-								<h4 className="font-medium">Claim Ingested</h4>
-								<Chip size="sm" variant="flat" color="primary">
-									System
-								</Chip>
-							</div>
-							<p className="text-sm text-foreground-500 mt-1">
-								{new Date(claim.ingestedAt).toLocaleString()}
-							</p>
-							<p className="text-sm mt-2">
-								Claim #{claim.transactionNumber} was received via Portal
-								and entered into the system.
-							</p>
-						</div>
-					</div>
-
-					<div className="flex gap-4">
-						<div className="flex flex-col items-center">
-							<div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white">
-								<Cpu width={16} />
-							</div>
-							<div className="flex-grow w-0.5 bg-divider my-2"></div>
-						</div>
-						<div>
-							<div className="flex items-center gap-2">
-								<h4 className="font-medium">Agent Processing Started</h4>
-								<Chip size="sm" variant="flat" color="secondary">
-									AI Agent
-								</Chip>
-							</div>
-							<p className="text-sm text-foreground-500 mt-1">
-								May 15, 2023 - 09:35 AM
-							</p>
-							<p className="text-sm mt-2">
-								AI Agent began processing the claim.
-							</p>
-						</div>
-					</div>
-
-					<div className="flex gap-4">
-						<div className="flex flex-col items-center">
-							<div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white">
-								<Cpu width={16} />
-							</div>
-							<div className="flex-grow w-0.5 bg-divider my-2"></div>
-						</div>
-						<div>
-							<div className="flex items-center gap-2">
-								<h4 className="font-medium">
-									Agent Processing Completed
-								</h4>
-								<Chip size="sm" variant="flat" color="secondary">
-									AI Agent
-								</Chip>
-							</div>
-							<p className="text-sm text-foreground-500 mt-1">
-								{claim.agentReview?.reviewedAt
-									? new Date(claim.agentReview.reviewedAt).toLocaleString()
-									: "Pending"}
-							</p>
-							<p className="text-sm mt-2">
-								{claim.agentReview?.reviewedAt
-									? `AI Agent completed processing with recommendation: ${claim.agentReview.recommendation || "Review"}`
-									: "AI Agent is queued for processing this claim"}
-								.
-							</p>
-							{!claim.agentReview?.reviewedAt && (
-								<div className="mt-2 p-2 bg-secondary-100 rounded text-xs">
-									<strong>Processing Queue:</strong> Claim is in the AI processing queue
+					{auditLogs.map((log, index) => (
+						<div key={log.id} className="flex gap-4">
+							<div className="flex flex-col items-center">
+								<div
+									className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${
+										log.actorType === AuditActorType.User
+											? "bg-default"
+											: log.actorType === AuditActorType.AiAgent
+												? "bg-secondary"
+												: "bg-primary"
+									}`}
+								>
+									{getActorIcon(log.actorType)}
 								</div>
-							)}
-						</div>
-					</div>
-
-					<div className="flex gap-4">
-						<div className="flex flex-col items-center">
-							<div className="w-8 h-8 rounded-full bg-warning flex items-center justify-center text-white">
-								<UserCheck width={16} />
+								{index < auditLogs.length - 1 && (
+									<div className="flex-grow w-0.5 bg-divider my-2"></div>
+								)}
 							</div>
-							<div className="flex-grow w-0.5 bg-divider my-2"></div>
-						</div>
-						<div>
-							<div className="flex items-center gap-2">
-								<h4 className="font-medium">
-									Status Changed to Pending Human Review
-								</h4>
-								<Chip size="sm" variant="flat" color="warning">
-									System
-								</Chip>
-							</div>
-							<p className="text-sm text-foreground-500 mt-1">
-								May 15, 2023 - 09:36 AM
-							</p>
-							<p className="text-sm mt-2">
-								Claim status was updated to "Pending Human Review".
-							</p>
-						</div>
-					</div>
-
-					<div className="flex gap-4">
-						<div className="flex flex-col items-center">
-							<div className="w-8 h-8 rounded-full bg-default flex items-center justify-center text-white">
-								<User width={16} />
+							<div className="flex-1">
+								<div className="flex items-center gap-2 mb-1">
+									<h4 className="font-medium">{log.action}</h4>
+									<Chip
+										size="sm"
+										variant="flat"
+										color={getActorColor(log.actorType)}
+									>
+										{log.actorName
+											? `${getActorLabel(log.actorType)}: ${log.actorName}`
+											: getActorLabel(log.actorType)}
+									</Chip>
+								</div>
+								<p className="text-sm text-foreground-500 mb-2">
+									{new Date(log.timestamp).toLocaleString()}
+								</p>
+								<p className="text-sm">{log.description}</p>
 							</div>
 						</div>
-						<div>
-							<div className="flex items-center gap-2">
-								<h4 className="font-medium">Viewed by John Smith</h4>
-								<Chip size="sm" variant="flat" color="default">
-									User
-								</Chip>
-							</div>
-							<p className="text-sm text-foreground-500 mt-1">
-								May 15, 2023 - 10:15 AM
-							</p>
-							<p className="text-sm mt-2">
-								Claim details were viewed by John Smith (Claims
-								Adjudicator).
-							</p>
-						</div>
-					</div>
+					))}
 				</div>
 			</CardBody>
 		</Card>

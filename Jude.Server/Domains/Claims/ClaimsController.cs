@@ -105,4 +105,18 @@ public class ClaimsController : ControllerBase
         return Ok(result.Data);
     }
 
+    [HttpGet("{claimId:guid}/audit-logs")]
+    [Authorize]
+    public async Task<IActionResult> GetClaimAuditLogs(Guid claimId)
+    {
+        var result = await _claimsService.GetClaimAuditLogsAsync(claimId);
+
+        if (!result.Success)
+        {
+            return BadRequest(new { message = result.Errors.FirstOrDefault() });
+        }
+
+        return Ok(result.Data);
+    }
+
 }

@@ -213,10 +213,31 @@ public class ClaimsIngestProcessor : BackgroundService
 
         foreach (var claim in pendingClaims)
         {
+            var auditLog = new AuditLogModel
+            {
+                Id = Guid.NewGuid(),
+                Timestamp = DateTime.UtcNow,
+                EntityType = AuditEntityType.Claim,
+                EntityId = claim.Id,
+                Action = "Claim Ingested",
+                ActorType = AuditActorType.System,
+                ActorId = null,
+                Description = $"Claim {claim.ClaimNumber} was ingested from Excel file: {fileName}",
+                Metadata = new Dictionary<string, object>
+                {
+                    { "fileName", fileName },
+                    { "claimNumber", claim.ClaimNumber }
+                }
+            };
+
+            await dbContext.AuditLogs.AddAsync(auditLog);
+
             var ingestEvent = new ClaimIngestEvent(claim, DateTime.UtcNow);
             await _claimQueue.Writer.WriteAsync(ingestEvent);
             queuedCount++;
         }
+
+        await dbContext.SaveChangesAsync();
 
         _logger.LogInformation(
             "Background processing complete for file {FileName}. Total: {Total}, Inserted: {Inserted}, Duplicates: {Duplicates}, Failed: {Failed}, Queued: {Queued}",

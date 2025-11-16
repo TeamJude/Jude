@@ -37,6 +37,14 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
             .WithOne(hr => hr.Claim)
             .HasForeignKey<HumanReviewModel>(hr => hr.ClaimId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure AuditLogModel indexes and JSONB
+        modelBuilder.Entity<AuditLogModel>().HasIndex(a => new { a.EntityType, a.EntityId });
+        modelBuilder.Entity<AuditLogModel>().HasIndex(a => a.Timestamp);
+        modelBuilder
+            .Entity<AuditLogModel>()
+            .Property(a => a.Metadata)
+            .HasColumnType("jsonb");
     }
 
     public DbSet<UserModel> Users { get; set; }
@@ -47,4 +55,5 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
     public DbSet<AgentReviewModel> AgentReviews { get; set; }
     public DbSet<HumanReviewModel> HumanReviews { get; set; }
     public DbSet<PolicyModel> Policies { get; set; }
+    public DbSet<AuditLogModel> AuditLogs { get; set; }
 }

@@ -247,6 +247,26 @@ export interface SubmitHumanReviewResponse {
 	comments: string;
 }
 
+export enum AuditActorType {
+	User,
+	System,
+	AiAgent,
+}
+
+export interface AuditLogResponse {
+	id: string;
+	timestamp: string;
+	action: string;
+	actorType: AuditActorType;
+	actorName?: string;
+	description: string;
+	metadata?: Record<string, unknown>;
+}
+
+export interface GetClaimAuditLogsResponse {
+	auditLogs: AuditLogResponse[];
+}
+
 // Review-related request/response types
 export interface CreateClaimReviewRequest {
 	claimId: string;

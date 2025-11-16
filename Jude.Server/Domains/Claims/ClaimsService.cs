@@ -17,6 +17,7 @@ public interface IClaimsService
     Task<Result<bool>> UpdateClaimStatus(Guid ClaimId, ClaimStatus status);
     Task<Result<UploadExcelResponse>> ProcessExcelUploadAsync(Stream excelStream, string fileName);
     Task<Result<SubmitHumanReviewResponse>> SubmitHumanReviewAsync(Guid claimId, Guid userId, SubmitHumanReviewRequest request);
+    Task<Result<GetClaimAuditLogsResponse>> GetClaimAuditLogsAsync(Guid claimId);
 }
 
 public class ClaimsService : IClaimsService
@@ -164,6 +165,26 @@ public class ClaimsService : IClaimsService
 
         review.ClaimId = claimId;
         await _repository.AgentReviews.AddAsync(review);
+
+        var auditLog = new AuditLogModel
+        {
+            Id = Guid.NewGuid(),
+            Timestamp = DateTime.UtcNow,
+            EntityType = AuditEntityType.Claim,
+            EntityId = claimId,
+            Action = $"Agent Review Completed: {review.Decision}",
+            ActorType = AuditActorType.AiAgent,
+            ActorId = null,
+            Description = $"AI Agent completed review with recommendation: {review.Recommendation}. Confidence: {review.ConfidenceScore:P}",
+            Metadata = new Dictionary<string, object>
+            {
+                { "decision", review.Decision.ToString() },
+                { "recommendation", review.Recommendation },
+                { "confidenceScore", review.ConfidenceScore }
+            }
+        };
+
+        await _repository.AuditLogs.AddAsync(auditLog);
         await _repository.SaveChangesAsync();
 
         return Result.Ok(true);
@@ -672,6 +693,24 @@ public class ClaimsService : IClaimsService
                 : ClaimStatus.Rejected;
         claim.UpdatedAt = DateTime.UtcNow;
 
+        var auditLog = new AuditLogModel
+        {
+            Id = Guid.NewGuid(),
+            Timestamp = DateTime.UtcNow,
+            EntityType = AuditEntityType.Claim,
+            EntityId = claimId,
+            Action = $"Human Review: {request.Decision}",
+            ActorType = AuditActorType.User,
+            ActorId = userId,
+            Description = $"Human reviewer {request.Decision}d the claim. Comments: {request.Comments}",
+            Metadata = new Dictionary<string, object>
+            {
+                { "decision", request.Decision.ToString() },
+                { "comments", request.Comments }
+            }
+        };
+
+        await _repository.AuditLogs.AddAsync(auditLog);
         await _repository.SaveChangesAsync();
 
         _logger.LogInformation(
@@ -688,6 +727,42 @@ public class ClaimsService : IClaimsService
             humanReview.Comments
         );
 
+        return Result.Ok(response);
+    }
+
+    public async Task<Result<GetClaimAuditLogsResponse>> GetClaimAuditLogsAsync(Guid claimId)
+    {
+        var auditLogsQuery = _repository
+            .AuditLogs.Where(a =>
+                a.EntityType == AuditEntityType.Claim && a.EntityId == claimId
+            )
+            .OrderByDescending(a => a.Timestamp);
+
+        var auditLogs = await auditLogsQuery.ToListAsync();
+
+        var userIds = auditLogs
+            .Where(a => a.ActorType == AuditActorType.User && a.ActorId.HasValue)
+            .Select(a => a.ActorId!.Value)
+            .Distinct()
+            .ToList();
+
+        var users = await _repository
+            .Users.Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.Username ?? u.Email);
+
+        var auditLogResponses = auditLogs.Select(a => new AuditLogResponse(
+            a.Id,
+            a.Timestamp,
+            a.Action,
+            a.ActorType,
+            a.ActorType == AuditActorType.User && a.ActorId.HasValue
+                ? users.GetValueOrDefault(a.ActorId.Value)
+                : null,
+            a.Description,
+            a.Metadata
+        )).ToArray();
+
+        var response = new GetClaimAuditLogsResponse(auditLogResponses);
         return Result.Ok(response);
     }
 }

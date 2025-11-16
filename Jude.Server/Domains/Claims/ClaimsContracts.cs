@@ -134,3 +134,15 @@ public record ClaimUploadError(int RowNumber, string Error);
 public record SubmitHumanReviewRequest(ClaimDecision Decision, string Comments);
 
 public record SubmitHumanReviewResponse(Guid Id, DateTime ReviewedAt, ClaimDecision Decision, string Comments);
+
+public record AuditLogResponse(
+    Guid Id,
+    DateTime Timestamp,
+    string Action,
+    AuditActorType ActorType,
+    string? ActorName,
+    string Description,
+    Dictionary<string, object>? Metadata
+);
+
+public record GetClaimAuditLogsResponse(AuditLogResponse[] AuditLogs);

@@ -7,7 +7,8 @@ import {
 	type CreateClaimReviewRequest,
 	type UpdateClaimReviewRequest,
 	type SubmitHumanReviewRequest,
-	type SubmitHumanReviewResponse
+	type SubmitHumanReviewResponse,
+	type GetClaimAuditLogsResponse
 } from "../types/claim";
 import { apiRequest, type ApiResponse } from "../utils/api";
 
@@ -114,5 +115,13 @@ const submitHumanReview = async (
 	});
 };
 
-export { createReview, getClaim, getClaims, getClaimsDashboard, getUserReviewForClaim, submitReview, submitHumanReview, updateReview };
+const getClaimAuditLogs = async (
+	claimId: string
+): Promise<ApiResponse<GetClaimAuditLogsResponse>> => {
+	return apiRequest<GetClaimAuditLogsResponse>(`/api/claims/${claimId}/audit-logs`, {
+		method: "GET",
+	});
+};
+
+export { createReview, getClaim, getClaims, getClaimsDashboard, getClaimAuditLogs, getUserReviewForClaim, submitReview, submitHumanReview, updateReview };
 
