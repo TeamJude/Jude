@@ -20,12 +20,10 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
 
         modelBuilder.Entity<UserModel>().HasIndex(u => u.Username).IsUnique();
 
-        // Configure ClaimModel Data property as JSONB
-        modelBuilder
-            .Entity<ClaimModel>()
-            .Property(c => c.Data)
-            .HasColumnType("jsonb")
-            .IsRequired();
+        // Configure ClaimModel indexes
+        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.ClaimNumber).IsUnique();
+        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.Status);
+        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.IngestedAt);
 
         // Configure one-to-one relationships for ClaimModel
         modelBuilder.Entity<ClaimModel>()

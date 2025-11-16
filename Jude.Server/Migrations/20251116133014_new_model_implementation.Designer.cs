@@ -14,8 +14,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Jude.Server.Migrations
 {
     [DbContext(typeof(JudeDbContext))]
-    [Migration("20250725103713_removeDocUrl")]
-    partial class removeDocUrl
+    [Migration("20251116133014_new_model_implementation")]
+    partial class new_model_implementation
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,85 +27,128 @@ namespace Jude.Server.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Jude.Server.Data.Models.AgentReviewModel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClaimId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("ConfidenceScore")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("Decision")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reasoning")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Recommendation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClaimId")
+                        .IsUnique();
+
+                    b.ToTable("AgentReviews");
+                });
+
             modelBuilder.Entity("Jude.Server.Data.Models.ClaimModel", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<decimal?>("AgentConfidenceScore")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime?>("AgentProcessedAt")
+                    b.Property<DateTime>("AssessmentDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("AgentReasoning")
+                    b.Property<string>("AssessorName")
+                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("AgentRecommendation")
+                    b.Property<string>("ClaimCode")
+                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<decimal?>("ApprovedAmount")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("CIMASPayload")
+                    b.Property<string>("ClaimMarkdown")
                         .HasColumnType("text");
-
-                    b.Property<decimal>("ClaimAmount")
-                        .HasColumnType("numeric");
 
                     b.Property<string>("ClaimNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Currency")
+                    b.Property<string>("ClaimTypeCode")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("FinalDecision")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("CoPayAmount")
+                        .HasColumnType("numeric");
 
-                    b.PrimitiveCollection<List<string>>("FraudIndicators")
-                        .HasColumnType("text[]");
+                    b.Property<string>("CodeDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<int>("FraudRiskLevel")
-                        .HasColumnType("integer");
+                    b.Property<DateTime>("DateReceived")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("IngestedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsFlagged")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("MembershipNumber")
+                    b.Property<string>("InvoiceReference")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("PatientName")
+                    b.Property<string>("MedicalSchemeName")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("ProcessedAt")
+                    b.Property<string>("MemberNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OptionName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("PatientBirthDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ProviderPractice")
+                    b.Property<int>("PatientCurrentAge")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PatientFirstName")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("RejectionReason")
+                    b.Property<string>("PatientSurname")
+                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("RequiresHumanReview")
-                        .HasColumnType("boolean");
+                    b.Property<string>("PayerName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("PracticeNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("ReviewedById")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ReviewerComments")
-                        .HasColumnType("text");
+                    b.Property<DateTime>("ServiceDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Source")
                         .HasColumnType("integer");
@@ -113,19 +156,28 @@ namespace Jude.Server.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("SubmittedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<decimal>("TotalAmountPaid")
+                        .HasColumnType("numeric");
 
-                    b.Property<string>("TransactionNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<decimal>("TotalClaimAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("Units")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClaimNumber")
+                        .IsUnique();
+
+                    b.HasIndex("IngestedAt");
+
                     b.HasIndex("ReviewedById");
+
+                    b.HasIndex("Status");
 
                     b.ToTable("Claims");
                 });
@@ -160,6 +212,33 @@ namespace Jude.Server.Migrations
                     b.ToTable("FraudIndicators");
                 });
 
+            modelBuilder.Entity("Jude.Server.Data.Models.HumanReviewModel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClaimId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comments")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Decision")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClaimId")
+                        .IsUnique();
+
+                    b.ToTable("HumanReviews");
+                });
+
             modelBuilder.Entity("Jude.Server.Data.Models.PolicyModel", b =>
                 {
                     b.Property<int>("Id")
@@ -175,7 +254,9 @@ namespace Jude.Server.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("DocumentId")
-                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DocumentUrl")
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
@@ -294,6 +375,17 @@ namespace Jude.Server.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Jude.Server.Data.Models.AgentReviewModel", b =>
+                {
+                    b.HasOne("Jude.Server.Data.Models.ClaimModel", "Claim")
+                        .WithOne("AgentReview")
+                        .HasForeignKey("Jude.Server.Data.Models.AgentReviewModel", "ClaimId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Claim");
+                });
+
             modelBuilder.Entity("Jude.Server.Data.Models.ClaimModel", b =>
                 {
                     b.HasOne("Jude.Server.Data.Models.UserModel", "ReviewedBy")
@@ -312,6 +404,17 @@ namespace Jude.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("Jude.Server.Data.Models.HumanReviewModel", b =>
+                {
+                    b.HasOne("Jude.Server.Data.Models.ClaimModel", "Claim")
+                        .WithOne("HumanReview")
+                        .HasForeignKey("Jude.Server.Data.Models.HumanReviewModel", "ClaimId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Claim");
                 });
 
             modelBuilder.Entity("Jude.Server.Data.Models.PolicyModel", b =>
@@ -345,6 +448,13 @@ namespace Jude.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("Jude.Server.Data.Models.ClaimModel", b =>
+                {
+                    b.Navigation("AgentReview");
+
+                    b.Navigation("HumanReview");
                 });
 #pragma warning restore 612, 618
         }

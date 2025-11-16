@@ -1,9 +1,5 @@
-using Jude.Server.Domains.Claims.Providers.CIMAS;
+using Jude.Server.Data.Models;
 
 namespace Jude.Server.Domains.Agents.Events;
 
-public record ClaimIngestEvent(
-    string TransactionNumber,
-    ClaimResponse CIMASClaimData,
-    DateTime IngestedAt
-);
+public record ClaimIngestEvent(ClaimModel Claim, DateTime IngestedAt);

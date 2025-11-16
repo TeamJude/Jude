@@ -1,9 +1,6 @@
-using System.Globalization;
-using System.Text.Json;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Agents.Workflows;
-using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jude.Server.Domains.Agents.Events;
@@ -33,101 +30,39 @@ public class ClaimIngestEventHandler : IClaimIngestEventHandler
     public async Task HandleClaimIngestAsync(ClaimIngestEvent @event)
     {
         _logger.LogInformation(
-            "Processing claim ingest event for transaction {TransactionNumber}",
-            @event.TransactionNumber
+            "Processing claim ingest event for Claim {ClaimId}",
+            @event.Claim.Id
         );
 
-        try
-        {
-            // Check if claim already exists to avoid duplicates
-            var existingClaim = await _dbContext.Claims.FirstOrDefaultAsync(c =>
-                c.TransactionNumber == @event.TransactionNumber
-            );
-
-            if (existingClaim != null)
-            {
-                _logger.LogDebug(
-                    "Claim with transaction number {TransactionNumber} already exists with status {Status}, checking if processing needed",
-                    @event.TransactionNumber,
-                    existingClaim.Status
-                );
-
-                // If claim exists but hasn't been processed yet, trigger processing
-                if (existingClaim.Status == ClaimStatus.Pending)
-                {
-                    _logger.LogInformation(
-                        "Triggering processing for existing pending claim {ClaimId}",
-                        existingClaim.Id
-                    );
-                    await TriggerAdjudicationWorkflow(existingClaim);
-                }
-                return;
-            }
-
-            // Map CIMAS claim data to our internal model
-            var claimModel = MapCIMASClaimToModel(@event);
-
-            // Save to database
-            _dbContext.Claims.Add(claimModel);
-            await _dbContext.SaveChangesAsync();
-
-            _logger.LogInformation(
-                "Successfully ingested claim {ClaimId} with transaction number {TransactionNumber}",
-                claimModel.Id,
-                @event.TransactionNumber
-            );
-
-            // Trigger adjudication workflow
-            await TriggerAdjudicationWorkflow(claimModel);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex,
-                "Error processing claim ingest event for transaction {TransactionNumber}: {Message}",
-                @event.TransactionNumber,
-                ex.Message
-            );
-            throw;
-        }
-    }
-
-    private ClaimModel MapCIMASClaimToModel(ClaimIngestEvent @event)
-    {
-        var cimasData = @event.CIMASClaimData;
-
-        // Extract patient name from CIMAS data
-        var patientFirstName = cimasData.Patient?.Personal?.FirstName ?? "";
-        var patientSurname = cimasData.Patient?.Personal?.Surname ?? "";
-
-        // Calculate total claim amount from services
-        var totalClaimAmount = decimal.Parse(
-            @event.CIMASClaimData.ClaimHeaderResponse.TotalValues.Claimed,
-            NumberStyles.Any,
-            CultureInfo.InvariantCulture
+        var existingClaim = await _dbContext.Claims.FirstOrDefaultAsync(c =>
+            c.Id == @event.Claim.Id
         );
 
-        // Extract claim number from transaction response
-        var claimNumber = cimasData.TransactionResponse?.ClaimNumber ?? "";
-
-        // Extract medical scheme name
-        var medicalSchemeName = cimasData.Member?.MedicalSchemeName ?? "";
-
-        var claimModel = new ClaimModel
+        if (existingClaim == null)
         {
-            TransactionNumber = @event.TransactionNumber,
-            ClaimNumber = claimNumber,
-            PatientFirstName = patientFirstName,
-            PatientSurname = patientSurname,
-            MedicalSchemeName = medicalSchemeName,
-            TotalClaimAmount = totalClaimAmount,
-            IngestedAt = @event.IngestedAt,
-            UpdatedAt = @event.IngestedAt,
-            Status = ClaimStatus.Pending,
-            Data = cimasData
-        };
+            _logger.LogWarning(
+                "Claim {ClaimId} not found in database. It may have been deleted or never inserted.",
+                @event.Claim.Id
+            );
+            return;
+        }
 
-        return claimModel;
+        if (existingClaim.Status != ClaimStatus.Pending)
+        {
+            _logger.LogDebug(
+                "Claim {ClaimId} has status {Status}, skipping processing (already processed)",
+                existingClaim.Id,
+                existingClaim.Status
+            );
+            return;
+        }
+
+        _logger.LogInformation(
+            "Claim {ClaimId} is Pending, triggering adjudication workflow",
+            existingClaim.Id
+        );
+
+        await TriggerAdjudicationWorkflow(existingClaim);
     }
 
     private async Task TriggerAdjudicationWorkflow(ClaimModel claim)

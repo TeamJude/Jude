@@ -1,5 +1,5 @@
+using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
-using Jude.Server.Domains.Claims;
 using Jude.Server.Domains.Fraud;
 using Jude.Server.Domains.Rules;
 using Microsoft.Extensions.Caching.Memory;
@@ -8,7 +8,7 @@ namespace Jude.Server.Domains.Agents;
 
 public interface IAgentManager
 {
-    Task<bool> ProcessClaimAsync(ClaimModel claim);
+    Task<Result<AgentReviewModel>> ProcessClaimAsync(ClaimModel claim);
 }
 
 public class AgentManager : IAgentManager
@@ -42,7 +42,7 @@ public class AgentManager : IAgentManager
         _fraudService.OnFraudIndicatorsChanged += InvalidateContext;
     }
 
-    public async Task<bool> ProcessClaimAsync(ClaimModel claim)
+    public async Task<Result<AgentReviewModel>> ProcessClaimAsync(ClaimModel claim)
     {
         _logger.LogInformation("Starting claim processing for claim {ClaimId}", claim.Id);
 
@@ -53,25 +53,16 @@ public class AgentManager : IAgentManager
             var context = await GetCachedContextAsync();
 
             // Process the claim with the singleton agent
-            var success = await _jude.ProcessClaimAsync(claim, context);
+            var result = await _jude.ProcessClaimAsync(claim, context);
 
-            if (success)
-            {
-                _logger.LogInformation("Successfully processed claim {ClaimId}", claim.Id);
-            }
-            else
-            {
-                _logger.LogWarning("Agent processing failed for claim {ClaimId}", claim.Id);
-            }
-
-            return success;
+            return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing claim {ClaimId} with agent manager", claim.Id);
             claim.Status = ClaimStatus.Failed;
             claim.UpdatedAt = DateTime.UtcNow;
-            return false;
+            return Result.Fail("failed to process claim");
         }
         finally
         {

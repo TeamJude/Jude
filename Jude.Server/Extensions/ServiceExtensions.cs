@@ -9,7 +9,6 @@ using Jude.Server.Domains.Agents.Workflows;
 using Jude.Server.Domains.Auth;
 using Jude.Server.Domains.Auth.Authorization;
 using Jude.Server.Domains.Claims;
-using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Jude.Server.Domains.Fraud;
 using Jude.Server.Domains.Policies;
 using Jude.Server.Domains.Policies.Events;
@@ -135,13 +134,10 @@ public static class ServiceExtensions
         services.AddScoped<IRulesService, RulesService>();
         services.AddScoped<IFraudService, FraudService>();
         services.AddScoped<IClaimsService, ClaimsService>();
+        services.AddScoped<IExcelClaimParser, ExcelClaimParser>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<ITokenProvider, TokenProvider>();
         services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
-
-        services.AddSingleton(AppConfig.CIMAS);
-        services.AddHttpClient<ICIMASProvider, CIMASProvider>();
-        services.AddScoped<ICIMASProvider, CIMASProvider>();
 
         return services;
     }
@@ -149,6 +145,7 @@ public static class ServiceExtensions
     public static IServiceCollection AddAgentServices(this IServiceCollection services)
     {
         // Event Queues - Singletons for in-memory queues
+        services.AddSingleton<IClaimBulkInsertEventsQueue, ClaimBulkInsertEventsQueue>();
         services.AddSingleton<IClaimIngestEventsQueue, ClaimIngestEventsQueue>();
         services.AddSingleton<IPolicyIngestEventsQueue, PolicyIngestEventsQueue>();
 
@@ -160,7 +157,6 @@ public static class ServiceExtensions
         services.AddScoped<Domains.Agents.Jude>();
         services.AddScoped<IAgentManager, AgentManager>();
         services.AddScoped<Orchestrator>();
-        services.AddScoped<AgentService>();
 
         services.AddScoped<IPolicyContext, PolicyContext>();
         services.AddScoped<IPolicyService, PolicyService>();

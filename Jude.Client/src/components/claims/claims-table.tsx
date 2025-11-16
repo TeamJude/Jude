@@ -1,9 +1,6 @@
 import { getClaims } from "@/lib/services/claims.service";
-import { uploadClaim } from "@/lib/services/agent.service";
-import {
-	ClaimStatus,
-	type GetClaimResponse,
-} from "@/lib/types/claim";
+import { uploadExcelClaims } from "@/lib/services/excel-upload.service";
+import { ClaimStatus, type GetClaimResponse } from "@/lib/types/claim";
 import {
 	Button,
 	Chip,
@@ -82,7 +79,13 @@ const getStatusIcon = (status: ClaimStatus) => {
 	}
 };
 
-const INITIAL_VISIBLE_COLUMNS = ["id", "patient", "amount", "status", "actions"];
+const INITIAL_VISIBLE_COLUMNS = [
+	"id",
+	"patient",
+	"amount",
+	"status",
+	"actions",
+];
 
 export function ClaimsTable() {
 	const [search, setSearch] = React.useState("");
@@ -118,7 +121,9 @@ export function ClaimsTable() {
 			}),
 	});
 
-	const claims = claimsResponse?.success ? claimsResponse.data.claims || [] : [];
+	const claims = claimsResponse?.success
+		? claimsResponse.data.claims || []
+		: [];
 	const totalCount = claimsResponse?.success
 		? claimsResponse.data.totalCount || 0
 		: 0;
@@ -144,26 +149,43 @@ export function ClaimsTable() {
 	};
 
 	const handleFileUpload = async (file: File) => {
-		if (!file || file.type !== "application/pdf") {
-			alert("Please select a PDF file");
+		const allowedExtensions = [".xlsx", ".xls"];
+		const fileExtension = file.name
+			.substring(file.name.lastIndexOf("."))
+			.toLowerCase();
+
+		if (!allowedExtensions.includes(fileExtension)) {
+			alert("Please select an Excel file (.xlsx or .xls)");
 			return;
 		}
 
 		setIsUploading(true);
-		
+
 		try {
-			const result = await uploadClaim(file);
-			
+			const result = await uploadExcelClaims(file);
+
 			if (result.success) {
-				// Refresh claims list to include the new uploaded claim
-				await refetch();
-				alert(`Claim processed successfully!\nTransaction: ${result.data.transactionNumber}\nPatient: ${result.data.patientFirstName} ${result.data.patientSurname}`);
+				const { totalRows } = result.data;
+
+				alert(
+					`Excel file uploaded successfully!\n\n` +
+						`Total claims found: ${totalRows}\n\n` +
+						`Claims are being processed in the background.\n` +
+						`Duplicates will be automatically skipped.\n\n` +
+						`Refresh the page to see newly processed claims.`,
+				);
+
+				setTimeout(() => {
+					refetch();
+				}, 2000);
 			} else {
 				throw new Error(result.errors?.[0] || "Upload failed");
 			}
 		} catch (error) {
 			console.error("Upload error:", error);
-			alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+			alert(
+				`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
 		} finally {
 			setIsUploading(false);
 		}
@@ -177,9 +199,7 @@ export function ClaimsTable() {
 				case "id":
 					return (
 						<div className="flex items-center gap-2">
-							<span className="text-small font-mono">
-								{claim.transactionNumber}
-							</span>
+							<span className="text-small font-mono">{claim.claimNumber}</span>
 						</div>
 					);
 				case "patient":
@@ -223,7 +243,10 @@ export function ClaimsTable() {
 									</Button>
 								</DropdownTrigger>
 								<DropdownMenu>
-									<DropdownItem key="view" onClick={() => handleClaimClick(claim.id)}>
+									<DropdownItem
+										key="view"
+										onClick={() => handleClaimClick(claim.id)}
+									>
 										View Details
 									</DropdownItem>
 								</DropdownMenu>
@@ -260,7 +283,8 @@ export function ClaimsTable() {
 								if (isUploading) return;
 								const input = document.createElement("input");
 								input.type = "file";
-								input.accept = "application/pdf";
+								input.accept =
+									".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
 								input.onchange = (e) => {
 									const file = (e.target as HTMLInputElement).files?.[0];
 									if (file) {
@@ -270,7 +294,7 @@ export function ClaimsTable() {
 								input.click();
 							}}
 						>
-							{isUploading ? "Processing..." : "Upload Claim"}
+							{isUploading ? "Processing..." : "Upload Excel"}
 						</Button>
 						<Dropdown>
 							<DropdownTrigger className="hidden sm:flex">

@@ -41,23 +41,37 @@ public class Orchestrator
             await _claimsService.UpdateClaimStatus(claim.Id, ClaimStatus.UnderAgentReview);
 
             // Process the claim using the agent manager
-            var success = await _agentManager.ProcessClaimAsync(claim);
+            var result = await _agentManager.ProcessClaimAsync(claim);
 
-            if (success)
-            {
-                _logger.LogInformation(
-                    "Successfully processed claim {ClaimId} with recommendation: {Recommendation}",
-                    claim.Id,
-                    claim.AgentReview?.Recommendation
-                );
-            }
-            else
+            if (!result.Success || result.Data == null)
             {
                 _logger.LogWarning("Agent processing failed for claim {ClaimId}", claim.Id);
                 await _claimsService.UpdateClaimStatus(claim.Id, ClaimStatus.UnderHumanReview);
+                return false;
             }
 
-            return success;
+            var agentReview = result.Data;
+
+            // Save the agent review to the database
+            var updateResult = await _claimsService.UpdateAgentReview(claim.Id, agentReview);
+
+            if (!updateResult.Success)
+            {
+                _logger.LogError(
+                    "Failed to save agent review for claim {ClaimId}",
+                    claim.Id
+                );
+                await _claimsService.UpdateClaimStatus(claim.Id, ClaimStatus.Failed);
+                return false;
+            }
+
+            _logger.LogInformation(
+                "Successfully processed claim {ClaimId} with recommendation: {Recommendation}",
+                claim.Id,
+                agentReview.Recommendation
+            );
+
+            return true;
         }
         catch (Exception ex)
         {

@@ -1,28 +1,22 @@
 using System.Text.Json;
 using Jude.Server.Config;
+using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
-using Jude.Server.Data.Repository;
-using Jude.Server.Domains.Agents.Plugins;
-using Jude.Server.Domains.Claims;
-using Jude.Server.Domains.Policies;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
+using OpenAI.Chat;
 
 namespace Jude.Server.Domains.Agents;
 
 public class Jude
 {
     private readonly Kernel _kernel;
-    private readonly IClaimsService _claimsService;
-    private readonly IPolicyContext _policyContext;
     private readonly ILogger<Jude> _logger;
 
-    public Jude(IClaimsService claimsService, IPolicyContext policyContext, ILogger<Jude> logger)
+    public Jude(ILogger<Jude> logger)
     {
-        _claimsService = claimsService;
-        _policyContext = policyContext;
         _logger = logger;
 
         _kernel = Kernel
@@ -35,76 +29,96 @@ public class Jude
             .Build();
     }
 
-    public async Task<bool> ProcessClaimAsync(ClaimModel claim, string context)
+    public async Task<Result<AgentReviewModel>> ProcessClaimAsync(ClaimModel claim, string context)
     {
-        try
-        {
-            _logger.LogInformation("Starting agent processing for claim {ClaimId}", claim.Id);
+        _logger.LogInformation("Starting agent processing for claim {ClaimId}", claim.Id);
 
-            var decisionPlugin = new DecisionPlugin(
-                claim,
-                _claimsService,
-                _kernel.LoggerFactory.CreateLogger<DecisionPlugin>()
-            );
-
-            var policyPlugin = new PolicyPlugin(
-                _policyContext,
-                _kernel.LoggerFactory.CreateLogger<PolicyPlugin>()
-            );
-
-            var pricingPlugin = new PricingPlugin(
-                _claimsService,
-                _kernel.LoggerFactory.CreateLogger<PricingPlugin>()
-            );
-
-            _kernel.ImportPluginFromObject(decisionPlugin, "Decision");
-            _kernel.ImportPluginFromObject(policyPlugin, "Policy");
-            _kernel.ImportPluginFromObject(pricingPlugin, "Pricing");
-
-            // Create the agent with explicit function calling requirements
-            var agent = new ChatCompletionAgent()
+        var jsonSchema = """
             {
-                Name = "Jude",
-                Instructions = Prompts.AdjudicationEngine,
-                Kernel = _kernel,
-                Arguments = new KernelArguments(
-                    new AzureOpenAIPromptExecutionSettings()
-                    {
-                        FunctionChoiceBehavior = FunctionChoiceBehavior.Required(),
-                        MaxTokens = 4000,
+                "type": "object",
+                "properties": {
+                    "Decision": {
+                        "type": "integer",
+                        "enum": [1, 2],
+                        "description": "1 for Approve, 2 for Reject"
+                    },
+                    "Recommendation": {
+                        "type": "string",
+                        "description": "Guidance for human reviewers"
+                    },
+                    "Reasoning": {
+                        "type": "string",
+                        "description": "Detailed justification for the decision"
+                    },
+                    "ConfidenceScore": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "description": "Confidence level in the decision"
                     }
-                ),
-            };
-
-            var claimData = JsonSerializer.Serialize(claim.Data);
-            var initialMessage = new ChatMessageContent(
-                role: AuthorRole.User,
-                content: $"Please process this medical claim for adjudication:\n\n{claimData} \n {context}\nAnalyze the claim according to your instructions and make a decision using the MakeDecision function"
-            );
-
-            AgentThread? thread = null;
-            var responseContent = "";
-
-            await foreach (var response in agent.InvokeAsync(initialMessage, thread))
-            {
-                responseContent += response.Message.Content;
-                thread = response.Thread;
+                },
+                "required": ["Decision", "Recommendation", "Reasoning", "ConfidenceScore"],
+                "additionalProperties": false
             }
+            """;
 
-            _logger.LogDebug(
-                "Agent response for claim {ClaimId}: {Response}",
-                claim.Id,
-                responseContent
-            );
-
-            _logger.LogInformation("Successfully processed claim {ClaimId}", claim.Id);
-
-            return true;
-        }
-        catch (Exception ex)
+        var chatResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
+            jsonSchemaFormatName: "agent_review_result",
+            jsonSchema: BinaryData.FromString(jsonSchema),
+            jsonSchemaIsStrict: true
+        );
+        var agent = new ChatCompletionAgent()
         {
-            _logger.LogError(ex, "Error processing claim {ClaimId} with agent", claim.Id);
-            return false;
+            Name = "Jude",
+            Instructions = Prompts.AdjudicationEngine,
+            Kernel = _kernel,
+            Arguments = new KernelArguments(
+                new AzureOpenAIPromptExecutionSettings()
+                {
+                    MaxTokens = 8000,
+                    ResponseFormat = chatResponseFormat,
+                }
+            ),
+        };
+
+        var claimJson = JsonSerializer.Serialize(claim);
+        var initialMessage = new Microsoft.SemanticKernel.ChatMessageContent(
+            role: AuthorRole.User,
+            content: $"Please process this medical claim for adjudication:\n\n{claimJson} \n {context}\n"
+        );
+
+        AgentThread? thread = null;
+        var responseContent = "";
+
+        await foreach (var response in agent.InvokeAsync(initialMessage, thread))
+        {
+            responseContent += response.Message.Content;
+            thread = response.Thread;
         }
+
+        // Parse the structured response as AgentReviewModel
+        if (!string.IsNullOrWhiteSpace(responseContent))
+        {
+            try
+            {
+                var review = JsonSerializer.Deserialize<AgentReviewModel>(responseContent);
+                if (review != null)
+                {
+                    review.ReviewedAt = DateTime.UtcNow;
+                    review.Id = Guid.NewGuid();
+                }
+                return Result.Ok(review);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Could not parse agent response as AgentReviewModel. Raw response: {Response}",
+                    responseContent
+                );
+            }
+        }
+
+        return Result.Fail("failed to process claim");
     }
 }

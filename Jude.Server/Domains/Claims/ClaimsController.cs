@@ -2,7 +2,6 @@ using System.Security.Claims;
 using Jude.Server.Core.Helpers;
 using Jude.Server.Data.Models;
 using Jude.Server.Domains.Auth.Authorization;
-using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,10 +15,10 @@ public class ClaimsController : ControllerBase
     private readonly IClaimsService _claimsService;
     private readonly ILogger<ClaimsController> _logger;
 
-    public ClaimsController(IClaimsService claimsService, ILogger<ClaimsController> logger)
+    public ClaimsController(IClaimsService claimsService, ILogger<ClaimsController> _logger)
     {
         _claimsService = claimsService;
-        _logger = logger;
+        this._logger = _logger;
     }
 
     [HttpGet("dashboard")]
@@ -31,50 +30,6 @@ public class ClaimsController : ControllerBase
             return BadRequest(result.Errors);
         }
         return Ok(result.Data);
-    }
-
-    [HttpGet("member/{membershipNumber}/{suffix}")]
-    public async Task<IActionResult> GetMember(int membershipNumber, int suffix)
-    {
-        var result = await _claimsService.GetMemberAsync(membershipNumber, suffix);
-        if (!result.Success)
-        {
-            return BadRequest(result.Errors);
-        }
-        return Ok(result.Data);
-    }
-
-    [HttpGet("past-claims/{practiceNumber}")]
-    public async Task<IActionResult> GetPastClaims(string practiceNumber)
-    {
-        var result = await _claimsService.GetPastClaimsAsync(practiceNumber);
-        if (!result.Success)
-        {
-            return BadRequest(result.Errors);
-        }
-        return Ok(result.Data);
-    }
-
-    [HttpPost("submit")]
-    public async Task<IActionResult> SubmitClaim([FromBody] ClaimRequest request)
-    {
-        var result = await _claimsService.SubmitClaimAsync(request);
-        if (!result.Success)
-        {
-            return BadRequest(result.Errors);
-        }
-        return Ok(result.Data);
-    }
-
-    [HttpPost("reverse/{transactionNumber}")]
-    public async Task<IActionResult> ReverseClaim(string transactionNumber)
-    {
-        var result = await _claimsService.ReverseClaimAsync(transactionNumber);
-        if (!result.Success)
-        {
-            return BadRequest(result.Errors);
-        }
-        return Ok();
     }
 
     [HttpGet]
@@ -93,6 +48,37 @@ public class ClaimsController : ControllerBase
     {
         var result = await _claimsService.GetClaimAsync(claimId);
         return result.Success ? Ok(result.Data) : BadRequest(result.Errors);
+    }
+
+    [HttpPost("upload-excel")]
+    [Consumes("multipart/form-data")]
+    [RequestFormLimits(MultipartBodyLengthLimit = 104857600)]
+    [RequestSizeLimit(104857600)]
+    [Authorize]
+    public async Task<IActionResult> UploadExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { message = "No file uploaded or file is empty." });
+        }
+
+        var allowedExtensions = new[] { ".xlsx", ".xls" };
+        var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(fileExtension))
+        {
+            return BadRequest(new { message = "Only Excel files (.xlsx, .xls) are supported." });
+        }
+
+        using var stream = file.OpenReadStream();
+        var result = await _claimsService.ProcessExcelUploadAsync(stream, file.FileName);
+
+        if (!result.Success)
+        {
+            return BadRequest(new { message = result.Errors.FirstOrDefault() });
+        }
+
+        return Ok(result.Data);
     }
 
 }

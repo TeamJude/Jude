@@ -1,25 +1,27 @@
-using Jude.Server.Config;
+using Jude.Server.Data.Models;
+using Jude.Server.Data.Repository;
 using Jude.Server.Domains.Agents.Events;
-using Jude.Server.Domains.Claims;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jude.Server.Domains.Agents.Workflows;
 
 public class ClaimsIngestProcessor : BackgroundService
 {
-    private readonly IClaimIngestEventsQueue _queue;
+    private readonly IClaimBulkInsertEventsQueue _bulkInsertQueue;
+    private readonly IClaimIngestEventsQueue _claimQueue;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<ClaimsIngestProcessor> _logger;
-
-    private readonly TimeSpan _pollingInterval = TimeSpan.FromMinutes(5); // Poll every 5 minutes
-    private readonly TimeSpan _initialDelay = TimeSpan.FromSeconds(30); // Wait 30 seconds before first poll
+    private readonly TimeSpan _initialDelay = TimeSpan.FromSeconds(30);
 
     public ClaimsIngestProcessor(
-        IClaimIngestEventsQueue queue,
+        IClaimBulkInsertEventsQueue bulkInsertQueue,
+        IClaimIngestEventsQueue claimQueue,
         IServiceScopeFactory serviceScopeFactory,
         ILogger<ClaimsIngestProcessor> logger
     )
     {
-        _queue = queue;
+        _bulkInsertQueue = bulkInsertQueue;
+        _claimQueue = claimQueue;
         _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
     }
@@ -28,68 +30,68 @@ public class ClaimsIngestProcessor : BackgroundService
     {
         _logger.LogInformation("ClaimIngestProcessor starting up");
 
-        // Check if demo mode is enabled - if so, skip CIMAS polling
-        if (AppConfig.DemoMode)
-        {
-            _logger.LogInformation("Demo mode enabled - CIMAS polling disabled. Only processing queue events.");
-            
-            // Wait for initial delay to ensure application is fully started
-            await Task.Delay(_initialDelay, stoppingToken);
-
-            // Only start queue processing task in demo mode
-            await StartQueueProcessingTask(stoppingToken);
-            
-            _logger.LogInformation("ClaimIngestProcessor shutting down");
-            return;
-        }
-
-        // Wait for initial delay to ensure application is fully started
         await Task.Delay(_initialDelay, stoppingToken);
 
-        // Start both the polling task and the queue processing task
-        var pollingTask = StartPollingTask(stoppingToken);
-        var processingTask = StartQueueProcessingTask(stoppingToken);
+        var bulkInsertTask = ProcessBulkInsertQueue(stoppingToken);
+        var claimProcessingTask = ProcessClaimQueue(stoppingToken);
 
-        // Wait for either task to complete (or cancellation)
-        await Task.WhenAny(pollingTask, processingTask);
+        await Task.WhenAny(bulkInsertTask, claimProcessingTask);
 
         _logger.LogInformation("ClaimIngestProcessor shutting down");
     }
 
-    private async Task StartPollingTask(CancellationToken stoppingToken)
+    private async Task ProcessBulkInsertQueue(CancellationToken stoppingToken)
     {
-        _logger.LogInformation(
-            "Starting CIMAS polling task with interval: {Interval}",
-            _pollingInterval
-        );
+        _logger.LogInformation("Starting bulk insert queue processing");
 
-        while (!stoppingToken.IsCancellationRequested)
+        await foreach (
+            var bulkInsertEvent in _bulkInsertQueue.Reader.ReadAllAsync(stoppingToken)
+        )
         {
             try
             {
-                await PollCIMASForClaims();
+                _logger.LogInformation(
+                    "Processing bulk insert event for {Count} claims from file {FileName}",
+                    bulkInsertEvent.Claims.Count,
+                    bulkInsertEvent.FileName
+                );
+
+                using var scope = _serviceScopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<JudeDbContext>();
+
+                await BulkInsertAndQueueClaimsAsync(
+                    bulkInsertEvent.Claims,
+                    bulkInsertEvent.FileName,
+                    dbContext
+                );
+
+                _logger.LogInformation(
+                    "Successfully processed bulk insert for file {FileName}",
+                    bulkInsertEvent.FileName
+                );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during CIMAS polling: {Message}", ex.Message);
+                _logger.LogError(
+                    ex,
+                    "Error processing bulk insert event for file {FileName}",
+                    bulkInsertEvent.FileName
+                );
             }
-
-            // Wait for the next polling interval
-            await Task.Delay(_pollingInterval, stoppingToken);
         }
     }
 
-    private async Task StartQueueProcessingTask(CancellationToken stoppingToken)
+    private async Task ProcessClaimQueue(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Starting queue processing task");
+        _logger.LogInformation("Starting claim processing queue");
 
-        await foreach (var ingestEvent in _queue.Reader.ReadAllAsync(stoppingToken))
+        await foreach (var ingestEvent in _claimQueue.Reader.ReadAllAsync(stoppingToken))
         {
             try
             {
                 _logger.LogDebug(
-                    "Processing ingest event for transaction {TransactionNumber}",
-                    ingestEvent.TransactionNumber
+                    "Processing ingest event for claim {ClaimID}",
+                    ingestEvent.Claim.Id
                 );
 
                 using var scope = _serviceScopeFactory.CreateScope();
@@ -97,87 +99,133 @@ public class ClaimsIngestProcessor : BackgroundService
                 await handler.HandleClaimIngestAsync(ingestEvent);
 
                 _logger.LogDebug(
-                    "Successfully processed ingest event for transaction {TransactionNumber}",
-                    ingestEvent.TransactionNumber
+                    "Successfully processed ingest event for claim {ClaimId}",
+                    ingestEvent.Claim.Id
                 );
             }
             catch (Exception ex)
             {
                 _logger.LogError(
                     ex,
-                    "Error processing ingest event for transaction {TransactionNumber}: {Message}",
-                    ingestEvent.TransactionNumber,
+                    "Error processing ingest event for claim {ClaimId}: {Message}",
+                    ingestEvent.Claim.Id,
                     ex.Message
                 );
             }
         }
     }
 
-    private async Task PollCIMASForClaims()
+    private async Task BulkInsertAndQueueClaimsAsync(
+        List<ClaimModel> claims,
+        string fileName,
+        JudeDbContext dbContext
+    )
     {
-        _logger.LogDebug("Polling CIMAS for new claims");
+        var insertedCount = 0;
+        var duplicateCount = 0;
+        var queuedCount = 0;
+        var failedCount = 0;
+
+        _logger.LogInformation(
+            "Starting bulk insert of {Count} claims from file {FileName}",
+            claims.Count,
+            fileName
+        );
+
+        dbContext.Claims.AddRange(claims);
 
         try
         {
-            using var scope = _serviceScopeFactory.CreateScope();
-            var claimsService = scope.ServiceProvider.GetRequiredService<IClaimsService>();
+            await dbContext.SaveChangesAsync();
+            insertedCount = claims.Count;
 
-            var result = await claimsService.GetPastClaimsAsync(AppConfig.CIMAS.PracticeNumber);
-
-            if (!result.Success)
-            {
-                _logger.LogWarning(
-                    "Failed to get past claims for practice {PracticeNumber}: {Errors}",
-                    AppConfig.CIMAS.PracticeNumber,
-                    string.Join(", ", result.Errors)
-                );
-            }
-
-            var claims = result.Data;
             _logger.LogInformation(
-                "Retrieved {ClaimCount} claims for practice {PracticeNumber}",
-                claims.Count,
-                AppConfig.CIMAS.PracticeNumber
+                "Successfully bulk inserted all {Count} claims",
+                claims.Count
+            );
+        }
+        catch (DbUpdateException ex)
+            when (ex.InnerException?.Message.Contains("duplicate key") == true
+                || ex.InnerException?.Message.Contains("unique constraint") == true
+            )
+        {
+            _logger.LogInformation(
+                "Bulk insert encountered duplicates. Falling back to individual inserts."
             );
 
-            // Process each claim
+            dbContext.ChangeTracker.Clear();
+
             foreach (var claim in claims)
             {
-                await EnqueueClaimForProcessing(claim);
+                try
+                {
+                    dbContext.Claims.Add(claim);
+                    await dbContext.SaveChangesAsync();
+                    insertedCount++;
+                    _logger.LogDebug(
+                        "Inserted claim {ClaimNumber} into database",
+                        claim.ClaimNumber
+                    );
+                }
+                catch (DbUpdateException dbEx)
+                    when (dbEx.InnerException?.Message.Contains("duplicate key") == true
+                        || dbEx.InnerException?.Message.Contains("unique constraint") == true
+                    )
+                {
+                    duplicateCount++;
+                    _logger.LogDebug(
+                        "Skipped duplicate claim {ClaimNumber}",
+                        claim.ClaimNumber
+                    );
+                    dbContext.ChangeTracker.Clear();
+                }
+                catch (Exception individualEx)
+                {
+                    failedCount++;
+                    _logger.LogError(
+                        individualEx,
+                        "Error inserting claim {ClaimNumber}",
+                        claim.ClaimNumber
+                    );
+                    dbContext.ChangeTracker.Clear();
+                }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during CIMAS polling: {Message}", ex.Message);
-            throw;
+            _logger.LogError(ex, "Error during bulk insert operation");
+            failedCount = claims.Count;
         }
-    }
 
-    private async Task EnqueueClaimForProcessing(Domains.Claims.Providers.CIMAS.ClaimResponse claim)
-    {
-        try
+        _logger.LogInformation(
+            "Bulk insert complete. Inserted: {Inserted}, Duplicates: {Duplicates}, Failed: {Failed}. Now queueing for processing.",
+            insertedCount,
+            duplicateCount,
+            failedCount
+        );
+
+        var pendingClaims = await dbContext
+            .Claims.Where(c =>
+                c.Status == ClaimStatus.Pending
+                && claims.Select(cl => cl.ClaimNumber).Contains(c.ClaimNumber)
+            )
+            .ToListAsync();
+
+        foreach (var claim in pendingClaims)
         {
-            var transactionNumber = claim.TransactionResponse?.Number ?? "Unknown";
-
-            _logger.LogDebug(
-                "Enqueueing claim for processing: {TransactionNumber}",
-                transactionNumber
-            );
-
-            var ingestEvent = new ClaimIngestEvent(
-                TransactionNumber: transactionNumber,
-                CIMASClaimData: claim,
-                IngestedAt: DateTime.UtcNow
-            );
-
-            // Add to the processing queue
-            await _queue.Writer.WriteAsync(ingestEvent);
-
-            _logger.LogDebug("Successfully enqueued claim: {TransactionNumber}", transactionNumber);
+            var ingestEvent = new ClaimIngestEvent(claim, DateTime.UtcNow);
+            await _claimQueue.Writer.WriteAsync(ingestEvent);
+            queuedCount++;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error enqueueing claim for processing: {Message}", ex.Message);
-        }
+
+        _logger.LogInformation(
+            "Background processing complete for file {FileName}. Total: {Total}, Inserted: {Inserted}, Duplicates: {Duplicates}, Failed: {Failed}, Queued: {Queued}",
+            fileName,
+            claims.Count,
+            insertedCount,
+            duplicateCount,
+            failedCount,
+            queuedCount
+        );
     }
 }

@@ -91,7 +91,7 @@ public class PolicyIngestEventHandler : IPolicyIngestEventHandler
                 ingestEvent.PolicyId,
                 ingestEvent.PolicyName,
                 string.Join(", ", ingestResult.Errors)
-            );
+            ); 
         }
 
         await dbContext.SaveChangesAsync();

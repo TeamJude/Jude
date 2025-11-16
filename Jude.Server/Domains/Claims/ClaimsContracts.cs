@@ -1,5 +1,4 @@
 using Jude.Server.Data.Models;
-using Jude.Server.Domains.Claims.Providers.CIMAS;
 
 namespace Jude.Server.Domains.Claims;
 
@@ -9,7 +8,6 @@ public record GetClaimsResponse(GetClaimResponse[] Claims, int TotalCount);
 
 public record GetClaimResponse(
     Guid Id,
-    string TransactionNumber,
     string ClaimNumber,
     string PatientFirstName,
     string PatientSurname,
@@ -25,13 +23,29 @@ public record GetClaimDetailResponse(
     DateTime IngestedAt,
     DateTime UpdatedAt,
     ClaimStatus Status,
-    ClaimResponse Data,
-    string TransactionNumber,
     string ClaimNumber,
     string PatientFirstName,
     string PatientSurname,
+    string MemberNumber,
     string MedicalSchemeName,
+    string OptionName,
+    string PayerName,
     decimal TotalClaimAmount,
+    decimal TotalAmountPaid,
+    decimal CoPayAmount,
+    string ProviderName,
+    string PracticeNumber,
+    string InvoiceReference,
+    DateTime ServiceDate,
+    DateTime AssessmentDate,
+    DateTime DateReceived,
+    string ClaimCode,
+    string CodeDescription,
+    int Units,
+    string AssessorName,
+    string ClaimTypeCode,
+    DateTime PatientBirthDate,
+    int PatientCurrentAge,
     AgentReviewResponse? AgentReview,
     HumanReviewResponse? HumanReview,
     ReviewerInfo? ReviewedBy,
@@ -106,3 +120,13 @@ public record ClaimReviewResponse(
 );
 
 public record GetClaimReviewsResponse(ClaimReviewResponse[] Reviews);
+
+public record UploadExcelResponse(
+    int TotalRows,
+    int SuccessfullyQueued,
+    int Duplicates,
+    int Failed,
+    List<string> Errors
+);
+
+public record ClaimUploadError(int RowNumber, string Error);

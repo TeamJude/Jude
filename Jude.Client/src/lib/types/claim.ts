@@ -125,7 +125,6 @@ export interface ClaimResponse {
 // Backend Contract Types
 export interface GetClaimResponse {
 	id: string;
-	transactionNumber: string;
 	claimNumber: string;
 	patientFirstName: string;
 	patientSurname: string;
@@ -163,13 +162,29 @@ export interface GetClaimDetailResponse {
 	ingestedAt: string;
 	updatedAt: string;
 	status: ClaimStatus;
-	data: ClaimResponse;
-	transactionNumber: string;
 	claimNumber: string;
 	patientFirstName: string;
 	patientSurname: string;
+	memberNumber: string;
 	medicalSchemeName: string;
+	optionName: string;
+	payerName: string;
 	totalClaimAmount: number;
+	totalAmountPaid: number;
+	coPayAmount: number;
+	providerName: string;
+	practiceNumber: string;
+	invoiceReference: string;
+	serviceDate: string;
+	assessmentDate: string;
+	dateReceived: string;
+	claimCode: string;
+	codeDescription: string;
+	units: number;
+	assessorName: string;
+	claimTypeCode: string;
+	patientBirthDate: string;
+	patientCurrentAge: number;
 	agentReview?: AgentReviewResponse;
 	humanReview?: HumanReviewResponse;
 	reviewedBy?: ReviewerInfo;
@@ -201,7 +216,6 @@ export interface ClaimReview {
 
 export interface ClaimSummary {
 	id: string;
-	transactionNumber: string;
 	claimNumber: string;
 	patientFirstName: string;
 	patientSurname: string;
@@ -212,22 +226,13 @@ export interface ClaimSummary {
 	updatedAt: string;
 }
 
-// Legacy interface for backward compatibility (deprecated)
-export interface Claim {
-	id: string;
-	ingestedAt: string;
-	updatedAt: string;
-	status: ClaimStatus;
-	data: ClaimResponse;
-	transactionNumber: string;
-	claimNumber: string;
-	patientFirstName: string;
-	patientSurname: string;
-	medicalSchemeName: string;
-	totalClaimAmount: number;
-	agentReview?: AgentReviewResponse;
-	humanReview?: HumanReviewResponse;
-	reviewedBy?: ReviewerInfo;
+// Excel Upload Response
+export interface UploadExcelResponse {
+	totalRows: number;
+	successfullyQueued: number;
+	duplicates: number;
+	failed: number;
+	errors: string[];
 }
 
 // Review-related request/response types

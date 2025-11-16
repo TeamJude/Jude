@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using Jude.Server.Data.Models;
 using Jude.Server.Data.Repository;
-using Jude.Server.Domains.Claims.Providers.CIMAS;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -65,6 +64,17 @@ namespace Jude.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("AssessmentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AssessorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClaimCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("ClaimMarkdown")
                         .HasColumnType("text");
 
@@ -72,16 +82,44 @@ namespace Jude.Server.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<ClaimResponse>("Data")
+                    b.Property<string>("ClaimTypeCode")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("CoPayAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("CodeDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DateReceived")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("IngestedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("InvoiceReference")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("MedicalSchemeName")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("MemberNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OptionName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("PatientBirthDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PatientCurrentAge")
+                        .HasColumnType("integer");
 
                     b.Property<string>("PatientFirstName")
                         .IsRequired()
@@ -91,8 +129,23 @@ namespace Jude.Server.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PayerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PracticeNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("ReviewedById")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ServiceDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Source")
                         .HasColumnType("integer");
@@ -100,19 +153,28 @@ namespace Jude.Server.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<decimal>("TotalAmountPaid")
+                        .HasColumnType("numeric");
+
                     b.Property<decimal>("TotalClaimAmount")
                         .HasColumnType("numeric");
 
-                    b.Property<string>("TransactionNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Units")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClaimNumber")
+                        .IsUnique();
+
+                    b.HasIndex("IngestedAt");
+
                     b.HasIndex("ReviewedById");
+
+                    b.HasIndex("Status");
 
                     b.ToTable("Claims");
                 });
