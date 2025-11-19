@@ -64,11 +64,11 @@ const getClaimsDashboard = async (period: ClaimsDashboardPeriod) => {
 	return apiRequest<{
 		totalClaims: number;
 		autoApprovedRate: number;
-		avgProcessingTime: number;
+		claimsPendingReview: number;
 		claimsFlagged: number;
 		totalClaimsChangePercent: number;
 		autoApprovedRateChangePercent: number;
-		avgProcessingTimeChangePercent: number;
+		claimsPendingReviewChangePercent: number;
 		claimsFlaggedChangePercent: number;
 		claimsActivity: Array<{
 			day: string;

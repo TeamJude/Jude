@@ -328,54 +328,61 @@ public class ClaimsService : IClaimsService
                 c.IngestedAt >= previousPeriodStart && c.IngestedAt < previousPeriodEnd
             );
 
-            // --- Current Period Stats ---
+            // --- Current Period Stats (Optimized - no unnecessary Includes) ---
             int totalClaims = await currentPeriodQuery.CountAsync();
-            int autoApprove = await currentPeriodQuery
-                .Include(c => c.AgentReview)
-                .CountAsync(c =>
-                    c.AgentReview != null
-                    && c.AgentReview.Decision == ClaimDecision.Approve
-                    && c.AgentReview.Recommendation == "Auto-Approve"
+            
+            // Count auto-approved claims (using join instead of Include)
+            int autoApprove = await _repository.Claims
+                .Where(c => c.IngestedAt >= currentPeriodStart && c.IngestedAt <= now)
+                .Join(_repository.AgentReviews,
+                    claim => claim.Id,
+                    review => review.ClaimId,
+                    (claim, review) => new { claim, review })
+                .CountAsync(x => 
+                    x.review.Decision == ClaimDecision.Approve
+                    && (x.review.Recommendation == "Auto-Approve" || x.review.Recommendation.Contains("Auto"))
                 );
-            var processingTimes = await currentPeriodQuery
-                .Include(c => c.AgentReview)
-                .Where(c => c.AgentReview != null)
-                .Select(c => new { c.IngestedAt, c.AgentReview!.ReviewedAt })
-                .ToListAsync();
-            int claimsFlagged = await currentPeriodQuery
-                .Include(c => c.AgentReview)
-                .CountAsync(c =>
-                    c.AgentReview != null && c.AgentReview.Decision == ClaimDecision.Reject
-                );
+            
+            // Count claims pending human review (lightweight and informative)
+            int claimsPendingReview = await currentPeriodQuery
+                .CountAsync(c => c.Status == ClaimStatus.UnderHumanReview);
+            
+            // Count flagged claims (rejected by agent)
+            int claimsFlagged = await _repository.Claims
+                .Where(c => c.IngestedAt >= currentPeriodStart && c.IngestedAt <= now)
+                .Join(_repository.AgentReviews,
+                    claim => claim.Id,
+                    review => review.ClaimId,
+                    (claim, review) => review)
+                .CountAsync(r => r.Decision == ClaimDecision.Reject);
 
-            // --- Previous Period Stats ---
+            // --- Previous Period Stats (Optimized) ---
             int prevTotalClaims = await previousPeriodQuery.CountAsync();
-            int prevAutoApprove = await previousPeriodQuery
-                .Include(c => c.AgentReview)
-                .CountAsync(c =>
-                    c.AgentReview != null
-                    && c.AgentReview.Decision == ClaimDecision.Approve
-                    && c.AgentReview.Recommendation == "Auto-Approve"
+            
+            int prevAutoApprove = await _repository.Claims
+                .Where(c => c.IngestedAt >= previousPeriodStart && c.IngestedAt < previousPeriodEnd)
+                .Join(_repository.AgentReviews,
+                    claim => claim.Id,
+                    review => review.ClaimId,
+                    (claim, review) => new { claim, review })
+                .CountAsync(x => 
+                    x.review.Decision == ClaimDecision.Approve
+                    && (x.review.Recommendation == "Auto-Approve" || x.review.Recommendation.Contains("Auto"))
                 );
-            var prevProcessingTimes = await previousPeriodQuery
-                .Include(c => c.AgentReview)
-                .Where(c => c.AgentReview != null)
-                .Select(c => new { c.IngestedAt, c.AgentReview!.ReviewedAt })
-                .ToListAsync();
-            int prevClaimsFlagged = await previousPeriodQuery
-                .Include(c => c.AgentReview)
-                .CountAsync(c =>
-                    c.AgentReview != null && c.AgentReview.Decision == ClaimDecision.Reject
-                );
+            
+            // Count previous period claims pending review
+            int prevClaimsPendingReview = await previousPeriodQuery
+                .CountAsync(c => c.Status == ClaimStatus.UnderHumanReview);
+            
+            int prevClaimsFlagged = await _repository.Claims
+                .Where(c => c.IngestedAt >= previousPeriodStart && c.IngestedAt < previousPeriodEnd)
+                .Join(_repository.AgentReviews,
+                    claim => claim.Id,
+                    review => review.ClaimId,
+                    (claim, review) => review)
+                .CountAsync(r => r.Decision == ClaimDecision.Reject);
 
-            // --- Calculate Final Stats ---
-            double avgProcessingTime = processingTimes.Any()
-                ? processingTimes.Average(c => (c.ReviewedAt - c.IngestedAt).TotalMinutes)
-                : 0;
-            double prevAvgProcessingTime = prevProcessingTimes.Any()
-                ? prevProcessingTimes.Average(c => (c.ReviewedAt - c.IngestedAt).TotalMinutes)
-                : 0;
-
+            // --- Calculate Approval Rates ---
             double autoApproveRate = totalClaims > 0 ? (double)autoApprove / totalClaims * 100 : 0;
             double prevAutoApproveRate =
                 prevTotalClaims > 0 ? (double)prevAutoApprove / prevTotalClaims * 100 : 0;
@@ -386,9 +393,9 @@ public class ClaimsService : IClaimsService
                 autoApproveRate,
                 prevAutoApproveRate
             );
-            double avgProcessingTimeChangePercent = CalculateChangePercent(
-                avgProcessingTime,
-                prevAvgProcessingTime
+            double claimsPendingReviewChangePercent = CalculateChangePercent(
+                claimsPendingReview,
+                prevClaimsPendingReview
             );
             double claimsFlaggedChangePercent = CalculateChangePercent(
                 claimsFlagged,
@@ -405,11 +412,11 @@ public class ClaimsService : IClaimsService
             var response = new ClaimsDashboardResponse(
                 totalClaims,
                 autoApproveRate,
-                avgProcessingTime,
+                claimsPendingReview,
                 claimsFlagged,
                 totalClaimsChangePercent,
                 autoApproveRateChangePercent,
-                avgProcessingTimeChangePercent,
+                claimsPendingReviewChangePercent,
                 claimsFlaggedChangePercent,
                 activity
             );
@@ -433,9 +440,8 @@ public class ClaimsService : IClaimsService
         switch (period)
         {
             case ClaimsDashboardPeriod.Last7Days:
+                // Optimized: Remove Includes - EF Core will handle joins automatically in Count operations
                 var dailyData = await query
-                    .Include(c => c.AgentReview)
-                    .Include(c => c.HumanReview)
                     .GroupBy(c => c.IngestedAt.Date)
                     .Select(g => new
                     {
@@ -443,24 +449,12 @@ public class ClaimsService : IClaimsService
                         Total = g.Count(),
                         Processed = g.Count(c => c.Status != ClaimStatus.Pending),
                         Approve = g.Count(c =>
-                            (
-                                c.AgentReview != null
-                                && c.AgentReview.Decision == ClaimDecision.Approve
-                            )
-                            || (
-                                c.HumanReview != null
-                                && c.HumanReview.Decision == ClaimDecision.Approve
-                            )
+                            _repository.AgentReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Approve)
+                            || _repository.HumanReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Approve)
                         ),
                         Reject = g.Count(c =>
-                            (
-                                c.AgentReview != null
-                                && c.AgentReview.Decision == ClaimDecision.Reject
-                            )
-                            || (
-                                c.HumanReview != null
-                                && c.HumanReview.Decision == ClaimDecision.Reject
-                            )
+                            _repository.AgentReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Reject)
+                            || _repository.HumanReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Reject)
                         ),
                     })
                     .ToDictionaryAsync(x => x.Date, x => x);
@@ -488,9 +482,8 @@ public class ClaimsService : IClaimsService
                 break;
 
             case ClaimsDashboardPeriod.Last30Days:
+                // Optimized: Remove Includes - EF Core will handle joins automatically
                 var monthlyData = await query
-                    .Include(c => c.AgentReview)
-                    .Include(c => c.HumanReview)
                     .GroupBy(c => c.IngestedAt.Date)
                     .Select(g => new
                     {
@@ -498,24 +491,12 @@ public class ClaimsService : IClaimsService
                         Total = g.Count(),
                         Processed = g.Count(c => c.Status != ClaimStatus.Pending),
                         Approve = g.Count(c =>
-                            (
-                                c.AgentReview != null
-                                && c.AgentReview.Decision == ClaimDecision.Approve
-                            )
-                            || (
-                                c.HumanReview != null
-                                && c.HumanReview.Decision == ClaimDecision.Approve
-                            )
+                            _repository.AgentReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Approve)
+                            || _repository.HumanReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Approve)
                         ),
                         Reject = g.Count(c =>
-                            (
-                                c.AgentReview != null
-                                && c.AgentReview.Decision == ClaimDecision.Reject
-                            )
-                            || (
-                                c.HumanReview != null
-                                && c.HumanReview.Decision == ClaimDecision.Reject
-                            )
+                            _repository.AgentReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Reject)
+                            || _repository.HumanReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Reject)
                         ),
                     })
                     .ToDictionaryAsync(x => x.Date, x => x);
@@ -545,9 +526,8 @@ public class ClaimsService : IClaimsService
                 break;
 
             case ClaimsDashboardPeriod.LastQuarter:
+                // Optimized: Remove Includes - EF Core will handle joins automatically
                 var quarterlyData = await query
-                    .Include(c => c.AgentReview)
-                    .Include(c => c.HumanReview)
                     .GroupBy(c => new { c.IngestedAt.Year, c.IngestedAt.Month })
                     .Select(g => new
                     {
@@ -556,24 +536,12 @@ public class ClaimsService : IClaimsService
                         Total = g.Count(),
                         Processed = g.Count(c => c.Status != ClaimStatus.Pending),
                         Approve = g.Count(c =>
-                            (
-                                c.AgentReview != null
-                                && c.AgentReview.Decision == ClaimDecision.Approve
-                            )
-                            || (
-                                c.HumanReview != null
-                                && c.HumanReview.Decision == ClaimDecision.Approve
-                            )
+                            _repository.AgentReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Approve)
+                            || _repository.HumanReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Approve)
                         ),
                         Reject = g.Count(c =>
-                            (
-                                c.AgentReview != null
-                                && c.AgentReview.Decision == ClaimDecision.Reject
-                            )
-                            || (
-                                c.HumanReview != null
-                                && c.HumanReview.Decision == ClaimDecision.Reject
-                            )
+                            _repository.AgentReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Reject)
+                            || _repository.HumanReviews.Any(r => r.ClaimId == c.Id && r.Decision == ClaimDecision.Reject)
                         ),
                     })
                     .ToDictionaryAsync(x => new { x.Year, x.Month }, x => x);

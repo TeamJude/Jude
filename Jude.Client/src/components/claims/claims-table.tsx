@@ -16,7 +16,7 @@ import {
 	Input,
 	Pagination,
 	type Selection,
-	Spinner,
+	Skeleton,
 	Table,
 	TableBody,
 	TableCell,
@@ -31,7 +31,7 @@ import {
 	CheckCircle,
 	ChevronDown,
 	Clock,
-	EllipsisVertical,
+	Eye,
 	Search,
 	Upload,
 	XCircle,
@@ -85,16 +85,6 @@ const getStatusIcon = (status: ClaimStatus) => {
 	}
 };
 
-const INITIAL_VISIBLE_COLUMNS = [
-	"claimNumber",
-	"memberNumber",
-	"patient",
-	"provider",
-	"amount",
-	"status",
-	"actions",
-];
-
 export function ClaimsTable() {
 	const [search, setSearch] = React.useState("");
 	const [searchField, setSearchField] = React.useState<ClaimSearchField>(
@@ -102,9 +92,6 @@ export function ClaimsTable() {
 	);
 	const [selectedKeys, setSelectedKeys] = React.useState<Selection>(
 		new Set([]),
-	);
-	const [visibleColumns, setVisibleColumns] = React.useState<Selection>(
-		new Set(INITIAL_VISIBLE_COLUMNS),
 	);
 	const [statusFilter, setStatusFilter] = React.useState<Selection>("all");
 	const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -160,12 +147,7 @@ export function ClaimsTable() {
 		: 0;
 	const pages = Math.ceil(totalCount / rowsPerPage);
 
-	const headerColumns = React.useMemo(() => {
-		if (visibleColumns === "all") return columns;
-		return columns.filter((column) =>
-			Array.from(visibleColumns).includes(column.uid),
-		);
-	}, [visibleColumns]);
+	const headerColumns = React.useMemo(() => columns, []);
 
 	const onRowsPerPageChange = React.useCallback(
 		(e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -296,21 +278,15 @@ export function ClaimsTable() {
 				case "actions":
 					return (
 						<div className="relative flex justify-end items-center gap-2">
-							<Dropdown>
-								<DropdownTrigger>
-									<Button isIconOnly size="sm" variant="light">
-										<EllipsisVertical className="text-default-300" />
-									</Button>
-								</DropdownTrigger>
-								<DropdownMenu>
-									<DropdownItem
-										key="view"
-										onClick={() => handleClaimClick(claim.id)}
-									>
-										View Details
-									</DropdownItem>
-								</DropdownMenu>
-							</Dropdown>
+							<Button
+								isIconOnly
+								size="sm"
+								variant="light"
+								onPress={() => handleClaimClick(claim.id)}
+								aria-label="View claim details"
+							>
+								<Eye className="w-4 h-4 text-default-500" />
+							</Button>
 						</div>
 					);
 				default:
@@ -468,37 +444,13 @@ export function ClaimsTable() {
 								))}
 							</DropdownMenu>
 						</Dropdown>
-						<Dropdown>
-							<DropdownTrigger className="hidden sm:flex">
-								<Button
-									endContent={<ChevronDown className="text-small" />}
-									variant="flat"
-								>
-									Columns
-								</Button>
-							</DropdownTrigger>
-							<DropdownMenu
-								disallowEmptySelection
-								aria-label="Table Columns"
-								closeOnSelect={false}
-								selectedKeys={visibleColumns}
-								selectionMode="multiple"
-								onSelectionChange={setVisibleColumns}
-							>
-								{columns.map((column) => (
-									<DropdownItem key={column.uid} className="capitalize">
-										{column.name}
-									</DropdownItem>
-								))}
-							</DropdownMenu>
-						</Dropdown>
 					</div>
 				</div>
-				<div className="flex justify-between items-center">
-					<span className="text-default-400 text-small">
+				<div className="flex justify-between items-center mx-1">
+					<span className="text-default-400 text-xs">
 						Total {totalCount} claims
 					</span>
-					<label className="flex items-center text-default-400 text-small">
+					<label className="flex items-center text-default-400 text-xs">
 						Rows per page:
 						<select
 							className="bg-transparent outline-none text-default-400 text-small"
@@ -519,7 +471,6 @@ export function ClaimsTable() {
 		search,
 		searchField,
 		statusFilter,
-		visibleColumns,
 		totalCount,
 		rowsPerPage,
 		onRowsPerPageChange,
@@ -565,30 +516,41 @@ export function ClaimsTable() {
 		);
 	}, [selectedKeys, page, pages, claims.length]);
 
-	if (isLoading) {
-		return (
-			<div className="flex items-center justify-center h-40">
-				<Spinner label="Loading claims..." />
-			</div>
-		);
-	}
-
-	if (error) {
-		return (
-			<div className="flex flex-col items-center justify-center h-40">
-				<AlertCircle className="w-8 h-8 text-danger mb-2" />
-				<p className="text-danger">Failed to load claims</p>
-				<Button size="sm" variant="flat" onPress={() => refetch()}>
-					Retry
-				</Button>
-			</div>
-		);
-	}
+	const renderSkeletonCell = (columnKey: string) => {
+		switch (columnKey) {
+			case "claimNumber":
+				return (
+					<div className="flex flex-col gap-1">
+						<Skeleton className="h-4 w-24 rounded" />
+						<Skeleton className="h-3 w-16 rounded" />
+					</div>
+				);
+			case "memberNumber":
+				return <Skeleton className="h-4 w-20 rounded" />;
+			case "patient":
+				return <Skeleton className="h-4 w-32 rounded" />;
+			case "provider":
+				return (
+					<div className="flex flex-col gap-1">
+						<Skeleton className="h-4 w-40 rounded" />
+						<Skeleton className="h-3 w-16 rounded" />
+					</div>
+				);
+			case "amount":
+				return <Skeleton className="h-4 w-16 rounded" />;
+			case "status":
+				return <Skeleton className="h-6 w-20 rounded-full" />;
+			case "actions":
+				return <Skeleton className="h-8 w-8 rounded-full" />;
+			default:
+				return <Skeleton className="h-4 w-20 rounded" />;
+		}
+	};
 
 	return (
 		<Table
+			shadow="none"
 			aria-label="Claims table"
-			isHeaderSticky
 			bottomContent={bottomContent}
 			bottomContentPlacement="outside"
 			classNames={{
@@ -612,18 +574,55 @@ export function ClaimsTable() {
 					</TableColumn>
 				)}
 			</TableHeader>
-			<TableBody emptyContent={"No claims found"} items={claims}>
-				{(item) => (
-					<TableRow
-						key={item.id}
-						className="cursor-pointer hover:bg-default-100"
-						onClick={() => handleClaimClick(item.id)}
-					>
-						{(columnKey) => (
-							<TableCell>{renderCell(item, columnKey)}</TableCell>
-						)}
-					</TableRow>
-				)}
+			<TableBody
+				emptyContent={
+					error ? (
+						<div className="flex flex-col items-center justify-center py-8">
+							<AlertCircle className="w-8 h-8 text-danger mb-2" />
+							<p className="text-danger mb-2">Failed to load claims</p>
+							<Button size="sm" variant="flat" onPress={() => refetch()}>
+								Retry
+							</Button>
+						</div>
+					) : isLoading ? null : (
+						"No claims found"
+					)
+				}
+				items={
+					isLoading
+						? Array.from(
+								{ length: rowsPerPage },
+								(_, i) => ({ id: `skeleton-${i}` }) as ClaimSummary,
+							)
+						: claims
+				}
+			>
+				{(item) => {
+					if (isLoading) {
+						return (
+							<TableRow key={item.id}>
+								{(columnKey) => (
+									<TableCell>
+										{renderSkeletonCell(columnKey as string)}
+									</TableCell>
+								)}
+							</TableRow>
+						);
+					}
+					return (
+						<TableRow
+							key={item.id}
+							className="cursor-pointer hover:bg-default-100"
+							onClick={() => handleClaimClick(item.id)}
+						>
+							{(columnKey) => (
+								<TableCell>
+									{renderCell(item as ClaimSummary, columnKey)}
+								</TableCell>
+							)}
+						</TableRow>
+					);
+				}}
 			</TableBody>
 		</Table>
 	);

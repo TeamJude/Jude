@@ -118,11 +118,11 @@ public record ClaimsDashboardRequest(ClaimsDashboardPeriod Period);
 public record ClaimsDashboardResponse(
     int TotalClaims,
     double AutoApprovedRate,
-    double AvgProcessingTime,
+    int ClaimsPendingReview,
     int ClaimsFlagged,
     double TotalClaimsChangePercent,
     double AutoApprovedRateChangePercent,
-    double AvgProcessingTimeChangePercent,
+    double ClaimsPendingReviewChangePercent,
     double ClaimsFlaggedChangePercent,
     List<ClaimsActivityResponse> ClaimsActivity
 );
