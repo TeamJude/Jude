@@ -54,16 +54,31 @@ public class ClaimsService : IClaimsService
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
                 var searchTerm = $"%{request.Search.Trim()}%";
-                query = query.Where(c =>
-                    EF.Functions.ILike(c.ClaimNumber, searchTerm) ||
-                    EF.Functions.ILike(c.ClaimLineNo, searchTerm) ||
-                    EF.Functions.ILike(c.PatientFirstName, searchTerm) ||
-                    EF.Functions.ILike(c.PatientSurname, searchTerm) ||
-                    EF.Functions.ILike(c.PatientFirstName + " " + c.PatientSurname, searchTerm) ||
-                    EF.Functions.ILike(c.MemberNumber, searchTerm) ||
-                    EF.Functions.ILike(c.ProviderName, searchTerm) ||
-                    EF.Functions.ILike(c.PracticeNumber, searchTerm)
-                );
+                var searchField = request.SearchField ?? ClaimSearchField.All;
+
+                query = searchField switch
+                {
+                    ClaimSearchField.MemberNumber => query.Where(c => EF.Functions.ILike(c.MemberNumber, searchTerm)),
+                    ClaimSearchField.ClaimNumber => query.Where(c => EF.Functions.ILike(c.ClaimNumber, searchTerm)),
+                    ClaimSearchField.ClaimLineNo => query.Where(c => EF.Functions.ILike(c.ClaimLineNo, searchTerm)),
+                    ClaimSearchField.PatientName => query.Where(c =>
+                        EF.Functions.ILike(c.PatientFirstName, searchTerm) ||
+                        EF.Functions.ILike(c.PatientSurname, searchTerm) ||
+                        EF.Functions.ILike(c.PatientFirstName + " " + c.PatientSurname, searchTerm)
+                    ),
+                    ClaimSearchField.ProviderName => query.Where(c => EF.Functions.ILike(c.ProviderName, searchTerm)),
+                    ClaimSearchField.PracticeNumber => query.Where(c => EF.Functions.ILike(c.PracticeNumber, searchTerm)),
+                    ClaimSearchField.All or _ => query.Where(c =>
+                        EF.Functions.ILike(c.ClaimNumber, searchTerm) ||
+                        EF.Functions.ILike(c.ClaimLineNo, searchTerm) ||
+                        EF.Functions.ILike(c.PatientFirstName, searchTerm) ||
+                        EF.Functions.ILike(c.PatientSurname, searchTerm) ||
+                        EF.Functions.ILike(c.PatientFirstName + " " + c.PatientSurname, searchTerm) ||
+                        EF.Functions.ILike(c.MemberNumber, searchTerm) ||
+                        EF.Functions.ILike(c.ProviderName, searchTerm) ||
+                        EF.Functions.ILike(c.PracticeNumber, searchTerm)
+                    )
+                };
             }
 
             var totalCount = await query.CountAsync();

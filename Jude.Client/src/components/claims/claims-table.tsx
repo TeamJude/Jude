@@ -1,6 +1,10 @@
 import { getClaims } from "@/lib/services/claims.service";
 import { uploadExcelClaims } from "@/lib/services/excel-upload.service";
-import { ClaimStatus, type ClaimSummary } from "@/lib/types/claim";
+import {
+	ClaimStatus,
+	ClaimSearchField,
+	type ClaimSummary,
+} from "@/lib/types/claim";
 import {
 	Button,
 	Chip,
@@ -93,6 +97,9 @@ const INITIAL_VISIBLE_COLUMNS = [
 
 export function ClaimsTable() {
 	const [search, setSearch] = React.useState("");
+	const [searchField, setSearchField] = React.useState<ClaimSearchField>(
+		ClaimSearchField.MemberNumber,
+	);
 	const [selectedKeys, setSelectedKeys] = React.useState<Selection>(
 		new Set([]),
 	);
@@ -122,7 +129,14 @@ export function ClaimsTable() {
 		error,
 		refetch,
 	} = useQuery({
-		queryKey: ["claims", page, rowsPerPage, statusFilter, debouncedSearch],
+		queryKey: [
+			"claims",
+			page,
+			rowsPerPage,
+			statusFilter,
+			debouncedSearch,
+			searchField,
+		],
 		queryFn: () =>
 			getClaims({
 				page,
@@ -134,6 +148,7 @@ export function ClaimsTable() {
 							) as ClaimStatus[])
 						: undefined,
 				search: debouncedSearch.trim() || undefined,
+				searchField: debouncedSearch.trim() ? searchField : undefined,
 			}),
 	});
 
@@ -305,19 +320,107 @@ export function ClaimsTable() {
 		[navigate],
 	);
 
+	const getSearchPlaceholder = () => {
+		switch (searchField) {
+			case ClaimSearchField.MemberNumber:
+				return "Search by member number...";
+			case ClaimSearchField.ClaimNumber:
+				return "Search by claim number...";
+			case ClaimSearchField.ClaimLineNo:
+				return "Search by claim line number...";
+			case ClaimSearchField.PatientName:
+				return "Search by patient name...";
+			case ClaimSearchField.ProviderName:
+				return "Search by provider name...";
+			case ClaimSearchField.PracticeNumber:
+				return "Search by practice number...";
+			case ClaimSearchField.All:
+			default:
+				return "Search all fields...";
+		}
+	};
+
+	const getSearchFieldLabel = () => {
+		switch (searchField) {
+			case ClaimSearchField.MemberNumber:
+				return "Member #";
+			case ClaimSearchField.ClaimNumber:
+				return "Claim #";
+			case ClaimSearchField.ClaimLineNo:
+				return "Claim Line #";
+			case ClaimSearchField.PatientName:
+				return "Patient";
+			case ClaimSearchField.ProviderName:
+				return "Provider";
+			case ClaimSearchField.PracticeNumber:
+				return "Practice #";
+			case ClaimSearchField.All:
+			default:
+				return "All Fields";
+		}
+	};
+
 	const topContent = React.useMemo(() => {
 		return (
 			<div className="flex flex-col gap-4">
 				<div className="flex justify-between gap-3 items-end">
-					<Input
-						isClearable
-						className="w-full sm:max-w-[44%]"
-						placeholder="Search by claim number, claim line number, or patient name..."
-						startContent={<Search />}
-						value={search}
-						onClear={() => setSearch("")}
-						onValueChange={setSearch}
-					/>
+					<div className="flex gap-2 w-full sm:max-w-[50%]">
+						<Dropdown>
+							<DropdownTrigger>
+								<Button
+									variant="flat"
+									endContent={<ChevronDown className="text-small" />}
+									className="min-w-[140px]"
+								>
+									{getSearchFieldLabel()}
+								</Button>
+							</DropdownTrigger>
+							<DropdownMenu
+								disallowEmptySelection
+								aria-label="Search Field Filter"
+								selectedKeys={new Set([searchField.toString()])}
+								selectionMode="single"
+								onSelectionChange={(keys) => {
+									const selected = Array.from(keys)[0];
+									if (selected) {
+										setSearchField(Number(selected) as ClaimSearchField);
+										setPage(1);
+									}
+								}}
+							>
+								<DropdownItem key={ClaimSearchField.MemberNumber.toString()}>
+									Member Number
+								</DropdownItem>
+								<DropdownItem key={ClaimSearchField.ClaimNumber.toString()}>
+									Claim Number
+								</DropdownItem>
+								<DropdownItem key={ClaimSearchField.ClaimLineNo.toString()}>
+									Claim Line Number
+								</DropdownItem>
+								<DropdownItem key={ClaimSearchField.PatientName.toString()}>
+									Patient Name
+								</DropdownItem>
+								<DropdownItem key={ClaimSearchField.ProviderName.toString()}>
+									Provider Name
+								</DropdownItem>
+								<DropdownItem key={ClaimSearchField.PracticeNumber.toString()}>
+									Practice Number
+								</DropdownItem>
+								<DropdownItem key={ClaimSearchField.All.toString()}>
+									All Fields
+								</DropdownItem>
+							</DropdownMenu>
+						</Dropdown>
+						<Input
+							isClearable
+							className="flex-1"
+							placeholder={getSearchPlaceholder()}
+							startContent={<Search />}
+							value={search}
+							onClear={() => setSearch("")}
+							onValueChange={setSearch}
+						/>
+					</div>
 					<div className="flex gap-3">
 						<Button
 							color="primary"
@@ -414,6 +517,7 @@ export function ClaimsTable() {
 		);
 	}, [
 		search,
+		searchField,
 		statusFilter,
 		visibleColumns,
 		totalCount,

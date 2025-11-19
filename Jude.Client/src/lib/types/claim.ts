@@ -45,6 +45,16 @@ export enum ClaimsDashboardPeriod {
     LastQuarter
 }
 
+export enum ClaimSearchField {
+	MemberNumber = 0,
+	ClaimNumber = 1,
+	ClaimLineNo = 2,
+	PatientName = 3,
+	ProviderName = 4,
+	PracticeNumber = 5,
+	All = 6,
+}
+
 // CIMAS Data Structures
 export interface ClaimResponsePersonal {
 	Surname: string;

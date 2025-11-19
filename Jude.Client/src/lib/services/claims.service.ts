@@ -1,6 +1,7 @@
 import {
 	ClaimsDashboardPeriod,
 	ClaimStatus,
+	ClaimSearchField,
     type GetClaimDetailResponse,
 	type ClaimReview,
 	type ClaimSummary,
@@ -17,6 +18,7 @@ const getClaims = async (data: {
 	pageSize?: number;
 	status?: ClaimStatus[];
 	search?: string;
+	searchField?: ClaimSearchField;
 }): Promise<
 	ApiResponse<{
 		claims: ClaimSummary[];
