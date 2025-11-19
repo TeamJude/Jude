@@ -21,7 +21,7 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
         modelBuilder.Entity<UserModel>().HasIndex(u => u.Username).IsUnique();
 
         // Configure ClaimModel indexes
-        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.ClaimNumber).IsUnique();
+        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.ClaimLineNo).IsUnique();
         modelBuilder.Entity<ClaimModel>().HasIndex(c => c.Status);
         modelBuilder.Entity<ClaimModel>().HasIndex(c => c.IngestedAt);
 

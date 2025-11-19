@@ -132,16 +132,29 @@ public class ClaimsIngestProcessor : BackgroundService
             fileName
         );
 
-        dbContext.Claims.AddRange(claims);
+        var validClaims = claims
+            .Where(c => !string.IsNullOrWhiteSpace(c.ClaimLineNo))
+            .ToList();
+
+        if (validClaims.Count == 0)
+        {
+            _logger.LogWarning(
+                "No valid claims to insert. All {TotalCount} claims are missing ClaimLineNo.",
+                claims.Count
+            );
+            return;
+        }
+
+        dbContext.Claims.AddRange(validClaims);
 
         try
         {
             await dbContext.SaveChangesAsync();
-            insertedCount = claims.Count;
+            insertedCount = validClaims.Count;
 
             _logger.LogInformation(
-                "Successfully bulk inserted all {Count} claims",
-                claims.Count
+                "Successfully bulk inserted {Count} claims",
+                insertedCount
             );
         }
         catch (DbUpdateException ex)
@@ -155,7 +168,7 @@ public class ClaimsIngestProcessor : BackgroundService
 
             dbContext.ChangeTracker.Clear();
 
-            foreach (var claim in claims)
+            foreach (var claim in validClaims)
             {
                 try
                 {
@@ -163,8 +176,8 @@ public class ClaimsIngestProcessor : BackgroundService
                     await dbContext.SaveChangesAsync();
                     insertedCount++;
                     _logger.LogDebug(
-                        "Inserted claim {ClaimNumber} into database",
-                        claim.ClaimNumber
+                        "Inserted claim with ClaimLineNo {ClaimLineNo} into database",
+                        claim.ClaimLineNo
                     );
                 }
                 catch (DbUpdateException dbEx)
@@ -174,8 +187,8 @@ public class ClaimsIngestProcessor : BackgroundService
                 {
                     duplicateCount++;
                     _logger.LogDebug(
-                        "Skipped duplicate claim {ClaimNumber}",
-                        claim.ClaimNumber
+                        "Skipped duplicate claim with ClaimLineNo {ClaimLineNo}",
+                        claim.ClaimLineNo
                     );
                     dbContext.ChangeTracker.Clear();
                 }
@@ -184,8 +197,8 @@ public class ClaimsIngestProcessor : BackgroundService
                     failedCount++;
                     _logger.LogError(
                         individualEx,
-                        "Error inserting claim {ClaimNumber}",
-                        claim.ClaimNumber
+                        "Error inserting claim with ClaimLineNo {ClaimLineNo}",
+                        claim.ClaimLineNo
                     );
                     dbContext.ChangeTracker.Clear();
                 }
@@ -194,7 +207,7 @@ public class ClaimsIngestProcessor : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during bulk insert operation");
-            failedCount = claims.Count;
+            failedCount = validClaims.Count;
         }
 
         _logger.LogInformation(
@@ -204,10 +217,22 @@ public class ClaimsIngestProcessor : BackgroundService
             failedCount
         );
 
+        if (insertedCount == 0)
+        {
+            _logger.LogInformation(
+                "No claims were inserted. Skipping queue processing."
+            );
+            return;
+        }
+
+        var claimLineNos = validClaims
+            .Select(c => c.ClaimLineNo)
+            .ToList();
+
         var pendingClaims = await dbContext
             .Claims.Where(c =>
                 c.Status == ClaimStatus.Pending
-                && claims.Select(cl => cl.ClaimNumber).Contains(c.ClaimNumber)
+                && claimLineNos.Contains(c.ClaimLineNo)
             )
             .ToListAsync();
 

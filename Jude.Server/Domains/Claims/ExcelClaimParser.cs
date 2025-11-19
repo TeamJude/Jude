@@ -123,10 +123,19 @@ public class ExcelClaimParser : IExcelClaimParser
         };
 
         claim.MemberNumber = GetCellValue(worksheet, row, headers, "MEMBER NO");
+        claim.Ino = GetCellValue(worksheet, row, headers, "INO");
+        claim.Dis = GetCellValue(worksheet, row, headers, "DIS");
         claim.ClaimNumber = GetCellValue(worksheet, row, headers, "CLAIM NO");
 
         var providerText = GetCellValue(worksheet, row, headers, "PROVIDER");
-        ExtractPatientNameFromProvider(providerText, out var firstName, out var surname);
+        var firstName = GetCellValue(worksheet, row, headers, "FIRST NAME");
+        var surname = GetCellValue(worksheet, row, headers, "LAST NAME");
+        
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(surname))
+        {
+            ExtractPatientNameFromProvider(providerText, out firstName, out surname);
+        }
+        
         claim.PatientFirstName = firstName;
         claim.PatientSurname = surname;
 
@@ -138,6 +147,8 @@ public class ExcelClaimParser : IExcelClaimParser
         claim.ProviderName = providerText;
         claim.PracticeNumber = GetCellValue(worksheet, row, headers, "PRACTICE NO");
         claim.InvoiceReference = GetCellValue(worksheet, row, headers, "INV REF");
+        claim.AsAtNetworks = GetCellValue(worksheet, row, headers, "AS AT NETWORKS");
+        claim.ReferringPractice = GetCellValue(worksheet, row, headers, "REFERRING PRACTICE");
 
         claim.ServiceDate = GetDateValue(worksheet, row, headers, "SERVICE DATE");
         claim.AssessmentDate = GetDateValue(worksheet, row, headers, "ASSESS DATE");
@@ -146,20 +157,38 @@ public class ExcelClaimParser : IExcelClaimParser
         claim.ClaimCode = GetCellValue(worksheet, row, headers, "CLM CODE");
         claim.CodeDescription = GetCellValue(worksheet, row, headers, "CODE DESCRIPTION");
         claim.Units = GetIntValue(worksheet, row, headers, "UNITS");
+        claim.ScriptCode = GetCellValue(worksheet, row, headers, "SCRIPT CODE");
+        claim.Icd10Code = GetCellValue(worksheet, row, headers, "ICD-10");
 
         claim.TotalClaimAmount = GetDecimalValue(worksheet, row, headers, "AMOUNT CLAIMED");
+        claim.PaidFromRiskAmount = GetDecimalValue(worksheet, row, headers, "PAID FROM RISK AMT");
+        claim.PaidFromThreshold = GetDecimalValue(worksheet, row, headers, "PAID FROM THRESHHOLD");
+        claim.PaidFromSavings = GetDecimalValue(worksheet, row, headers, "PAID FROM SAVINGS");
+        claim.RecoveryAmount = GetDecimalValue(worksheet, row, headers, "RECOVERY AMOUNT");
         claim.TotalAmountPaid = GetDecimalValue(worksheet, row, headers, "TOTAL AMOUNT PAID");
+        claim.Tariff = GetDecimalValue(worksheet, row, headers, "TARIFF");
         claim.CoPayAmount = GetDecimalValue(worksheet, row, headers, "CO-PAY");
+
+        claim.PayTo = GetCellValue(worksheet, row, headers, "PAY TO");
+        claim.Rej = GetCellValue(worksheet, row, headers, "REJ");
+        claim.Rev = GetCellValue(worksheet, row, headers, "REV");
+        claim.AuthNo = GetCellValue(worksheet, row, headers, "AUTH NO");
+        claim.Dl = GetCellValue(worksheet, row, headers, "DL");
+
+        claim.ClaimLineNo = GetCellValue(worksheet, row, headers, "CLAIM LINE NO");
+        claim.DuplicateClaim = GetCellValue(worksheet, row, headers, "DUPLICATE CLAIM");
+        claim.DuplicateClaimLine = GetCellValue(worksheet, row, headers, "DUPLICATE CLAIM LINE");
+        claim.PaperOrEdi = GetCellValue(worksheet, row, headers, "PAPER/EDI");
 
         claim.AssessorName = GetCellValue(worksheet, row, headers, "ASSESSOR NAME");
         claim.ClaimTypeCode = GetCellValue(worksheet, row, headers, "CLAIM TYPE CODE") ?? "";
 
         claim.PatientBirthDate = GetDateValue(worksheet, row, headers, "BIRTHDATE");
-        claim.PatientCurrentAge = GetIntValue(worksheet, row, headers, "CURRENT AGE");
+        claim.PatientCurrentAge = GetIntValue(worksheet, row, headers, "CURRENT AG");
 
-        if (string.IsNullOrEmpty(claim.ClaimNumber))
+        if (string.IsNullOrWhiteSpace(claim.ClaimLineNo))
         {
-            _logger.LogWarning("Row {Row} has no claim number, skipping", row);
+            _logger.LogWarning("Row {Row} has no claim line number, skipping", row);
             return null;
         }
 

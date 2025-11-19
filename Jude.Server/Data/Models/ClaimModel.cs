@@ -18,20 +18,19 @@ public class ClaimModel
 
     // Patient Identifier
     public string MemberNumber { get; set; } = string.Empty;
+    public string Ino { get; set; } = string.Empty;
+    public string Dis { get; set; } = string.Empty;
 
     public string MedicalSchemeName { get; set; } = string.Empty;
     public string OptionName { get; set; } = string.Empty;
     public string PayerName { get; set; } = string.Empty;
 
-    // Amounts
-    public decimal TotalClaimAmount { get; set; }
-    public decimal TotalAmountPaid { get; set; }
-    public decimal CoPayAmount { get; set; }
-
     // Provider/Invoice
     public string ProviderName { get; set; } = string.Empty;
     public string PracticeNumber { get; set; } = string.Empty;
     public string InvoiceReference { get; set; } = string.Empty;
+    public string AsAtNetworks { get; set; } = string.Empty;
+    public string ReferringPractice { get; set; } = string.Empty;
 
     // Dates
     public DateTime ServiceDate { get; set; }
@@ -42,6 +41,31 @@ public class ClaimModel
     public string ClaimCode { get; set; } = string.Empty;
     public string CodeDescription { get; set; } = string.Empty;
     public int Units { get; set; }
+    public string ScriptCode { get; set; } = string.Empty;
+    public string Icd10Code { get; set; } = string.Empty;
+
+    // Amounts
+    public decimal TotalClaimAmount { get; set; }
+    public decimal PaidFromRiskAmount { get; set; }
+    public decimal PaidFromThreshold { get; set; }
+    public decimal PaidFromSavings { get; set; }
+    public decimal RecoveryAmount { get; set; }
+    public decimal TotalAmountPaid { get; set; }
+    public decimal Tariff { get; set; }
+    public decimal CoPayAmount { get; set; }
+
+    // Payment/Authorization
+    public string PayTo { get; set; } = string.Empty;
+    public string Rej { get; set; } = string.Empty;
+    public string Rev { get; set; } = string.Empty;
+    public string AuthNo { get; set; } = string.Empty;
+    public string Dl { get; set; } = string.Empty;
+
+    // Claim Details
+    public string ClaimLineNo { get; set; } = string.Empty;
+    public string DuplicateClaim { get; set; } = string.Empty;
+    public string DuplicateClaimLine { get; set; } = string.Empty;
+    public string PaperOrEdi { get; set; } = string.Empty;
 
     // Review/Source
     [ForeignKey(nameof(UserModel))]

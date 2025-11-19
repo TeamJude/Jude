@@ -267,7 +267,7 @@ export function ClaimsTable() {
 					<Input
 						isClearable
 						className="w-full sm:max-w-[44%]"
-						placeholder="Search by transaction number or patient name..."
+						placeholder="Search by claim number, claim line number, or patient name..."
 						startContent={<Search />}
 						value={search}
 						onClear={() => setSearch("")}

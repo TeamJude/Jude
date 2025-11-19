@@ -94,21 +94,41 @@ public class ClaimsService : IClaimsService
                     c.PatientFirstName,
                     c.PatientSurname,
                     c.MemberNumber,
+                    c.Ino,
+                    c.Dis,
                     c.MedicalSchemeName,
                     c.OptionName,
                     c.PayerName,
-                    c.TotalClaimAmount,
-                    c.TotalAmountPaid,
-                    c.CoPayAmount,
                     c.ProviderName,
                     c.PracticeNumber,
                     c.InvoiceReference,
+                    c.AsAtNetworks,
+                    c.ReferringPractice,
                     c.ServiceDate,
                     c.AssessmentDate,
                     c.DateReceived,
                     c.ClaimCode,
                     c.CodeDescription,
                     c.Units,
+                    c.ScriptCode,
+                    c.Icd10Code,
+                    c.TotalClaimAmount,
+                    c.PaidFromRiskAmount,
+                    c.PaidFromThreshold,
+                    c.PaidFromSavings,
+                    c.RecoveryAmount,
+                    c.TotalAmountPaid,
+                    c.Tariff,
+                    c.CoPayAmount,
+                    c.PayTo,
+                    c.Rej,
+                    c.Rev,
+                    c.AuthNo,
+                    c.Dl,
+                    c.ClaimLineNo,
+                    c.DuplicateClaim,
+                    c.DuplicateClaimLine,
+                    c.PaperOrEdi,
                     c.AssessorName,
                     c.ClaimTypeCode,
                     c.PatientBirthDate,
@@ -165,6 +185,9 @@ public class ClaimsService : IClaimsService
 
         review.ClaimId = claimId;
         await _repository.AgentReviews.AddAsync(review);
+
+        claim.Status = ClaimStatus.UnderHumanReview;
+        claim.UpdatedAt = DateTime.UtcNow;
 
         var auditLog = new AuditLogModel
         {

@@ -115,6 +115,14 @@ export const ClaimOverviewTab: React.FC<ClaimOverviewTabProps> = ({
 									<span>{claim.memberNumber || "-"}</span>
 								</div>
 								<div className="flex justify-between">
+									<span className="text-foreground-500">INO</span>
+									<span>{claim.ino || "-"}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-foreground-500">DIS</span>
+									<span>{claim.dis || "-"}</span>
+								</div>
+								<div className="flex justify-between">
 									<span className="text-foreground-500">Medical Scheme</span>
 									<span>{claim.medicalSchemeName || "-"}</span>
 								</div>
@@ -145,6 +153,16 @@ export const ClaimOverviewTab: React.FC<ClaimOverviewTabProps> = ({
 									<span>{claim.practiceNumber || "-"}</span>
 								</div>
 								<div className="flex justify-between">
+									<span className="text-foreground-500">
+										Referring Practice
+									</span>
+									<span>{claim.referringPractice || "-"}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-foreground-500">As At Networks</span>
+									<span>{claim.asAtNetworks || "-"}</span>
+								</div>
+								<div className="flex justify-between">
 									<span className="text-foreground-500">Invoice Reference</span>
 									<span>{claim.invoiceReference || "-"}</span>
 								</div>
@@ -163,6 +181,10 @@ export const ClaimOverviewTab: React.FC<ClaimOverviewTabProps> = ({
 									<span>{claim.claimNumber || "-"}</span>
 								</div>
 								<div className="flex justify-between">
+									<span className="text-foreground-500">Claim Line No</span>
+									<span className="font-mono">{claim.claimLineNo || "-"}</span>
+								</div>
+								<div className="flex justify-between">
 									<span className="text-foreground-500">Claim Code</span>
 									<span>{claim.claimCode || "-"}</span>
 								</div>
@@ -171,6 +193,14 @@ export const ClaimOverviewTab: React.FC<ClaimOverviewTabProps> = ({
 									<span className="text-right">
 										{claim.codeDescription || "-"}
 									</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-foreground-500">Script Code</span>
+									<span>{claim.scriptCode || "-"}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-foreground-500">ICD-10 Code</span>
+									<span className="font-mono">{claim.icd10Code || "-"}</span>
 								</div>
 								<div className="flex justify-between">
 									<span className="text-foreground-500">Units</span>
@@ -226,10 +256,10 @@ export const ClaimOverviewTab: React.FC<ClaimOverviewTabProps> = ({
 
 					<div>
 						<h3 className="text-lg font-medium mb-3">Financial Summary</h3>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 							<div className="space-y-2 bg-content2 rounded-md p-4">
 								<div className="text-xs text-foreground-500 uppercase">
-									Total Claimed
+									Amount Claimed
 								</div>
 								<div className="text-2xl font-semibold">
 									${claim.totalClaimAmount?.toFixed(2) || "0.00"}
@@ -237,7 +267,7 @@ export const ClaimOverviewTab: React.FC<ClaimOverviewTabProps> = ({
 							</div>
 							<div className="space-y-2 bg-content2 rounded-md p-4">
 								<div className="text-xs text-foreground-500 uppercase">
-									Total Paid
+									Total Amount Paid
 								</div>
 								<div className="text-2xl font-semibold text-primary">
 									${claim.totalAmountPaid?.toFixed(2) || "0.00"}
@@ -249,6 +279,122 @@ export const ClaimOverviewTab: React.FC<ClaimOverviewTabProps> = ({
 								</div>
 								<div className="text-2xl font-semibold text-warning">
 									${claim.coPayAmount?.toFixed(2) || "0.00"}
+								</div>
+							</div>
+							<div className="space-y-2 bg-content2 rounded-md p-4">
+								<div className="text-xs text-foreground-500 uppercase">
+									Tariff
+								</div>
+								<div className="text-2xl font-semibold">
+									${claim.tariff?.toFixed(2) || "0.00"}
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<Divider />
+
+					<div>
+						<h3 className="text-lg font-medium mb-3">Payment Breakdown</h3>
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+							<div className="space-y-2 bg-content2 rounded-md p-4 text-sm">
+								<div className="text-xs text-foreground-500 uppercase mb-2">
+									Paid From Risk Amount
+								</div>
+								<div className="text-lg font-semibold">
+									${claim.paidFromRiskAmount?.toFixed(2) || "0.00"}
+								</div>
+							</div>
+							<div className="space-y-2 bg-content2 rounded-md p-4 text-sm">
+								<div className="text-xs text-foreground-500 uppercase mb-2">
+									Paid From Threshold
+								</div>
+								<div className="text-lg font-semibold">
+									${claim.paidFromThreshold?.toFixed(2) || "0.00"}
+								</div>
+							</div>
+							<div className="space-y-2 bg-content2 rounded-md p-4 text-sm">
+								<div className="text-xs text-foreground-500 uppercase mb-2">
+									Paid From Savings
+								</div>
+								<div className="text-lg font-semibold">
+									${claim.paidFromSavings?.toFixed(2) || "0.00"}
+								</div>
+							</div>
+							<div className="space-y-2 bg-content2 rounded-md p-4 text-sm">
+								<div className="text-xs text-foreground-500 uppercase mb-2">
+									Recovery Amount
+								</div>
+								<div className="text-lg font-semibold">
+									${claim.recoveryAmount?.toFixed(2) || "0.00"}
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<Divider />
+
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div>
+							<h3 className="text-lg font-medium mb-3">
+								Authorization & Processing
+							</h3>
+							<div className="space-y-2 bg-content2 rounded-md p-4 text-sm">
+								<div className="flex justify-between">
+									<span className="text-foreground-500">Authorization No</span>
+									<span className="font-mono">{claim.authNo || "-"}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-foreground-500">Pay To</span>
+									<span>{claim.payTo || "-"}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-foreground-500">REJ</span>
+									<span>{claim.rej || "-"}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-foreground-500">REV</span>
+									<span>{claim.rev || "-"}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-foreground-500">DL</span>
+									<span>{claim.dl || "-"}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-foreground-500">Paper/EDI</span>
+									<span>{claim.paperOrEdi || "-"}</span>
+								</div>
+							</div>
+						</div>
+
+						<div>
+							<h3 className="text-lg font-medium mb-3">Duplicate Detection</h3>
+							<div className="space-y-2 bg-content2 rounded-md p-4 text-sm">
+								<div className="flex justify-between">
+									<span className="text-foreground-500">Duplicate Claim</span>
+									<span>
+										{claim.duplicateClaim ? (
+											<Chip color="warning" size="sm" variant="flat">
+												{claim.duplicateClaim}
+											</Chip>
+										) : (
+											"-"
+										)}
+									</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-foreground-500">
+										Duplicate Claim Line
+									</span>
+									<span>
+										{claim.duplicateClaimLine ? (
+											<Chip color="warning" size="sm" variant="flat">
+												{claim.duplicateClaimLine}
+											</Chip>
+										) : (
+											"-"
+										)}
+									</span>
 								</div>
 							</div>
 						</div>
