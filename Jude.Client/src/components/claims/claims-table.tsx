@@ -1,6 +1,6 @@
 import { getClaims } from "@/lib/services/claims.service";
 import { uploadExcelClaims } from "@/lib/services/excel-upload.service";
-import { ClaimStatus, type GetClaimResponse } from "@/lib/types/claim";
+import { ClaimStatus, type ClaimSummary } from "@/lib/types/claim";
 import {
 	Button,
 	Chip,
@@ -35,8 +35,10 @@ import {
 import React from "react";
 
 const columns = [
-	{ name: "CLAIM ID", uid: "id", sortable: true },
+	{ name: "CLAIM #", uid: "claimNumber", sortable: true },
+	{ name: "MEMBER #", uid: "memberNumber", sortable: true },
 	{ name: "PATIENT", uid: "patient", sortable: true },
+	{ name: "PROVIDER", uid: "provider", sortable: true },
 	{ name: "AMOUNT", uid: "amount", sortable: true },
 	{ name: "STATUS", uid: "status", sortable: true },
 	{ name: "ACTIONS", uid: "actions" },
@@ -80,8 +82,10 @@ const getStatusIcon = (status: ClaimStatus) => {
 };
 
 const INITIAL_VISIBLE_COLUMNS = [
-	"id",
+	"claimNumber",
+	"memberNumber",
 	"patient",
+	"provider",
 	"amount",
 	"status",
 	"actions",
@@ -204,14 +208,29 @@ export function ClaimsTable() {
 	};
 
 	const renderCell = React.useCallback(
-		(claim: GetClaimResponse, columnKey: React.Key) => {
-			const cellValue = claim[columnKey as keyof GetClaimResponse];
+		(claim: ClaimSummary, columnKey: React.Key) => {
+			const cellValue = claim[columnKey as keyof ClaimSummary];
 
 			switch (columnKey) {
-				case "id":
+				case "claimNumber":
 					return (
-						<div className="flex items-center gap-2">
-							<span className="text-small font-mono">{claim.claimNumber}</span>
+						<div className="flex flex-col">
+							<span className="text-small font-mono font-medium">
+								{claim.claimNumber || "-"}
+							</span>
+							{claim.claimLineNo && (
+								<span className="text-tiny text-default-500 font-mono">
+									Line: {claim.claimLineNo}
+								</span>
+							)}
+						</div>
+					);
+				case "memberNumber":
+					return (
+						<div className="flex items-center">
+							<span className="text-small font-mono">
+								{claim.memberNumber || "-"}
+							</span>
 						</div>
 					);
 				case "patient":
@@ -220,16 +239,30 @@ export function ClaimsTable() {
 							<p className="text-bold text-small capitalize">
 								{claim.patientFirstName} {claim.patientSurname}
 							</p>
-							<p className="text-bold text-tiny capitalize text-default-500">
-								{claim.medicalSchemeName}
+						</div>
+					);
+				case "provider":
+					return (
+						<div className="flex flex-col">
+							<p className="text-small font-medium truncate max-w-[200px]">
+								{claim.providerName || "-"}
 							</p>
+							{claim.practiceNumber && (
+								<p className="text-tiny text-default-500 font-mono">
+									{claim.practiceNumber}
+								</p>
+							)}
 						</div>
 					);
 				case "amount":
 					return (
 						<div className="flex flex-col">
 							<span className="font-medium">
-								${claim.totalClaimAmount.toLocaleString()}
+								$
+								{claim.totalClaimAmount.toLocaleString(undefined, {
+									minimumFractionDigits: 2,
+									maximumFractionDigits: 2,
+								})}
 							</span>
 						</div>
 					);

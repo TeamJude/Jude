@@ -75,9 +75,12 @@ public class ClaimsService : IClaimsService
                 .Select(c => new GetClaimResponse(
                     c.Id,
                     c.ClaimNumber,
+                    c.ClaimLineNo,
                     c.PatientFirstName,
                     c.PatientSurname,
-                    c.MedicalSchemeName,
+                    c.MemberNumber,
+                    c.ProviderName,
+                    c.PracticeNumber,
                     c.TotalClaimAmount,
                     c.Status,
                     c.IngestedAt,

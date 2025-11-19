@@ -9,9 +9,12 @@ public record GetClaimsResponse(GetClaimResponse[] Claims, int TotalCount);
 public record GetClaimResponse(
     Guid Id,
     string ClaimNumber,
+    string ClaimLineNo,
     string PatientFirstName,
     string PatientSurname,
-    string MedicalSchemeName,
+    string MemberNumber,
+    string ProviderName,
+    string PracticeNumber,
     decimal TotalClaimAmount,
     ClaimStatus Status,
     DateTime IngestedAt,

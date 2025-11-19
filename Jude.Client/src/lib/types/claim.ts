@@ -126,9 +126,12 @@ export interface ClaimResponse {
 export interface GetClaimResponse {
 	id: string;
 	claimNumber: string;
+	claimLineNo: string;
 	patientFirstName: string;
 	patientSurname: string;
-	medicalSchemeName: string;
+	memberNumber: string;
+	providerName: string;
+	practiceNumber: string;
 	totalClaimAmount: number;
 	status: ClaimStatus;
 	ingestedAt: string;
@@ -237,9 +240,12 @@ export interface ClaimReview {
 export interface ClaimSummary {
 	id: string;
 	claimNumber: string;
+	claimLineNo: string;
 	patientFirstName: string;
 	patientSurname: string;
-	medicalSchemeName: string;
+	memberNumber: string;
+	providerName: string;
+	practiceNumber: string;
 	totalClaimAmount: number;
 	status: ClaimStatus;
 	ingestedAt: string;
