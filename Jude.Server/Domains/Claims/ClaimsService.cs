@@ -51,6 +51,21 @@ public class ClaimsService : IClaimsService
                 query = query.Where(c => request.Status.Contains(c.Status));
             }
 
+            if (!string.IsNullOrWhiteSpace(request.Search))
+            {
+                var searchTerm = $"%{request.Search.Trim()}%";
+                query = query.Where(c =>
+                    EF.Functions.ILike(c.ClaimNumber, searchTerm) ||
+                    EF.Functions.ILike(c.ClaimLineNo, searchTerm) ||
+                    EF.Functions.ILike(c.PatientFirstName, searchTerm) ||
+                    EF.Functions.ILike(c.PatientSurname, searchTerm) ||
+                    EF.Functions.ILike(c.PatientFirstName + " " + c.PatientSurname, searchTerm) ||
+                    EF.Functions.ILike(c.MemberNumber, searchTerm) ||
+                    EF.Functions.ILike(c.ProviderName, searchTerm) ||
+                    EF.Functions.ILike(c.PracticeNumber, searchTerm)
+                );
+            }
+
             var totalCount = await query.CountAsync();
 
             var claims = await query

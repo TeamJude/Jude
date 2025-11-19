@@ -16,6 +16,7 @@ const getClaims = async (data: {
 	page?: number;
 	pageSize?: number;
 	status?: ClaimStatus[];
+	search?: string;
 }): Promise<
 	ApiResponse<{
 		claims: ClaimSummary[];

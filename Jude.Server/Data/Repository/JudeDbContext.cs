@@ -24,6 +24,14 @@ public class JudeDbContext(DbContextOptions<JudeDbContext> options) : DbContext(
         modelBuilder.Entity<ClaimModel>().HasIndex(c => c.ClaimLineNo).IsUnique();
         modelBuilder.Entity<ClaimModel>().HasIndex(c => c.Status);
         modelBuilder.Entity<ClaimModel>().HasIndex(c => c.IngestedAt);
+        
+        // Search optimization indexes
+        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.ClaimNumber);
+        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.MemberNumber);
+        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.PatientFirstName);
+        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.PatientSurname);
+        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.ProviderName);
+        modelBuilder.Entity<ClaimModel>().HasIndex(c => c.PracticeNumber);
 
         // Configure one-to-one relationships for ClaimModel
         modelBuilder.Entity<ClaimModel>()

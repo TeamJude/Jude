@@ -101,13 +101,24 @@ export function ClaimsTable() {
 	const [isUploading, setIsUploading] = React.useState(false);
 	const navigate = useNavigate();
 
+	const [debouncedSearch, setDebouncedSearch] = React.useState(search);
+
+	React.useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedSearch(search);
+			setPage(1);
+		}, 300);
+
+		return () => clearTimeout(timer);
+	}, [search]);
+
 	const {
 		data: claimsResponse,
 		isLoading,
 		error,
 		refetch,
 	} = useQuery({
-		queryKey: ["claims", page, rowsPerPage, statusFilter],
+		queryKey: ["claims", page, rowsPerPage, statusFilter, debouncedSearch],
 		queryFn: () =>
 			getClaims({
 				page,
@@ -118,6 +129,7 @@ export function ClaimsTable() {
 								Number(key),
 							) as ClaimStatus[])
 						: undefined,
+				search: debouncedSearch.trim() || undefined,
 			}),
 	});
 
@@ -374,6 +386,7 @@ export function ClaimsTable() {
 		totalCount,
 		rowsPerPage,
 		onRowsPerPageChange,
+		debouncedSearch,
 	]);
 
 	const bottomContent = React.useMemo(() => {

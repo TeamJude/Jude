@@ -2,7 +2,7 @@ using Jude.Server.Data.Models;
 
 namespace Jude.Server.Domains.Claims;
 
-public record GetClaimsRequest(int Page = 1, int PageSize = 10, ClaimStatus[]? Status = null);
+public record GetClaimsRequest(int Page = 1, int PageSize = 10, ClaimStatus[]? Status = null, string? Search = null);
 
 public record GetClaimsResponse(GetClaimResponse[] Claims, int TotalCount);
 
